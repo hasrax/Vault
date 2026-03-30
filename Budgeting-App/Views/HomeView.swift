@@ -23,6 +23,8 @@ struct HomeView: View {
     @State private var showSplitBill      = false
     @State private var showMealPlan       = false
     @State private var showSavings        = false
+    @State private var showSemesterPlanner = false
+    @State private var showAnalytics      = false
 
     private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
     private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
@@ -60,6 +62,9 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showPlanner) {
                 PlannerView()
             }
+            .navigationDestination(isPresented: $showSemesterPlanner) {
+                SemesterPlannerView()
+            }
             .navigationDestination(isPresented: $showWorkSchedule) {
                 WorkScheduleView()
             }
@@ -71,6 +76,9 @@ struct HomeView: View {
             }
             .navigationDestination(isPresented: $showSavings) {
                 SavingsView()
+            }
+            .navigationDestination(isPresented: $showAnalytics) {
+                AnalyticsView()
             }
         }
     }
@@ -324,23 +332,23 @@ struct HomeView: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
                 spacing: 10
             ) {
-                QuickActionButton(emoji: "📊", label: "Budget",  gradient: .primaryGrad) {
-                    showBudget = true
+                QuickActionButton(emoji: "📅", label: "Semester", gradient: .purpleGrad) {
+                    showSemesterPlanner = true
                 }
-                QuickActionButton(emoji: "📅", label: "Planner", gradient: .purpleGrad) {
-                    showPlanner = true
-                }
-                QuickActionButton(emoji: "💼", label: "Jobs",    gradient: .greenGrad) {
+                QuickActionButton(emoji: "💼", label: "Shifts",   gradient: .greenGrad) {
                     showWorkSchedule = true
                 }
-                QuickActionButton(emoji: "🤝", label: "Split",   gradient: .orangeGrad) {
-                    showSplitBill = true
-                }
-                QuickActionButton(emoji: "🍽️", label: "Meals",   gradient: .tealGrad) {
+                QuickActionButton(emoji: "🍽️", label: "Meals",    gradient: .tealGrad) {
                     showMealPlan = true
                 }
-                QuickActionButton(emoji: "🎯", label: "Savings", gradient: .pinkGrad) {
+                QuickActionButton(emoji: "🎯", label: "Savings",  gradient: .pinkGrad) {
                     showSavings = true
+                }
+                QuickActionButton(emoji: "🤝", label: "Split",    gradient: .orangeGrad) {
+                    showSplitBill = true
+                }
+                QuickActionButton(emoji: "📊", label: "Analytics", gradient: .primaryGrad) {
+                    showAnalytics = true
                 }
             }
         }
@@ -351,24 +359,39 @@ struct HomeView: View {
     // MARK: - Planner Highlights (all wired)
     private var plannerHighlights: some View {
         VStack(spacing: 12) {
-            SectionHeader(title: "Planner highlights", actionLabel: "Go to planner") {
+            SectionHeader(title: "Planner highlights", actionLabel: "All six") {
                 showPlanner = true
             }
             VStack(spacing: 8) {
                 PlannerHighlightCard(
                     title: "Semester Planner",
-                    detail: "9 weeks remaining"
-                ) { showPlanner = true }
+                    detail: "Key dates and targets"
+                ) { showSemesterPlanner = true }
 
                 PlannerHighlightCard(
                     title: "Work Schedule",
-                    detail: "2 shifts this week"
+                    detail: "Track hours and pay"
                 ) { showWorkSchedule = true }
 
                 PlannerHighlightCard(
+                    title: "Meal Plan",
+                    detail: "Swipes and dining"
+                ) { showMealPlan = true }
+
+                PlannerHighlightCard(
+                    title: "Savings",
+                    detail: "Goals and buffers"
+                ) { showSavings = true }
+
+                PlannerHighlightCard(
                     title: "Split Bill",
-                    detail: "Settle dinner with Hasini & co."
+                    detail: "Settle with friends"
                 ) { showSplitBill = true }
+
+                PlannerHighlightCard(
+                    title: "Analytics",
+                    detail: "Trends and insights"
+                ) { showAnalytics = true }
             }
         }
         .padding(16)

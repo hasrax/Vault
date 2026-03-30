@@ -356,10 +356,20 @@ struct SemesterPlannerView: View {
                             .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                     }
                     Spacer()
-                    if let amt = item.amount {
-                        Text("\(item.type == .income ? "+" : "−")\(amt.currencyRS)")
-                            .font(.system(size:14,weight:.semibold))
-                            .foregroundStyle(item.color)
+                    VStack(alignment: .trailing, spacing: 6) {
+                        if let amt = item.amount {
+                            Text("\(item.type == .income ? "+" : "−")\(amt.currencyRS)")
+                                .font(.system(size:14,weight:.semibold))
+                                .foregroundStyle(item.color)
+                        }
+                        Button {
+                            editDate = item
+                        } label: {
+                            Image(systemName: "pencil.circle.fill")
+                                .foregroundStyle(Color.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Edit date")
                     }
                 }
                 .padding(16)
@@ -421,6 +431,16 @@ struct SemesterPlannerView: View {
                             }
                         }
                     }
+                    Spacer()
+                    Button {
+                        if !goal.completed { editGoal = goal }
+                    } label: {
+                        Image(systemName: "pencil.circle.fill")
+                            .foregroundStyle(Color.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(goal.completed)
+                    .accessibilityLabel("Edit goal")
                 }
                 .padding(16)
                 .lightCard()
