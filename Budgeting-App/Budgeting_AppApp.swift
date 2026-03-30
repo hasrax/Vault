@@ -1,5 +1,7 @@
 import SwiftUI
 import Combine
+import FirebaseCore
+import FirebaseAuth
 
 // MARK: - Global App State
 class AppState: ObservableObject {
@@ -20,6 +22,10 @@ class AppState: ObservableObject {
 struct Budgeting_App: App {
     @StateObject private var appState = AppState()
 
+    init() {
+            FirebaseApp.configure()
+        }
+    
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -36,19 +42,27 @@ struct RootView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        Group {
-            if !appState.hasCompletedOnboarding {
-                SplashView()
-            } else if !appState.hasCompletedSetup {
-                SetupBudgetView()
-            } else if !appState.isAuthenticated {
-                WelcomeView()
-            } else {
-                MainTabView()
+            ZStack {
+                AppBackground()
+                Group {
+                    if !appState.hasCompletedOnboarding {
+                        SplashView()
+                    } else if !appState.hasCompletedSetup {
+                        SetupBudgetView()
+                    } else if !appState.isAuthenticated {
+                        WelcomeView()
+                    } else {
+                        MainTabView()
+                    }
+                }
             }
-        }
         .animation(.easeInOut(duration: 0.35), value: appState.isAuthenticated)
         .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedOnboarding)
         .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedSetup)
+        .onAppear {
+            if Auth.auth().currentUser != nil {
+                appState.isAuthenticated = true
+            }
+        }
     }
 }

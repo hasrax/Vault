@@ -410,6 +410,7 @@ struct PlannerModule: Identifiable {
     var title: String
     var description: String
     var pill: String
+    var icon: String
     var gradient: LinearGradient
     var destination: String
 }

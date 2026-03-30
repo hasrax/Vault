@@ -7,6 +7,7 @@
 
 import SwiftUI
 import LocalAuthentication
+import FirebaseAuth
 
 // MARK: - Login
 struct LoginView: View {
@@ -158,11 +159,22 @@ struct LoginView: View {
     }
 
     private func signIn() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmedEmail.isEmpty, !password.isEmpty else {
+            errorMessage = "Enter your email and password."
+            return
+        }
         isLoading = true
         errorMessage = ""
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            isLoading = false
-            appState.isAuthenticated = true
+        Auth.auth().signIn(withEmail: trimmedEmail, password: password) { _, error in
+            DispatchQueue.main.async {
+                isLoading = false
+                if let error = error {
+                    errorMessage = error.localizedDescription
+                } else {
+                    appState.isAuthenticated = true
+                }
+            }
         }
     }
 
@@ -193,6 +205,8 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var agreedToTerms = false
+    @State private var errorMessage = ""
+    @State private var isLoading = false
 
     var isValid: Bool {
         !name.isEmpty && !email.isEmpty && password.count >= 6 && password == confirmPassword && agreedToTerms
@@ -243,18 +257,27 @@ struct SignUpView: View {
 
                     VStack(spacing: 12) {
                         Button {
-                            appState.isAuthenticated = true
+                            signUp()
                         } label: {
-                            Text("Create Account")
-                                .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                                .frame(maxWidth: .infinity).frame(height: 56)
-                                .background(LinearGradient.ctaGrad)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                            Group {
+                                if isLoading { ProgressView().tint(.white) }
+                                else { Text("Create Account") }
+                            }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).frame(height: 56)
+                            .background(LinearGradient.ctaGrad)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 
                         Button { dismiss() } label: {
                             Text("Already have an account? Sign In")
                                 .font(.system(size: 15)).foregroundStyle(Color.white.opacity(0.5))
+                        }
+                        if !errorMessage.isEmpty {
+                            Label(errorMessage, systemImage: "exclamationmark.circle")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.expense)
                         }
                     }
                     .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 60)
@@ -269,6 +292,36 @@ struct SignUpView: View {
         case "Email":            return $email
         case "Password":         return $password
         default:                 return $confirmPassword
+        }
+    }
+
+    private func signUp() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard isValid else {
+            errorMessage = "Please complete all fields and accept terms."
+            return
+        }
+        isLoading = true
+        errorMessage = ""
+        Auth.auth().createUser(withEmail: trimmedEmail, password: password) { result, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                    return
+                }
+                if let user = result?.user {
+                    let change = user.createProfileChangeRequest()
+                    change.displayName = name
+                    change.commitChanges { _ in
+                        isLoading = false
+                        appState.isAuthenticated = true
+                    }
+                } else {
+                    isLoading = false
+                    appState.isAuthenticated = true
+                }
+            }
         }
     }
 

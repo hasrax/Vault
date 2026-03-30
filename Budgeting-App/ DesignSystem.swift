@@ -212,15 +212,15 @@ struct AppBackground: View {
 struct AuthBackground: View {
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(hex: "#06080F"), Color(hex: "#0A0F1E"), Color(hex: "#0B1020")],
+            LinearGradient(colors: [Color(hex: "#05070C"), Color(hex: "#0A0C12"), Color(hex: "#0F1117")],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()
 
-            LinearGradient(colors: [Color.uniBlue.opacity(0.35), Color.clear],
+            LinearGradient(colors: [Color.uniBlue.opacity(0.16), Color.clear],
                            startPoint: .topTrailing, endPoint: .bottom)
                 .ignoresSafeArea()
 
-            LinearGradient(colors: [Color.clear, Color.uniBlue.opacity(0.18)],
+            LinearGradient(colors: [Color.clear, Color.uniBlue.opacity(0.08)],
                            startPoint: .topLeading, endPoint: .bottom)
                 .ignoresSafeArea()
 

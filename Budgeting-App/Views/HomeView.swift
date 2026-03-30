@@ -153,13 +153,17 @@ struct HomeView: View {
                     .padding(.top, 24)
 
                 HStack(spacing: 24) {
-                    DonutChart(
-                        needs:      appState.needsPercent,
-                        wants:      appState.wantsPercent,
-                        savings:    appState.savingsPercent,
-                        centerText: balance.shortCurrency,
-                        centerSub:  "Monthly"
-                    )
+                    Button { showBudget = true } label: {
+                        DonutChart(
+                            needs:      appState.needsPercent,
+                            wants:      appState.wantsPercent,
+                            savings:    appState.savingsPercent,
+                            centerText: balance.shortCurrency,
+                            centerSub:  "Monthly"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open Budget Settings")
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(BudgetCategory.allCases) { cat in
                             HStack(spacing: 8) {
@@ -329,13 +333,13 @@ struct HomeView: View {
                 QuickActionButton(emoji: "💼", label: "Jobs",    gradient: .greenGrad) {
                     showWorkSchedule = true
                 }
-                QuickActionButton(emoji: "🍕", label: "Split",   gradient: .orangeGrad) {
+                QuickActionButton(emoji: "🤝", label: "Split",   gradient: .orangeGrad) {
                     showSplitBill = true
                 }
-                QuickActionButton(emoji: "🛒", label: "Meals",   gradient: .tealGrad) {
+                QuickActionButton(emoji: "🍽️", label: "Meals",   gradient: .tealGrad) {
                     showMealPlan = true
                 }
-                QuickActionButton(emoji: "🐷", label: "Savings", gradient: .pinkGrad) {
+                QuickActionButton(emoji: "🎯", label: "Savings", gradient: .pinkGrad) {
                     showSavings = true
                 }
             }

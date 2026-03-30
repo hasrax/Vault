@@ -23,6 +23,7 @@ struct AddTransactionView: View {
     @State private var note:              String = ""
     @State private var date:              Date = Date()
     @State private var showValidationMsg  = false
+    @State private var showReceiptScanner = false
 
     // Prefill support — used when coming from ReceiptScannerView
     init(transactions: Binding<[Transaction]>, prefillAmount: Double? = nil) {
@@ -44,6 +45,7 @@ struct AddTransactionView: View {
 
                 ScrollView {
                     VStack(spacing: 24) {
+                        scanReceiptButton
                         typeToggle
                         amountSection
                         categorySection
@@ -55,6 +57,9 @@ struct AddTransactionView: View {
             }
             .navigationTitle("Add Transaction")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $showReceiptScanner) {
+                ReceiptScannerView()
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -69,6 +74,22 @@ struct AddTransactionView: View {
         }
     }
 
+    private var scanReceiptButton: some View {
+        Button { showReceiptScanner = true } label: {
+            Label("Scan Receipt", systemImage: "camera.viewfinder")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.uniBlue)
+                .frame(maxWidth: .infinity).frame(height: 52)
+                .background(Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.uniBlue.opacity(0.4), lineWidth: 1)
+                )
+        }
+        .accessibilityLabel("Scan Receipt")
+    }
+
     // MARK: - Type Toggle
     private var typeToggle: some View {
         HStack(spacing: 4) {
@@ -78,13 +99,18 @@ struct AddTransactionView: View {
                 } label: {
                     let isSelected = txType == t
                     let isExpense  = t == .expense
+                    let color      = isExpense ? Color.expense : Color.income
                     Text(isExpense ? "Expense" : "Income")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.white : Color.primary)
+                        .foregroundStyle(color)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background(isSelected ? (isExpense ? Color.expense : Color.income) : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .background(color.opacity(isSelected ? 0.16 : 0.10))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(color.opacity(isSelected ? 0.45 : 0.20), lineWidth: 1)
+                        )
                 }
                 .accessibilityLabel(t == .expense ? "Expense" : "Income")
                 .accessibilityAddTraits(txType == t ? [.isSelected] : [])
@@ -93,10 +119,6 @@ struct AddTransactionView: View {
         .padding(4)
         .background(Color(UIColor.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-        )
     }
 
     // MARK: - Amount

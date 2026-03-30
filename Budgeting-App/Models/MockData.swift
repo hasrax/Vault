@@ -127,12 +127,12 @@ struct MockData {
 
     // MARK: - Planner Modules
     static var plannerModules: [PlannerModule] = [
-        PlannerModule(id: "semesterPlanner", title: "Semester Planner",  description: "Track academic weeks, tuition fees, and every major assignment in one glance.", pill: "Deadlines", gradient: .semesterGrad, destination: "semesterPlanner"),
-        PlannerModule(id: "workSchedule",    title: "Work Schedule",     description: "See upcoming shifts, projected earnings, and how many hours you still owe.",    pill: "Work",      gradient: .workGrad,     destination: "workSchedule"),
-        PlannerModule(id: "mealPlan",        title: "Meal & Study Plan", description: "Balance swipes, dining rupees, and study expenses so you don't run out.",       pill: "Lifestyle", gradient: .orangeGrad,   destination: "mealPlan"),
-        PlannerModule(id: "savings",         title: "Savings Goals",     description: "Auto-allocate rupees toward books, rent, and the semester emergency stash.",    pill: "Future",    gradient: .greenGrad,    destination: "savings"),
-        PlannerModule(id: "splitBill",       title: "Split Bill",        description: "Settle rupee spends with roommates and friends in one view.",                   pill: "Roomies",   gradient: .splitGrad,    destination: "splitBill"),
-        PlannerModule(id: "analytics",       title: "Analytics",         description: "Spending insights, weekly charts, and tips to spend smarter.",                  pill: "Insights",  gradient: .tealGrad,     destination: "analytics"),
+        PlannerModule(id: "semesterPlanner", title: "Semester Planner",  description: "Track academic weeks, tuition fees, and every major assignment in one glance.", pill: "Deadlines", icon: "📅", gradient: .semesterGrad, destination: "semesterPlanner"),
+        PlannerModule(id: "workSchedule",    title: "Work Schedule",     description: "See upcoming shifts, projected earnings, and how many hours you still owe.",    pill: "Work",      icon: "💼", gradient: .workGrad,     destination: "workSchedule"),
+        PlannerModule(id: "mealPlan",        title: "Meal & Study Plan", description: "Balance swipes, dining rupees, and study expenses so you don't run out.",       pill: "Lifestyle", icon: "🍽️", gradient: .orangeGrad,   destination: "mealPlan"),
+        PlannerModule(id: "savings",         title: "Savings Goals",     description: "Auto-allocate rupees toward books, rent, and the semester emergency stash.",    pill: "Future",    icon: "🎯", gradient: .greenGrad,    destination: "savings"),
+        PlannerModule(id: "splitBill",       title: "Split Bill",        description: "Settle rupee spends with roommates and friends in one view.",                   pill: "Roomies",   icon: "🤝", gradient: .splitGrad,    destination: "splitBill"),
+        PlannerModule(id: "analytics",       title: "Analytics",         description: "Spending insights, weekly charts, and tips to spend smarter.",                  pill: "Insights",  icon: "📊", gradient: .tealGrad,     destination: "analytics"),
     ]
 
     // MARK: - Computed totals
