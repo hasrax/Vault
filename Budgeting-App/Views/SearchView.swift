@@ -13,7 +13,7 @@ import SwiftUI
 // Matches React: TransactionsScreen.jsx
 struct SearchView: View {
     @Environment(\.dismiss) var dismiss
-    @State private var transactions = MockData.transactions
+    @EnvironmentObject var appState: AppState
     @State private var searchText   = ""
     @State private var activeFilter: TxFilter = .all
     @State private var showAdd      = false
@@ -26,7 +26,7 @@ struct SearchView: View {
 
     // MARK: - Computed
     private var filtered: [Transaction] {
-        transactions.filter { tx in
+        appState.transactions.filter { tx in
             let matchesFilter: Bool = {
                 switch activeFilter {
                 case .all:     return true
@@ -53,8 +53,8 @@ struct SearchView: View {
             .map { (fmt.string(from: $0.key), $0.value) }
     }
 
-    private var totalIncome:  Double { transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
-    private var totalExpense: Double { transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
 
     // MARK: - Body
     var body: some View {
@@ -183,7 +183,7 @@ struct SearchView: View {
             }
         }
         .sheet(isPresented: $showAdd) {
-            AddTransactionView(transactions: $transactions)
+            AddTransactionView()
         }
     }
 

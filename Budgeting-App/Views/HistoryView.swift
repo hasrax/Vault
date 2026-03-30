@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - History View
 // Tab 2 — grouped transaction list with filter chips and swipe-to-delete.
 struct HistoryView: View {
-    @State private var transactions = MockData.transactions
+    @EnvironmentObject var appState: AppState
     @State private var activeFilter: TxFilter = .all
     @State private var searchText = ""
     @State private var showAdd    = false
@@ -24,7 +24,7 @@ struct HistoryView: View {
 
     // MARK: - Computed
     private var filtered: [Transaction] {
-        transactions.filter { tx in
+        appState.transactions.filter { tx in
             let matchesFilter: Bool = {
                 switch activeFilter {
                 case .all:     return true
@@ -88,7 +88,7 @@ struct HistoryView: View {
                 SearchView()
             }
             .sheet(isPresented: $showAdd) {
-                AddTransactionView(transactions: $transactions)
+                AddTransactionView()
             }
         }
     }
@@ -171,7 +171,8 @@ struct HistoryView: View {
     // MARK: - Delete
     private func deleteItems(in group: [Transaction], at offsets: IndexSet) {
         let idsToDelete = offsets.map { group[$0].id }
-        transactions.removeAll { idsToDelete.contains($0.id) }
+        appState.transactions.removeAll { idsToDelete.contains($0.id) }
+        TransactionService.deleteTransactions(idsToDelete)
     }
 }
 

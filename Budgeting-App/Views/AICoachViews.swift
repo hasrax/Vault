@@ -281,7 +281,6 @@ struct ReceiptScannerView: View {
     @Environment(\.dismiss) var dismiss
     @State private var isScanning      = false
     @State private var scannedAmount: Double? = nil
-    @State private var transactions    = MockData.transactions
     @State private var showAdd         = false
 
     var body: some View {
@@ -305,8 +304,7 @@ struct ReceiptScannerView: View {
             }
         }
         .sheet(isPresented: $showAdd) {
-            AddTransactionView(transactions: $transactions,
-                               prefillAmount: scannedAmount)
+            AddTransactionView(prefillAmount: scannedAmount)
         }
     }
 

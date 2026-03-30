@@ -13,7 +13,6 @@ struct HomeView: View {
     @State private var activeCategory: BudgetCategory = .needs
     @State private var showAddTransaction = false
     @State private var showNotifications  = false
-    @State private var transactions       = MockData.transactions
     @State private var budgetLimits       = MockData.budgetLimits
 
     // Navigation destinations
@@ -25,8 +24,8 @@ struct HomeView: View {
     @State private var showMealPlan       = false
     @State private var showSavings        = false
 
-    private var totalExpense: Double { transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
-    private var totalIncome:  Double { transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
     private var balance:      Double { appState.monthlyBudget + totalIncome - totalExpense }
 
     private var currentLimit: BudgetLimit? {
@@ -46,7 +45,7 @@ struct HomeView: View {
             .background(Color(UIColor.systemGroupedBackground))
             // Sheets
             .sheet(isPresented: $showAddTransaction) {
-                AddTransactionView(transactions: $transactions)
+                AddTransactionView()
             }
             .sheet(isPresented: $showNotifications) {
                 NotificationsView()
@@ -92,7 +91,8 @@ struct HomeView: View {
                             .frame(width: 40, height: 40)
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
-                        Text("Hi, \(MockData.userName)!")
+                        let displayName = appState.currentUser?.name ?? MockData.userName
+                        Text("Hi, \(displayName)!")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color.white)
                     }
@@ -381,7 +381,7 @@ struct HomeView: View {
             SectionHeader(title: "Recent Transactions", actionLabel: "See all") {
                 showSearch = true
             }
-            ForEach(Array(transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
+            ForEach(Array(appState.transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
                 TransactionRow(transaction: tx)
                 if idx < 3 {
                     Divider().padding(.leading, 56)

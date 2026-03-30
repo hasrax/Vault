@@ -414,3 +414,17 @@ struct PlannerModule: Identifiable {
     var gradient: LinearGradient
     var destination: String
 }
+
+// MARK: - User Profile
+
+struct UserProfile: Identifiable {
+    let id: String
+    var name: String
+    var email: String
+    var createdAt: Date?
+    var monthlyBudget: Double?
+    var needsPercent: Double?
+    var wantsPercent: Double?
+    var savingsPercent: Double?
+    var hasCompletedSetup: Bool
+}

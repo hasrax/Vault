@@ -11,7 +11,7 @@ import SwiftUI
 // Bottom sheet / full-screen modal for logging a new income or expense.
 // Used from: HomeView, HistoryView, SearchView, ReceiptScannerView.
 struct AddTransactionView: View {
-    @Binding var transactions: [Transaction]
+    @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
 
     // Form state
@@ -26,8 +26,7 @@ struct AddTransactionView: View {
     @State private var showReceiptScanner = false
 
     // Prefill support — used when coming from ReceiptScannerView
-    init(transactions: Binding<[Transaction]>, prefillAmount: Double? = nil) {
-        _transactions = transactions
+    init(prefillAmount: Double? = nil) {
         if let amt = prefillAmount {
             _amountText = State(initialValue: String(Int(amt)))
         }
@@ -272,11 +271,12 @@ struct AddTransactionView: View {
             date:           date,
             note:           note
         )
-        transactions.insert(newTx, at: 0)
+        appState.addTransaction(newTx)
         dismiss()
     }
 }
 
 #Preview {
-    AddTransactionView(transactions: .constant(MockData.transactions))
+    AddTransactionView()
+        .environmentObject(AppState())
 }

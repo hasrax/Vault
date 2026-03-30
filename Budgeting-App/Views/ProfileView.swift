@@ -27,9 +27,11 @@ struct ProfileView: View {
                             Text(MockData.userAvatar).font(.system(size: 28))
                         }
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(MockData.userName)
+                            let displayName = appState.currentUser?.name ?? MockData.userName
+                            let displayEmail = appState.currentUser?.email ?? MockData.userEmail
+                            Text(displayName)
                                 .font(.system(size: 18, weight: .bold))
-                            Text(MockData.userEmail)
+                            Text(displayEmail)
                                 .font(.system(size: 14))
                                 .foregroundStyle(.secondary)
                             Text("Student · LKR")

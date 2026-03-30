@@ -7,7 +7,6 @@
 
 import SwiftUI
 import LocalAuthentication
-import FirebaseAuth
 
 // MARK: - Login
 struct LoginView: View {
@@ -166,13 +165,11 @@ struct LoginView: View {
         }
         isLoading = true
         errorMessage = ""
-        Auth.auth().signIn(withEmail: trimmedEmail, password: password) { _, error in
+        appState.signIn(email: trimmedEmail, password: password) { result in
             DispatchQueue.main.async {
                 isLoading = false
-                if let error = error {
+                if case let .failure(error) = result {
                     errorMessage = error.localizedDescription
-                } else {
-                    appState.isAuthenticated = true
                 }
             }
         }
@@ -303,23 +300,11 @@ struct SignUpView: View {
         }
         isLoading = true
         errorMessage = ""
-        Auth.auth().createUser(withEmail: trimmedEmail, password: password) { result, error in
+        appState.signUp(name: name, email: trimmedEmail, password: password) { result in
             DispatchQueue.main.async {
-                if let error = error {
-                    isLoading = false
+                isLoading = false
+                if case let .failure(error) = result {
                     errorMessage = error.localizedDescription
-                    return
-                }
-                if let user = result?.user {
-                    let change = user.createProfileChangeRequest()
-                    change.displayName = name
-                    change.commitChanges { _ in
-                        isLoading = false
-                        appState.isAuthenticated = true
-                    }
-                } else {
-                    isLoading = false
-                    appState.isAuthenticated = true
                 }
             }
         }
