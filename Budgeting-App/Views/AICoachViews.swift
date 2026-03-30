@@ -424,5 +424,5 @@ struct ReceiptScannerView: View {
 
 // ProfileView is in Views/Profile/ProfileView.swift
 
-#Preview("AI Coach") { AICoachView() }
-#Preview("Scanner")  { NavigationStack { ReceiptScannerView() } }
+#Preview("AI Coach") { AICoachView().environmentObject(AppState()) }
+#Preview("Scanner")  { NavigationStack { ReceiptScannerView() }.environmentObject(AppState()) }

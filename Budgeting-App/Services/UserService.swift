@@ -30,7 +30,8 @@ struct UserService {
             "needsPercent": needsPercent,
             "wantsPercent": wantsPercent,
             "savingsPercent": savingsPercent,
-            "hasCompletedSetup": hasCompletedSetup
+            "hasCompletedSetup": hasCompletedSetup,
+            "photoURL": NSNull()
         ]
         usersCollection.document(uid).setData(data, merge: true) { error in
             if let error = error {
@@ -42,6 +43,7 @@ struct UserService {
                 name: name,
                 email: email,
                 createdAt: Date(),
+                photoURL: nil,
                 monthlyBudget: monthlyBudget,
                 needsPercent: needsPercent,
                 wantsPercent: wantsPercent,
@@ -68,6 +70,7 @@ struct UserService {
             let name = data["name"] as? String ?? "User"
             let email = data["email"] as? String ?? ""
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
+            let photoURL = data["photoURL"] as? String
             let monthlyBudget = data["monthlyBudget"] as? Double
             let needsPercent = data["needsPercent"] as? Double
             let wantsPercent = data["wantsPercent"] as? Double
@@ -78,6 +81,7 @@ struct UserService {
                 name: name,
                 email: email,
                 createdAt: createdAt,
+                photoURL: photoURL,
                 monthlyBudget: monthlyBudget,
                 needsPercent: needsPercent,
                 wantsPercent: wantsPercent,
@@ -85,6 +89,25 @@ struct UserService {
                 hasCompletedSetup: hasCompletedSetup
             )
             completion(.success(profile))
+        }
+    }
+
+    static func updateProfile(
+        uid: String,
+        name: String,
+        email: String,
+        photoURL: String?,
+        completion: ((Error?) -> Void)? = nil
+    ) {
+        var data: [String: Any] = [
+            "name": name,
+            "email": email
+        ]
+        if let photoURL = photoURL {
+            data["photoURL"] = photoURL
+        }
+        usersCollection.document(uid).setData(data, merge: true) { error in
+            completion?(error)
         }
     }
 
@@ -104,6 +127,12 @@ struct UserService {
             "hasCompletedSetup": true
         ]
         usersCollection.document(uid).setData(data, merge: true) { error in
+            completion?(error)
+        }
+    }
+
+    static func deleteUser(uid: String, completion: ((Error?) -> Void)? = nil) {
+        usersCollection.document(uid).delete { error in
             completion?(error)
         }
     }

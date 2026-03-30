@@ -180,13 +180,13 @@ struct LoginView: View {
         var error: NSError?
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
             // Simulator fallback
-            appState.isAuthenticated = true
+            appState.restoreSession()
             return
         }
         ctx.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
                            localizedReason: "Sign in to Vault") { success, _ in
             DispatchQueue.main.async {
-                if success { appState.isAuthenticated = true }
+                if success { appState.restoreSession() }
                 else { errorMessage = "Face ID failed. Use your password." }
             }
         }

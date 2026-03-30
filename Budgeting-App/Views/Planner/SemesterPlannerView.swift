@@ -10,7 +10,19 @@ import SwiftUI
 // MARK: - Semester Planner
 struct SemesterPlannerView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
     @State private var activeTab = "overview"
+    @State private var showAddGoal = false
+    @State private var newGoalTitle = ""
+    @State private var newGoalProgress = ""
+    @State private var showAddDate = false
+    @State private var dateTitle = ""
+    @State private var dateType: ImportantDate.DateType = .event
+    @State private var dateAmount = ""
+    @State private var dateIcon = "📌"
+    @State private var selectedDate = Date()
+    @State private var editGoal: SemesterGoal?
+    @State private var editDate: ImportantDate?
 
     private let semesterBudget = 4000.0
     private let spent = 1650.0
@@ -59,6 +71,173 @@ struct SemesterPlannerView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton { dismiss() }
+            }
+        }
+        .sheet(isPresented: $showAddGoal) {
+            NavigationStack {
+                Form {
+                    Section("Goal") {
+                        TextField("Goal title", text: $newGoalTitle)
+                    }
+                    Section("Progress (optional)") {
+                        TextField("0 - 100", text: $newGoalProgress)
+                            .keyboardType(.numberPad)
+                    }
+                }
+                .navigationTitle("New Goal")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { showAddGoal = false }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Add") {
+                            let trimmed = newGoalTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmed.isEmpty else { return }
+                            let progress = Int(newGoalProgress)
+                            appState.addSemesterGoal(title: trimmed, progress: progress)
+                            newGoalTitle = ""
+                            newGoalProgress = ""
+                            showAddGoal = false
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showAddDate) {
+            NavigationStack {
+                Form {
+                    Section("Title") {
+                        TextField("e.g. Tuition Due", text: $dateTitle)
+                    }
+                    Section("Date") {
+                        DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                            .datePickerStyle(.graphical)
+                    }
+                    Section("Type") {
+                        Picker("Type", selection: $dateType) {
+                            Text("Bill").tag(ImportantDate.DateType.bill)
+                            Text("Income").tag(ImportantDate.DateType.income)
+                            Text("Event").tag(ImportantDate.DateType.event)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    Section("Amount (optional)") {
+                        TextField("e.g. 2500", text: $dateAmount)
+                            .keyboardType(.numberPad)
+                    }
+                    Section("Icon") {
+                        TextField("Emoji", text: $dateIcon)
+                    }
+                }
+                .navigationTitle("New Date")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { showAddDate = false }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Add") {
+                            let title = dateTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !title.isEmpty else { return }
+                            let amount = Double(dateAmount)
+                            let icon = dateIcon.isEmpty ? "📌" : dateIcon
+                            appState.addImportantDate(title: title, date: selectedDate, type: dateType, amount: amount, icon: icon)
+                            dateTitle = ""
+                            dateAmount = ""
+                            dateIcon = "📌"
+                            selectedDate = Date()
+                            showAddDate = false
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(item: $editGoal) { goal in
+            NavigationStack {
+                Form {
+                    Section("Goal") {
+                        TextField("Goal title", text: $newGoalTitle)
+                    }
+                    Section("Progress (optional)") {
+                        TextField("0 - 100", text: $newGoalProgress)
+                            .keyboardType(.numberPad)
+                    }
+                }
+                .navigationTitle("Edit Goal")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { editGoal = nil }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Save") {
+                            let title = newGoalTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !title.isEmpty else { return }
+                            let progress = Int(newGoalProgress)
+                            let updated = SemesterGoal(id: goal.id, title: title, completed: goal.completed, progress: progress)
+                            appState.updateSemesterGoal(updated)
+                            editGoal = nil
+                        }
+                    }
+                }
+                .onAppear {
+                    newGoalTitle = goal.title
+                    newGoalProgress = goal.progress.map(String.init) ?? ""
+                }
+            }
+        }
+        .sheet(item: $editDate) { item in
+            NavigationStack {
+                Form {
+                    Section("Title") {
+                        TextField("e.g. Tuition Due", text: $dateTitle)
+                    }
+                    Section("Date") {
+                        DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                            .datePickerStyle(.graphical)
+                    }
+                    Section("Type") {
+                        Picker("Type", selection: $dateType) {
+                            Text("Bill").tag(ImportantDate.DateType.bill)
+                            Text("Income").tag(ImportantDate.DateType.income)
+                            Text("Event").tag(ImportantDate.DateType.event)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    Section("Amount (optional)") {
+                        TextField("e.g. 2500", text: $dateAmount)
+                            .keyboardType(.numberPad)
+                    }
+                    Section("Icon") {
+                        TextField("Emoji", text: $dateIcon)
+                    }
+                }
+                .navigationTitle("Edit Date")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { editDate = nil }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Save") {
+                            let title = dateTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !title.isEmpty else { return }
+                            let amount = Double(dateAmount)
+                            let icon = dateIcon.isEmpty ? "📌" : dateIcon
+                            let updated = ImportantDate(id: item.id, title: title, date: selectedDate, type: dateType, amount: amount, icon: icon)
+                            appState.updateImportantDate(updated)
+                            editDate = nil
+                        }
+                    }
+                }
+                .onAppear {
+                    dateTitle = item.title
+                    dateType = item.type
+                    dateAmount = item.amount.map { String(Int($0)) } ?? ""
+                    dateIcon = item.icon
+                    selectedDate = item.date
+                }
             }
         }
     }
@@ -163,7 +342,7 @@ struct SemesterPlannerView: View {
 
     private var calendarTab: some View {
         VStack(spacing:14) {
-            ForEach(MockData.importantDates.sorted { $0.date < $1.date }) { (item: ImportantDate) in
+            ForEach(appState.importantDates.sorted { $0.date < $1.date }) { (item: ImportantDate) in
                 HStack(spacing:14) {
                     ZStack {
                         RoundedRectangle(cornerRadius:12)
@@ -185,8 +364,20 @@ struct SemesterPlannerView: View {
                 }
                 .padding(16)
                 .lightCard()
+                .contextMenu {
+                    Button {
+                        editDate = item
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) {
+                        appState.deleteImportantDate(item)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
-            Button("+ Add Important Date") {}
+            Button("+ Add Important Date") { showAddDate = true }
                 .font(.system(size:15,weight:.semibold)).foregroundStyle(Color.white)
                 .frame(maxWidth:.infinity).frame(height:48)
                 .background(LinearGradient.ctaGrad)
@@ -198,17 +389,22 @@ struct SemesterPlannerView: View {
 
     private var goalsTab: some View {
         VStack(spacing:12) {
-            ForEach(MockData.semesterGoals) { (goal: SemesterGoal) in
+            ForEach(appState.semesterGoals) { (goal: SemesterGoal) in
                 HStack(alignment:.top,spacing:14) {
-                    ZStack {
-                        Circle()
-                            .fill(goal.completed ? Color.income : Color(UIColor.tertiarySystemFill))
-                            .frame(width:28,height:28)
-                        if goal.completed {
-                            Image(systemName:"checkmark").font(.system(size:12,weight:.bold)).foregroundStyle(Color.white)
+                    Button {
+                        appState.toggleSemesterGoal(goal)
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(goal.completed ? Color.income : Color(UIColor.tertiarySystemFill))
+                                .frame(width:28,height:28)
+                            if goal.completed {
+                                Image(systemName:"checkmark").font(.system(size:12,weight:.bold)).foregroundStyle(Color.white)
+                            }
                         }
+                        .padding(.top,2)
                     }
-                    .padding(.top,2)
+                    .buttonStyle(.plain)
                     VStack(alignment:.leading,spacing:8) {
                         Text(goal.title)
                             .font(.system(size:15,weight:.medium))
@@ -228,8 +424,21 @@ struct SemesterPlannerView: View {
                 }
                 .padding(16)
                 .lightCard()
+                .contextMenu {
+                    Button {
+                        if !goal.completed { editGoal = goal }
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .disabled(goal.completed)
+                    Button(role: .destructive) {
+                        appState.deleteSemesterGoal(goal)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
-            Button("+ Add New Goal") {}
+            Button("+ Add New Goal") { showAddGoal = true }
                 .font(.system(size:15,weight:.semibold)).foregroundStyle(Color.white)
                 .frame(maxWidth:.infinity).frame(height:48)
                 .background(LinearGradient.ctaGrad)
@@ -261,4 +470,4 @@ struct SemesterPlannerView: View {
     }
 }
 
-#Preview("Semester")  { NavigationStack { SemesterPlannerView() } }
+#Preview("Semester")  { NavigationStack { SemesterPlannerView().environmentObject(AppState()) } }

@@ -171,11 +171,10 @@ struct HistoryView: View {
     // MARK: - Delete
     private func deleteItems(in group: [Transaction], at offsets: IndexSet) {
         let idsToDelete = offsets.map { group[$0].id }
-        appState.transactions.removeAll { idsToDelete.contains($0.id) }
-        TransactionService.deleteTransactions(idsToDelete)
+        appState.deleteTransactions(idsToDelete)
     }
 }
 
 #Preview {
-    HistoryView()
+    HistoryView().environmentObject(AppState())
 }

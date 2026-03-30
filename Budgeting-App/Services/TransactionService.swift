@@ -30,7 +30,8 @@ struct TransactionService {
             "incomeSource": tx.incomeSource?.rawValue as Any,
             "budgetCategory": tx.budgetCategory.rawValue,
             "date": Timestamp(date: tx.date),
-            "note": tx.note
+            "note": tx.note,
+            "linkedShiftId": tx.linkedShiftId as Any
         ]
         col.document(tx.id.uuidString).setData(data, merge: true) { error in
             completion?(error)
@@ -58,6 +59,7 @@ struct TransactionService {
                 let budgetRaw = data["budgetCategory"] as? String ?? BudgetCategory.wants.rawValue
                 let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
                 let note = data["note"] as? String ?? ""
+                let linkedShiftId = data["linkedShiftId"] as? String
 
                 return Transaction(
                     id: UUID(uuidString: doc.documentID) ?? UUID(),
@@ -68,11 +70,16 @@ struct TransactionService {
                     incomeSource: incomeRaw.flatMap(IncomeSource.init(rawValue:)),
                     budgetCategory: BudgetCategory(rawValue: budgetRaw) ?? .wants,
                     date: date,
-                    note: note
+                    note: note,
+                    linkedShiftId: linkedShiftId
                 )
             } ?? []
             completion(.success(txs))
         }
+    }
+
+    static func updateTransaction(_ tx: Transaction, completion: ((Error?) -> Void)? = nil) {
+        addTransaction(tx, completion: completion)
     }
 
     static func deleteTransactions(_ ids: [UUID], completion: ((Error?) -> Void)? = nil) {
@@ -86,6 +93,26 @@ struct TransactionService {
         }
         batch.commit { error in
             completion?(error)
+        }
+    }
+
+    static func deleteAllTransactions(completion: ((Error?) -> Void)? = nil) {
+        guard let col = userCollection() else {
+            completion?(NSError(domain: "TransactionService", code: 401))
+            return
+        }
+        col.getDocuments { snapshot, error in
+            if let error = error {
+                completion?(error)
+                return
+            }
+            let batch = db.batch()
+            snapshot?.documents.forEach { doc in
+                batch.deleteDocument(doc.reference)
+            }
+            batch.commit { err in
+                completion?(err)
+            }
         }
     }
 }

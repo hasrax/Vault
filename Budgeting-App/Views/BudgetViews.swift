@@ -11,14 +11,37 @@ import Charts
 // MARK: - Budget View
 struct BudgetView: View {
     @Environment(\.dismiss) var dismiss
-    @State private var budgetLimits = MockData.budgetLimits
+    @EnvironmentObject var appState: AppState
     @State private var activeFilter: BudgetFilter = .all
     @State private var showAnalytics = false
+    @State private var showEditBudget = false
 
     enum BudgetFilter: String, CaseIterable { case all="All"; case needs="Needs"; case wants="Wants"; case savings="Savings" }
 
     private var totalBudget: Double { budgetLimits.reduce(0){$0+$1.limit} }
     private var totalSpent:  Double { budgetLimits.reduce(0){$0+$1.spent} }
+
+    private var budgetLimits: [BudgetLimit] {
+        let needsLimit = appState.monthlyBudget * appState.needsPercent / 100
+        let wantsLimit = appState.monthlyBudget * appState.wantsPercent / 100
+        let savingsLimit = appState.monthlyBudget * appState.savingsPercent / 100
+
+        let needsSpent = appState.transactions
+            .filter { $0.budgetCategory == .needs && $0.type == .expense }
+            .reduce(0) { $0 + $1.amount }
+        let wantsSpent = appState.transactions
+            .filter { $0.budgetCategory == .wants && $0.type == .expense }
+            .reduce(0) { $0 + $1.amount }
+        let savingsSpent = appState.transactions
+            .filter { $0.budgetCategory == .savings && $0.type == .expense }
+            .reduce(0) { $0 + $1.amount }
+
+        return [
+            BudgetLimit(category: .needs, limit: needsLimit, spent: needsSpent),
+            BudgetLimit(category: .wants, limit: wantsLimit, spent: wantsSpent),
+            BudgetLimit(category: .savings, limit: savingsLimit, spent: savingsSpent)
+        ]
+    }
 
     private var filtered: [BudgetLimit] {
         activeFilter == .all ? budgetLimits
@@ -64,14 +87,24 @@ struct BudgetView: View {
                     BackButton { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showAnalytics = true
-                    } label: {
-                        Image(systemName: "chart.bar.xaxis")
+                    HStack(spacing: 12) {
+                        Button {
+                            showEditBudget = true
+                        } label: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                        Button {
+                            showAnalytics = true
+                        } label: {
+                            Image(systemName: "chart.bar.xaxis")
+                        }
                     }
                 }
             }
             .navigationDestination(isPresented: $showAnalytics) { AnalyticsView() }
+            .sheet(isPresented: $showEditBudget) {
+                SetupBudgetView(isEditing: true)
+            }
         }
     }
 
@@ -261,5 +294,5 @@ struct AnalyticsView: View {
     }
 }
 
-#Preview("Budget")    { BudgetView() }
+#Preview("Budget")    { BudgetView().environmentObject(AppState()) }
 #Preview("Analytics") { NavigationStack { AnalyticsView() } }

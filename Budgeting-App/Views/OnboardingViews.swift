@@ -185,7 +185,10 @@ struct WelcomeView: View {
 // MARK: - Setup Budget Screen
 struct SetupBudgetView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) var dismiss
+    var isEditing: Bool = false
     @State private var budget: Double = 45000
+    @State private var budgetInput = ""
     @State private var needsPct: Double = 50
     @State private var wantsPct: Double = 25
     @State private var savingsPct: Double = 25
@@ -205,6 +208,10 @@ struct SetupBudgetView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Header
                     VStack(alignment: .leading, spacing: 8) {
+                        if isEditing {
+                            BackButton(isDark: true) { dismiss() }
+                                .padding(.bottom, 12)
+                        }
                         Text("Set Your Budget")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.white)
@@ -230,12 +237,28 @@ struct SetupBudgetView: View {
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.appStroke, lineWidth: 1))
                     .padding(.horizontal, 24)
 
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Enter monthly income")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                        TextField("e.g. 45000", text: $budgetInput)
+                            .keyboardType(.numberPad)
+                            .foregroundStyle(.white)
+                            .padding(14)
+                            .background(Color.appSurface2)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appStroke, lineWidth: 1))
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 14)
+
                     // Budget presets
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
                             ForEach(budgetPresets, id: \.self) { preset in
                                 Button {
                                     budget = preset
+                                    budgetInput = String(Int(preset))
                                 } label: {
                                     Text(preset.shortCurrency)
                                         .font(.system(size: 13, weight: .semibold))
@@ -309,13 +332,10 @@ struct SetupBudgetView: View {
 
                     // CTA
                     Button {
-                        appState.monthlyBudget = budget
-                        appState.needsPercent = needsPct
-                        appState.wantsPercent = wantsPct
-                        appState.savingsPercent = savingsPct
-                        appState.hasCompletedSetup = true
+                        appState.saveBudget(monthly: budget, needs: needsPct, wants: wantsPct, savings: savingsPct)
+                        if isEditing { dismiss() }
                     } label: {
-                        Text("Complete Setup")
+                        Text(isEditing ? "Save Changes" : "Complete Setup")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(Color(hex: "#0B1020"))
                             .frame(maxWidth: .infinity).frame(height: 56)
@@ -326,6 +346,20 @@ struct SetupBudgetView: View {
                     .padding(.top, 32)
                     .padding(.bottom, 60)
                 }
+            }
+        }
+        .onAppear {
+            budget = appState.monthlyBudget
+            needsPct = appState.needsPercent
+            wantsPct = appState.wantsPercent
+            savingsPct = appState.savingsPercent
+            budgetInput = String(Int(appState.monthlyBudget))
+        }
+        .onChange(of: budgetInput) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue { budgetInput = filtered }
+            if let value = Double(filtered), value > 0 {
+                budget = value
             }
         }
     }

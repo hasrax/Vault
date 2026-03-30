@@ -109,6 +109,7 @@ struct Transaction: Identifiable, Codable {
     var budgetCategory: BudgetCategory
     var date: Date
     var note: String
+    var linkedShiftId: String?
 
     init(
         id: UUID = UUID(),
@@ -119,7 +120,8 @@ struct Transaction: Identifiable, Codable {
         incomeSource: IncomeSource? = nil,
         budgetCategory: BudgetCategory = .wants,
         date: Date = Date(),
-        note: String = ""
+        note: String = "",
+        linkedShiftId: String? = nil
     ) {
         self.id             = id
         self.name           = name
@@ -130,6 +132,7 @@ struct Transaction: Identifiable, Codable {
         self.budgetCategory = budgetCategory
         self.date           = date
         self.note           = note
+        self.linkedShiftId  = linkedShiftId
     }
 }
 
@@ -422,6 +425,7 @@ struct UserProfile: Identifiable {
     var name: String
     var email: String
     var createdAt: Date?
+    var photoURL: String?
     var monthlyBudget: Double?
     var needsPercent: Double?
     var wantsPercent: Double?
