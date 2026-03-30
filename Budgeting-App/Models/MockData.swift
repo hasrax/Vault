@@ -119,7 +119,7 @@ struct MockData {
     // MARK: - AI Coach starter messages
     static var coachMessages: [CoachMessage] = [
         CoachMessage(
-            text: "Hi! I'm your Budgify AI coach. I track your spending patterns to help you stay on budget. Ask me anything!",
+            text: "Hi! I'm your Vault AI coach. I track your spending patterns to help you stay on budget. Ask me anything!",
             isFromUser: false,
             riskLevel: .safe
         ),

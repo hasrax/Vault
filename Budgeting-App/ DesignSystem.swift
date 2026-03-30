@@ -21,12 +21,22 @@ extension Color {
 
     // Semantic
     static let income     = Color(hex: "#22C55E")
-    static let expense    = Color(hex: "#DC2626")
+    static let expense    = Color(hex: "#B91C1C")
     static let warning    = Color(hex: "#F59E0B")
 
     // Header
     static let headerDark = Color(hex: "#1A1A1A")
     static let headerMid  = Color(hex: "#0A0A0A")
+
+    // App surfaces
+    static let appBgTop     = Color(hex: "#0B1020")
+    static let appBgBottom  = Color(hex: "#101827")
+    static let appSurface   = Color(hex: "#141C2E")
+    static let appSurface2  = Color(hex: "#1B2438")
+    static let appStroke    = Color.white.opacity(0.08)
+
+    // CTA
+    static let ctaBlue      = Color(hex: "#3B82F6")
 
     // Category
     static let needsBlue    = Color(hex: "#3B82F6")
@@ -72,6 +82,12 @@ extension LinearGradient {
     static let workGrad     = LinearGradient(colors:[Color(hex:"#0F766E"),Color(hex:"#14B8A6")], startPoint:.topLeading, endPoint:.bottomTrailing)
     static let splitGrad    = LinearGradient(colors:[Color(hex:"#7C3AED"),Color(hex:"#8B5CF6")], startPoint:.topLeading, endPoint:.bottomTrailing)
     static let goldGrad     = LinearGradient(colors:[Color(hex:"#F59E0B"),Color(hex:"#FBBF24")], startPoint:.topLeading, endPoint:.bottomTrailing)
+
+    // App background
+    static let appBackgroundGrad = LinearGradient(colors:[Color.appBgTop, Color.appBgBottom], startPoint:.topLeading, endPoint:.bottomTrailing)
+
+    // CTA
+    static let ctaGrad = LinearGradient(colors:[Color(hex:"#3B82F6"), Color(hex:"#2563EB")], startPoint:.topLeading, endPoint:.bottomTrailing)
 }
 
 // MARK: - Budget Category
@@ -166,6 +182,62 @@ struct LightCardModifier: ViewModifier {
 extension View {
     func glassCard() -> some View            { modifier(GlassCardModifier()) }
     func lightCard(_ r: CGFloat = 16) -> some View { modifier(LightCardModifier(radius: r)) }
+    func appBackground() -> some View        { modifier(AppBackgroundModifier()) }
+}
+
+// MARK: - App Background
+struct AppBackground: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [Color(hex: "#0B1020"), Color(hex: "#0F1626"), Color(hex: "#101827")],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
+
+            LinearGradient(colors: [Color.uniBlue.opacity(0.30), Color.clear],
+                           startPoint: .topTrailing, endPoint: .bottom)
+                .ignoresSafeArea()
+
+            LinearGradient(colors: [Color.clear, Color.uniPurple.opacity(0.26)],
+                           startPoint: .top, endPoint: .bottomLeading)
+                .ignoresSafeArea()
+
+            LinearGradient(colors: [Color.black.opacity(0.35), Color.clear],
+                           startPoint: .bottom, endPoint: .center)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+// MARK: - Auth / Onboarding Background
+struct AuthBackground: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [Color(hex: "#06080F"), Color(hex: "#0A0F1E"), Color(hex: "#0B1020")],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
+
+            LinearGradient(colors: [Color.uniBlue.opacity(0.35), Color.clear],
+                           startPoint: .topTrailing, endPoint: .bottom)
+                .ignoresSafeArea()
+
+            LinearGradient(colors: [Color.clear, Color.uniBlue.opacity(0.18)],
+                           startPoint: .topLeading, endPoint: .bottom)
+                .ignoresSafeArea()
+
+            LinearGradient(colors: [Color.black.opacity(0.45), Color.clear],
+                           startPoint: .bottom, endPoint: .center)
+                .ignoresSafeArea()
+        }
+    }
+}
+
+private struct AppBackgroundModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        ZStack {
+            AppBackground()
+            content
+        }
+    }
 }
 
 // MARK: - Rounded Corner Shape (for clipping specific corners)

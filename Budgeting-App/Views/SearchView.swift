@@ -12,6 +12,7 @@ import SwiftUI
 // Shows: large title, search bar, filter chips, income/expense summary cards, grouped list.
 // Matches React: TransactionsScreen.jsx
 struct SearchView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var transactions = MockData.transactions
     @State private var searchText   = ""
     @State private var activeFilter: TxFilter = .all
@@ -60,6 +61,13 @@ struct SearchView: View {
         VStack(spacing: 0) {
             // ── Header ──────────────────────────────────────────────────────
             VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    BackButton { dismiss() }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+
                 Text("Transactions")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .padding(.horizontal, 20)
@@ -152,7 +160,7 @@ struct SearchView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 6)
-                                    .background(Color(UIColor.systemGroupedBackground))
+                                    .background(Color.clear)
                             }
                         }
                     }
@@ -161,7 +169,7 @@ struct SearchView: View {
                 }
             }
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.clear)
         .navigationTitle("")
         .navigationBarHidden(true)
         .toolbar {

@@ -8,24 +8,6 @@
 import SwiftUI
 import LocalAuthentication
 
-private struct AuthBackground: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(hex: "#0B1020"), Color(hex: "#101827")],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-
-            LinearGradient(colors: [Color.uniBlue.opacity(0.30), Color.clear],
-                           startPoint: .topTrailing, endPoint: .bottom)
-                .ignoresSafeArea()
-
-            LinearGradient(colors: [Color.clear, Color.uniPurple.opacity(0.26)],
-                           startPoint: .top, endPoint: .bottomLeading)
-                .ignoresSafeArea()
-        }
-    }
-}
-
 // MARK: - Login
 struct LoginView: View {
     @EnvironmentObject var appState: AppState
@@ -138,18 +120,9 @@ struct LoginView: View {
                                 else { Text("Sign In").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white) }
                             }
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(
-                                Group {
-                                    if email.isEmpty || password.isEmpty {
-                                        Color.white.opacity(0.12)
-                                    } else {
-                                        Color.uniBlue
-                                    }
-                                }
-                            )
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(email.isEmpty || password.isEmpty)
 
                         Button {
                             showSignUp = true
@@ -202,7 +175,7 @@ struct LoginView: View {
             return
         }
         ctx.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
-                           localizedReason: "Sign in to Budgify") { success, _ in
+                           localizedReason: "Sign in to Vault") { success, _ in
             DispatchQueue.main.async {
                 if success { appState.isAuthenticated = true }
                 else { errorMessage = "Face ID failed. Use your password." }
@@ -275,10 +248,9 @@ struct SignUpView: View {
                             Text("Create Account")
                                 .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
                                 .frame(maxWidth: .infinity).frame(height: 56)
-                                .background(isValid ? LinearGradient.primaryGrad : LinearGradient(colors:[Color.white.opacity(0.12),Color.white.opacity(0.12)],startPoint:.leading,endPoint:.trailing))
+                                .background(LinearGradient.ctaGrad)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(!isValid)
 
                         Button { dismiss() } label: {
                             Text("Already have an account? Sign In")

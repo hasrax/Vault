@@ -62,7 +62,7 @@ struct HistoryView: View {
                 Divider()
                 transactionList
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("History")
             .navigationBarTitleDisplayMode(.large)
             .searchable(text: $searchText, prompt: "Search transactions")

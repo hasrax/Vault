@@ -38,7 +38,7 @@ struct MoreView: View {
                         LinearGradient.headerGrad
                             .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Budgify")
+                            Text("Vault")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(.white.opacity(0.5))
                                 .textCase(.uppercase)
@@ -93,7 +93,7 @@ struct MoreView: View {
                     .padding(.bottom, 100)
                 }
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("")
             .navigationBarHidden(true)
             .navigationDestination(for: String.self) { dest in

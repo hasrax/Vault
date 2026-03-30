@@ -79,7 +79,7 @@ struct HomeView: View {
     // MARK: - Dark Header
     private var darkHeader: some View {
         ZStack(alignment: .bottom) {
-            LinearGradient.headerGrad
+            AuthBackground()
                 .frame(minHeight: 380)
                 .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
 
@@ -129,7 +129,7 @@ struct HomeView: View {
                     VStack(spacing: 3) {
                         Text("Income")
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalIncome.currencyRS)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.income)
@@ -138,7 +138,7 @@ struct HomeView: View {
                     VStack(spacing: 3) {
                         Text("Spent")
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalExpense.currencyRS)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.expense)
@@ -285,18 +285,26 @@ struct HomeView: View {
                 Button { showAddTransaction = true } label: {
                     Label("Expense", systemImage: "minus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(Color.expense)
                         .frame(maxWidth: .infinity).frame(height: 44)
-                        .background(Color.expense)
+                        .background(Color.expense.opacity(0.16))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.expense.opacity(0.45), lineWidth: 1)
+                        )
                 }
                 Button { showAddTransaction = true } label: {
                     Label("Income", systemImage: "plus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(Color.income)
                         .frame(maxWidth: .infinity).frame(height: 44)
-                        .background(Color.income)
+                        .background(Color.income.opacity(0.16))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.income.opacity(0.45), lineWidth: 1)
+                        )
                 }
             }
         }

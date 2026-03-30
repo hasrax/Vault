@@ -10,6 +10,7 @@ import Charts
 
 // MARK: - Budget View
 struct BudgetView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var budgetLimits = MockData.budgetLimits
     @State private var activeFilter: BudgetFilter = .all
     @State private var showAnalytics = false
@@ -54,10 +55,14 @@ struct BudgetView: View {
                     .padding(.bottom, 100)
                 }
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("Budget")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    BackButton { dismiss() }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showAnalytics = true
@@ -244,9 +249,15 @@ struct AnalyticsView: View {
             .padding(.top, 16)
             .padding(.bottom, 40)
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.clear)
         .navigationTitle("Analytics")
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton { dismiss() }
+            }
+        }
     }
 }
 

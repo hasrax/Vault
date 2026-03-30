@@ -39,12 +39,8 @@ struct AddTransactionView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Dark background — matches React AddTransactionScreen
-                LinearGradient(
-                    colors: [Color(hex: "#1A1A1A"), Color(hex: "#0D0D0D")],
-                    startPoint: .top, endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                Color(UIColor.systemGroupedBackground)
+                    .ignoresSafeArea()
 
                 ScrollView {
                     VStack(spacing: 24) {
@@ -59,17 +55,14 @@ struct AddTransactionView: View {
             }
             .navigationTitle("Add Transaction")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color(hex: "#1A1A1A"), for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                        .foregroundStyle(Color.white.opacity(0.6))
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
                         .font(.headline)
-                        .foregroundStyle(isValid ? Color.white : Color.white.opacity(0.3))
+                        .foregroundStyle(isValid ? Color.uniBlue : Color.secondary)
                         .disabled(!isValid)
                 }
             }
@@ -87,7 +80,7 @@ struct AddTransactionView: View {
                     let isExpense  = t == .expense
                     Text(isExpense ? "Expense" : "Income")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.4))
+                        .foregroundStyle(isSelected ? Color.white : Color.primary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                         .background(isSelected ? (isExpense ? Color.expense : Color.income) : Color.clear)
@@ -98,11 +91,11 @@ struct AddTransactionView: View {
             }
         }
         .padding(4)
-        .background(Color.white.opacity(0.08))
+        .background(Color(UIColor.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
         )
     }
 
@@ -111,7 +104,7 @@ struct AddTransactionView: View {
         VStack(spacing: 6) {
             Text("Amount")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.5))
+                .foregroundStyle(Color.secondary)
             AmountInput(
                 text: $amountText,
                 accentColor: txType == .expense ? Color.expense : Color.income
@@ -119,11 +112,11 @@ struct AddTransactionView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(24)
-        .background(Color.white.opacity(0.06))
+        .background(Color(UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
         )
     }
 
@@ -132,7 +125,7 @@ struct AddTransactionView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Category")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.white)
+                .foregroundStyle(Color.primary)
 
             if txType == .expense {
                 // Expense subcategories
@@ -184,15 +177,15 @@ struct AddTransactionView: View {
                 Text(emoji).font(.system(size: 13))
                 Text(label).font(.system(size: 12, weight: .medium))
             }
-            .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.5))
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background(isSelected ? color : Color.white.opacity(0.06))
+            .background(isSelected ? color : Color(UIColor.secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(
-                        isSelected ? Color.clear : Color.white.opacity(0.10),
+                        isSelected ? Color.clear : Color.black.opacity(0.06),
                         lineWidth: 1
                     )
             )
@@ -215,16 +208,15 @@ struct AddTransactionView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Date")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.55))
+                    .foregroundStyle(Color.secondary)
                 DatePicker("", selection: $date, displayedComponents: .date)
                     .datePickerStyle(.compact)
-                    .colorScheme(.dark)
                     .padding(14)
-                    .background(Color.white.opacity(0.08))
+                    .background(Color(UIColor.systemBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            .stroke(Color.black.opacity(0.06), lineWidth: 1)
                     )
             }
 

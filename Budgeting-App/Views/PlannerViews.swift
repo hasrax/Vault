@@ -96,7 +96,7 @@ struct PlannerView: View {
                     .padding(.bottom, 100)
                 }
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("")
             .navigationBarHidden(true)
             .navigationDestination(for: String.self) { dest in
@@ -161,6 +161,7 @@ struct PlannerView: View {
 
 // MARK: - Semester Planner
 struct SemesterPlannerView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var activeTab = "overview"
 
     private let semesterBudget = 4000.0
@@ -203,9 +204,15 @@ struct SemesterPlannerView: View {
             }
             .padding(.bottom, 40)
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.clear)
         .navigationTitle("Semester Planner")
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton { dismiss() }
+            }
+        }
     }
 
     private var overviewTab: some View {
@@ -409,6 +416,7 @@ struct SemesterPlannerView: View {
 
 // MARK: - Work Schedule
 struct WorkScheduleView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var activeTab = "week"
     @State private var viewMode = "hours"
     private let shifts = MockData.shifts
@@ -492,20 +500,27 @@ struct WorkScheduleView: View {
                     Label("Add Shift",systemImage:"plus")
                         .font(.system(size:15,weight:.semibold)).foregroundStyle(Color.white)
                         .frame(maxWidth:.infinity).frame(height:50)
-                        .background(LinearGradient.primaryGrad)
+                        .background(LinearGradient.ctaGrad)
                         .clipShape(RoundedRectangle(cornerRadius:14))
                 }
                 .padding(.horizontal,16).padding(.top,20).padding(.bottom,40)
             }
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.clear)
         .navigationTitle("Work Schedule")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton { dismiss() }
+            }
+        }
     }
 }
 
 // MARK: - Meal Plan
 struct MealPlanView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var activeTab = "meals"
 
     var body: some View {
@@ -535,9 +550,15 @@ struct MealPlanView: View {
             }
             .padding(.horizontal,16).padding(.top,16).padding(.bottom,40)
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.clear)
         .navigationTitle("Campus Life")
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton { dismiss() }
+            }
+        }
     }
 
     private var mealsTab: some View {
@@ -632,6 +653,7 @@ struct MealPlanView: View {
 
 // MARK: - Savings
 struct SavingsView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var goals = MockData.savingsGoals
     private var totalSaved:  Double { goals.reduce(0){$0+$1.currentAmount} }
     private var totalTarget: Double { goals.reduce(0){$0+$1.targetAmount} }
@@ -672,10 +694,13 @@ struct SavingsView: View {
             }
             .padding(.horizontal,16).padding(.top,16).padding(.bottom,40)
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.clear)
         .navigationTitle("Savings Goals")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton { dismiss() }
+            }
             ToolbarItem(placement:.topBarTrailing) {
                 Button { } label: { Image(systemName:"plus") }
             }
@@ -685,6 +710,7 @@ struct SavingsView: View {
 
 // MARK: - Split Bill
 struct SplitBillView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var amountText = ""
     @State private var description = ""
     @State private var splitMethod = "equal"
@@ -790,7 +816,7 @@ struct SplitBillView: View {
                     Text("Create Split")
                         .font(.system(size:16,weight:.semibold)).foregroundStyle(Color.white)
                         .frame(maxWidth:.infinity).frame(height:52)
-                        .background(amount > 0 && totalPeople > 0 ? LinearGradient.purpleGrad : LinearGradient(colors:[Color.white.opacity(0.1)],startPoint:.leading,endPoint:.trailing))
+                        .background(amount > 0 && totalPeople > 0 ? LinearGradient.ctaGrad : LinearGradient(colors:[Color.white.opacity(0.1)],startPoint:.leading,endPoint:.trailing))
                         .clipShape(RoundedRectangle(cornerRadius:14))
                 }
                 .disabled(amount == 0 || totalPeople == 0)
@@ -801,6 +827,12 @@ struct SplitBillView: View {
         .ignoresSafeArea()
         .navigationTitle("Split Bill")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton(isDark: true) { dismiss() }
+            }
+        }
         .toolbarBackground(Color(hex:"#0D0D0D"),for:.navigationBar)
         .toolbarColorScheme(.dark,for:.navigationBar)
     }

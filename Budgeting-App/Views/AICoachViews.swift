@@ -23,7 +23,7 @@ struct AICoachView: View {
                 chatArea
                 inputBar
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("AI Coach")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -278,6 +278,7 @@ struct CanIAffordSheet: View {
 
 // MARK: - Receipt Scanner
 struct ReceiptScannerView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var isScanning      = false
     @State private var scannedAmount: Double? = nil
     @State private var transactions    = MockData.transactions
@@ -294,9 +295,15 @@ struct ReceiptScannerView: View {
             .padding(.top, 16)
             .padding(.bottom, 40)
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.clear)
         .navigationTitle("Receipt Scanner")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackButton { dismiss() }
+            }
+        }
         .sheet(isPresented: $showAdd) {
             AddTransactionView(transactions: $transactions,
                                prefillAmount: scannedAmount)
