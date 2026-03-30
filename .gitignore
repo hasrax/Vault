@@ -1,0 +1,21 @@
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+
+# Swift Package Manager
+.build/
+*.resolved
+
+# macOS
+.DS_Store
+
+# Firebase — never commit this
+GoogleService-Info.plist
+
+# Sensitive
+Secrets.swift
+APIKeys.swift
