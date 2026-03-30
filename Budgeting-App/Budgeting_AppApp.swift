@@ -22,10 +22,12 @@ class AppState: ObservableObject {
     @Published var importantDates: [ImportantDate] = MockData.importantDates
     @Published var semesterGoals: [SemesterGoal] = MockData.semesterGoals
     @Published var workShifts: [WorkShift] = MockData.shifts
+    @Published var splitBills: [SplitBill] = []
 
     private var importantDatesListener: ListenerRegistration?
     private var semesterGoalsListener: ListenerRegistration?
     private var workShiftsListener: ListenerRegistration?
+    private var splitBillsListener: ListenerRegistration?
     
         func restoreSession() {
             guard let user = Auth.auth().currentUser else { return }
@@ -34,6 +36,7 @@ class AppState: ObservableObject {
             }
             loadTransactions()
             startPlannerListeners()
+            startSplitBillListeners()
         }
     
         func signIn(email: String, password: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -78,7 +81,9 @@ class AppState: ObservableObject {
             isAuthenticated = false
             currentUser = nil
             transactions = []
+            splitBills = []
             stopPlannerListeners()
+            stopSplitBillListeners()
         }
 
         func changePassword(newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -251,6 +256,22 @@ class AppState: ObservableObject {
             workShiftsListener = nil
         }
 
+        func startSplitBillListeners() {
+            stopSplitBillListeners()
+            splitBillsListener = SplitBillService.listenSplitBills { result in
+                DispatchQueue.main.async {
+                    if case let .success(items) = result {
+                        self.splitBills = items.sorted { $0.createdAt > $1.createdAt }
+                    }
+                }
+            }
+        }
+
+        func stopSplitBillListeners() {
+            splitBillsListener?.remove()
+            splitBillsListener = nil
+        }
+
         func addSemesterGoal(title: String, progress: Int?) {
             let goal = SemesterGoal(title: title, completed: false, progress: progress)
             semesterGoals.insert(goal, at: 0)
@@ -412,6 +433,111 @@ class AppState: ObservableObject {
             if let tx = transactions.first(where: { $0.linkedShiftId == shift.id.uuidString }) {
                 deleteTransactions([tx.id])
             }
+        }
+
+        func findUserByEmail(_ email: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
+            let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !trimmed.isEmpty else {
+                completion(.failure(NSError(domain: "AppState", code: 400)))
+                return
+            }
+            UserService.fetchUserByEmail(email: trimmed, completion: completion)
+        }
+
+        func createSplitBill(
+            title: String,
+            totalAmount: Double,
+            splitMethod: SplitMethod,
+            participants: [SplitParticipant]
+        ) {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            let bill = SplitBill(
+                title: title,
+                totalAmount: totalAmount,
+                createdBy: uid,
+                createdAt: Date(),
+                splitMethod: splitMethod,
+                status: .open,
+                participants: participants
+            )
+            splitBills.insert(bill, at: 0)
+            SplitBillService.addSplitBill(bill)
+        }
+
+        func updateSplitBill(_ bill: SplitBill) {
+            if let idx = splitBills.firstIndex(where: { $0.id == bill.id }) {
+                splitBills[idx] = bill
+            }
+            SplitBillService.updateSplitBill(bill)
+        }
+
+        func acceptSplitBill(_ bill: SplitBill) {
+            updateSplitBillParticipant(bill, status: .accepted)
+        }
+
+        func declineSplitBill(_ bill: SplitBill) {
+            updateSplitBillParticipant(bill, status: .declined)
+        }
+
+        func markSplitBillPaid(_ bill: SplitBill) {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            guard let participant = bill.participants.first(where: { $0.userId == uid }) else { return }
+            if participant.status == .paid { return }
+            updateSplitBillParticipant(bill, status: .paid)
+
+            let tx = Transaction(
+                name: "Split: \(bill.title)",
+                amount: participant.shareAmount,
+                type: .expense,
+                category: .other,
+                budgetCategory: .wants,
+                date: Date(),
+                note: "Split bill payment",
+                linkedSplitBillId: bill.id.uuidString
+            )
+            addTransaction(tx)
+        }
+
+        func settleSplitBill(_ bill: SplitBill) {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            guard bill.createdBy == uid else { return }
+            if bill.status == .settled { return }
+
+            let totalCollected = bill.participants
+                .filter { !$0.isCreator && $0.status == .paid }
+                .reduce(0.0) { $0 + $1.shareAmount }
+
+            var updated = bill
+            updated.status = .settled
+            updateSplitBill(updated)
+
+            if totalCollected > 0 {
+                let tx = Transaction(
+                    name: "Split settled: \(bill.title)",
+                    amount: totalCollected,
+                    type: .income,
+                    incomeSource: .other,
+                    budgetCategory: .savings,
+                    date: Date(),
+                    note: "Split bill settled",
+                    linkedSplitBillId: bill.id.uuidString
+                )
+                addTransaction(tx)
+            }
+        }
+
+        private func updateSplitBillParticipant(_ bill: SplitBill, status: SplitParticipantStatus) {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            var updated = bill
+            updated.participants = bill.participants.map { p in
+                if p.userId == uid {
+                    var copy = p
+                    copy.status = status
+                    return copy
+                }
+                return p
+            }
+            updateSplitBill(updated)
         }
     
         func addTransaction(_ tx: Transaction) {

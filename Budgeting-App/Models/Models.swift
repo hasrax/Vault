@@ -110,6 +110,7 @@ struct Transaction: Identifiable, Codable {
     var date: Date
     var note: String
     var linkedShiftId: String?
+    var linkedSplitBillId: String?
 
     init(
         id: UUID = UUID(),
@@ -121,7 +122,8 @@ struct Transaction: Identifiable, Codable {
         budgetCategory: BudgetCategory = .wants,
         date: Date = Date(),
         note: String = "",
-        linkedShiftId: String? = nil
+        linkedShiftId: String? = nil,
+        linkedSplitBillId: String? = nil
     ) {
         self.id             = id
         self.name           = name
@@ -133,6 +135,7 @@ struct Transaction: Identifiable, Codable {
         self.date           = date
         self.note           = note
         self.linkedShiftId  = linkedShiftId
+        self.linkedSplitBillId = linkedSplitBillId
     }
 }
 
@@ -302,6 +305,70 @@ struct Roommate: Identifiable {
         self.name   = name
         self.avatar = avatar
         self.color  = color
+    }
+}
+
+// MARK: - Split Bill
+
+enum SplitMethod: String, Codable {
+    case equal
+    case custom
+}
+
+enum SplitBillStatus: String, Codable {
+    case open
+    case settled
+    case cancelled
+}
+
+enum SplitParticipantStatus: String, Codable {
+    case invited
+    case accepted
+    case declined
+    case paid
+}
+
+struct SplitParticipant: Identifiable, Codable {
+    var userId: String
+    var name: String
+    var email: String
+    var shareAmount: Double
+    var status: SplitParticipantStatus
+    var isCreator: Bool
+
+    var id: String { userId }
+}
+
+struct SplitBill: Identifiable, Codable {
+    let id: UUID
+    var title: String
+    var totalAmount: Double
+    var createdBy: String
+    var createdAt: Date
+    var splitMethod: SplitMethod
+    var status: SplitBillStatus
+    var participants: [SplitParticipant]
+    var participantIds: [String]
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        totalAmount: Double,
+        createdBy: String,
+        createdAt: Date = Date(),
+        splitMethod: SplitMethod,
+        status: SplitBillStatus = .open,
+        participants: [SplitParticipant]
+    ) {
+        self.id = id
+        self.title = title
+        self.totalAmount = totalAmount
+        self.createdBy = createdBy
+        self.createdAt = createdAt
+        self.splitMethod = splitMethod
+        self.status = status
+        self.participants = participants
+        self.participantIds = participants.map { $0.userId }
     }
 }
 

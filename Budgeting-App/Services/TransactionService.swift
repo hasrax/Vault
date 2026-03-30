@@ -31,7 +31,8 @@ struct TransactionService {
             "budgetCategory": tx.budgetCategory.rawValue,
             "date": Timestamp(date: tx.date),
             "note": tx.note,
-            "linkedShiftId": tx.linkedShiftId as Any
+            "linkedShiftId": tx.linkedShiftId as Any,
+            "linkedSplitBillId": tx.linkedSplitBillId as Any
         ]
         col.document(tx.id.uuidString).setData(data, merge: true) { error in
             completion?(error)
@@ -60,6 +61,7 @@ struct TransactionService {
                 let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
                 let note = data["note"] as? String ?? ""
                 let linkedShiftId = data["linkedShiftId"] as? String
+                let linkedSplitBillId = data["linkedSplitBillId"] as? String
 
                 return Transaction(
                     id: UUID(uuidString: doc.documentID) ?? UUID(),
@@ -71,7 +73,8 @@ struct TransactionService {
                     budgetCategory: BudgetCategory(rawValue: budgetRaw) ?? .wants,
                     date: date,
                     note: note,
-                    linkedShiftId: linkedShiftId
+                    linkedShiftId: linkedShiftId,
+                    linkedSplitBillId: linkedSplitBillId
                 )
             } ?? []
             completion(.success(txs))

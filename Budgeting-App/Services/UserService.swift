@@ -92,6 +92,44 @@ struct UserService {
         }
     }
 
+    static func fetchUserByEmail(
+        email: String,
+        completion: @escaping (Result<UserProfile, Error>) -> Void
+    ) {
+        usersCollection.whereField("email", isEqualTo: email).limit(to: 1).getDocuments { snapshot, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            guard let doc = snapshot?.documents.first else {
+                completion(.failure(NSError(domain: "UserService", code: 404)))
+                return
+            }
+            let data = doc.data()
+            let name = data["name"] as? String ?? "User"
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
+            let photoURL = data["photoURL"] as? String
+            let monthlyBudget = data["monthlyBudget"] as? Double
+            let needsPercent = data["needsPercent"] as? Double
+            let wantsPercent = data["wantsPercent"] as? Double
+            let savingsPercent = data["savingsPercent"] as? Double
+            let hasCompletedSetup = data["hasCompletedSetup"] as? Bool ?? false
+            let profile = UserProfile(
+                id: doc.documentID,
+                name: name,
+                email: email,
+                createdAt: createdAt,
+                photoURL: photoURL,
+                monthlyBudget: monthlyBudget,
+                needsPercent: needsPercent,
+                wantsPercent: wantsPercent,
+                savingsPercent: savingsPercent,
+                hasCompletedSetup: hasCompletedSetup
+            )
+            completion(.success(profile))
+        }
+    }
+
     static func updateProfile(
         uid: String,
         name: String,
