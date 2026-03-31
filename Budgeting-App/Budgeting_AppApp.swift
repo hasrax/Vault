@@ -22,7 +22,7 @@ class AppState: ObservableObject {
     @Published var importantDates: [ImportantDate] = MockData.importantDates
     @Published var semesterGoals: [SemesterGoal] = MockData.semesterGoals
     @Published var workShifts: [WorkShift] = MockData.shifts
-    @Published var sessionTimeoutSeconds: TimeInterval = 60
+    @Published var sessionTimeoutSeconds: TimeInterval = 30
     @Published var splitBills: [SplitBill] = []
 
     private var importantDatesListener: ListenerRegistration?
@@ -643,6 +643,7 @@ struct RootView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.scenePhase) var scenePhase
     @State private var lastBackgroundAt: Date?
+    private let lastBackgroundKey = "lastBackgroundAt"
 
     var body: some View {
             ZStack {
@@ -665,11 +666,19 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedSetup)
         .onAppear {
             appState.restoreSession()
+            if let ts = UserDefaults.standard.object(forKey: lastBackgroundKey) as? TimeInterval {
+                let last = Date(timeIntervalSince1970: ts)
+                let elapsed = Date().timeIntervalSince(last)
+                if elapsed >= appState.sessionTimeoutSeconds {
+                    appState.signOut()
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
             case .background:
                 lastBackgroundAt = Date()
+                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastBackgroundKey)
             case .active:
                 if appState.isAuthenticated, let last = lastBackgroundAt {
                     let elapsed = Date().timeIntervalSince(last)

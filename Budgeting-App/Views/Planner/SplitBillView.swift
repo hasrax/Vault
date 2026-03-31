@@ -54,7 +54,7 @@ struct SplitBillView: View {
             Text("Total Amount")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.secondary)
-            AmountInput(text: $amountText, accentColor: Color.uniPurple)
+            AmountInput(text: $amountText, accentColor: Color.uniBlue)
         }
         .frame(maxWidth: .infinity)
         .padding(24)
@@ -68,38 +68,45 @@ struct SplitBillView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing:24) {
-            // Amount input
-            amountInputSection
+            VStack(spacing: 24) {
+                // Amount + description
+                amountInputSection
 
-                // Description
-                VStack(alignment:.leading,spacing:8) {
-                    Text("What's this for?").font(.system(size:14,weight:.medium)).foregroundStyle(Color.primary)
-                    TextField("e.g. Dinner, Rent, Utilities",text:$description)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What's this for?")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.primary)
+                    TextField("e.g. Dinner, Rent, Utilities", text: $description)
                         .foregroundStyle(Color.primary)
                         .padding(14)
                         .background(Color(UIColor.systemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius:12))
-                        .overlay(RoundedRectangle(cornerRadius:12).stroke(Color.black.opacity(0.06),lineWidth:1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.black.opacity(0.06), lineWidth: 1))
                 }
 
-                // Split method
-                VStack(alignment:.leading,spacing:10) {
-                    Text("Split Method").font(.system(size:14,weight:.medium)).foregroundStyle(Color.primary)
-                    HStack(spacing:10) {
+                // Split method + preview
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Split Method")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.primary)
+                    HStack(spacing: 10) {
                         ForEach(splitOptions, id: \.id) { option in
                             Button {
                                 splitMethod = option.id
                             } label: {
-                                VStack(spacing:6) {
-                                    Text(option.emoji).font(.system(size:22))
-                                    Text(option.label).font(.system(size:11,weight:.medium)).foregroundStyle(splitMethod == option.id ? Color.uniPurple : Color.secondary)
+                                VStack(spacing: 6) {
+                                    Text(option.emoji).font(.system(size: 22))
+                                    Text(option.label)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(splitMethod == option.id ? Color.uniBlue : Color.secondary)
                                 }
-                                .frame(maxWidth:.infinity).padding(.vertical,14)
-                                .background(splitMethod == option.id ? Color.uniPurple.opacity(0.15) : Color(UIColor.secondarySystemBackground))
-                                .clipShape(RoundedRectangle(cornerRadius:12))
-                                .overlay(RoundedRectangle(cornerRadius:12)
-                                    .stroke(splitMethod == option.id ? Color.uniPurple : Color.clear,lineWidth:1.5))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(splitMethod == option.id ? Color.uniBlue.opacity(0.15) : Color(UIColor.secondarySystemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .overlay(RoundedRectangle(cornerRadius: 12)
+                                    .stroke(splitMethod == option.id ? Color.uniBlue : Color.clear, lineWidth: 1.5))
                             }
                         }
                     }
@@ -111,7 +118,7 @@ struct SplitBillView: View {
                                 .foregroundStyle(Color.secondary)
                             Text("Each pays \(currentUserShare.currencyRS)")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.uniPurple)
+                                .foregroundStyle(Color.uniBlue)
                             Text("Split between \(totalPeople) people")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(Color.secondary)
@@ -123,24 +130,40 @@ struct SplitBillView: View {
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.uniPurple.opacity(0.08))
+                        .background(Color.uniBlue.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.uniPurple.opacity(0.2), lineWidth: 1))
+                            .stroke(Color.uniBlue.opacity(0.2), lineWidth: 1))
                     }
                 }
 
                 // People selection
-                VStack(alignment:.leading,spacing:10) {
-                    Text("Split with").font(.system(size:14,weight:.medium)).foregroundStyle(Color.primary)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Split with")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.primary)
 
-                    TextField("Search by name or email", text: $searchQuery)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.emailAddress)
-                        .padding(12)
-                        .background(Color(UIColor.systemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius:12))
-                        .overlay(RoundedRectangle(cornerRadius:12).stroke(Color.black.opacity(0.06),lineWidth:1))
+                    HStack(spacing: 8) {
+                        TextField("Search by name or email", text: $searchQuery)
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.emailAddress)
+                            .padding(12)
+                            .background(Color(UIColor.systemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.black.opacity(0.06), lineWidth: 1))
+                            .onSubmit { performSearch() }
+
+                        Button {
+                            performSearch()
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(Color.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.uniBlue)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
 
                     if isSearching {
                         Text("Searching...")
@@ -162,7 +185,7 @@ struct SplitBillView: View {
                                     searchError = ""
                                 } label: {
                                     HStack(spacing: 12) {
-                                        Circle().fill(Color.uniPurple.opacity(0.2)).frame(width: 34, height: 34)
+                                        Circle().fill(Color.uniBlue.opacity(0.2)).frame(width: 34, height: 34)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(user.name)
                                                 .font(.system(size: 14, weight: .medium))
@@ -172,8 +195,9 @@ struct SplitBillView: View {
                                                 .foregroundStyle(Color.secondary)
                                         }
                                         Spacer()
-                                        Image(systemName: "plus.circle.fill")
-                                            .foregroundStyle(Color.uniPurple)
+                                        Text("Add")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundStyle(Color.uniBlue)
                                     }
                                     .padding(12)
                                     .background(Color(UIColor.systemBackground))
@@ -186,12 +210,12 @@ struct SplitBillView: View {
                     }
 
                     // Self
-                    personRow(avatar:"🎓",name:"You",color:Color.uniBlue,isSelected:includeSelf) {
+                    personRow(avatar: "🎓", name: "You", color: Color.uniBlue, isSelected: includeSelf) {
                         includeSelf.toggle()
                     }
 
                     ForEach(selectedUsers, id: \.id) { user in
-                        personRow(avatar:"👤",name:user.name,color:Color.uniPurple,isSelected:true) {
+                        personRow(avatar: "👤", name: user.name, color: Color.uniBlue, isSelected: true) {
                             selectedUsers.removeAll { $0.id == user.id }
                             customShares[user.id] = nil
                         }
@@ -217,18 +241,20 @@ struct SplitBillView: View {
                 Button {
                     createSplitBill()
                 } label: {
-                    Text("Create Split")
-                        .font(.system(size:16,weight:.semibold)).foregroundStyle(Color.white)
-                        .frame(maxWidth:.infinity).frame(height:52)
-                        .background(amount > 0 && totalPeople > 0 ? LinearGradient.ctaGrad : LinearGradient(colors:[Color.white.opacity(0.1)],startPoint:.leading,endPoint:.trailing))
-                        .clipShape(RoundedRectangle(cornerRadius:14))
+                    Text("Send Request")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(amount > 0 && totalPeople > 0 ? LinearGradient.ctaGrad : LinearGradient(colors:[Color.white.opacity(0.1)], startPoint: .leading, endPoint: .trailing))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .disabled(amount == 0 || totalPeople == 0)
 
                 if !appState.splitBills.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Your split bills")
-                            .font(.system(size:14,weight:.medium))
+                        Text("Requests")
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(Color.primary)
 
                         ForEach(appState.splitBills) { bill in
@@ -249,29 +275,12 @@ struct SplitBillView: View {
             }
         }
         .onChange(of: searchQuery) { _, newValue in
-            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if trimmed.count < 2 {
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
                 searchResults = []
                 searchError = ""
                 isSearching = false
                 return
-            }
-            isSearching = true
-            appState.searchUsers(query: trimmed) { result in
-                DispatchQueue.main.async {
-                    isSearching = false
-                    switch result {
-                    case .success(let users):
-                        let filtered = users.filter { user in
-                            user.id != currentUserId && !selectedUsers.contains(where: { $0.id == user.id })
-                        }
-                        searchResults = filtered
-                        searchError = filtered.isEmpty ? "No matches" : ""
-                    case .failure:
-                        searchResults = []
-                        searchError = "Search failed."
-                    }
-                }
             }
         }
     }
@@ -338,7 +347,7 @@ struct SplitBillView: View {
 
         let myShare: Double
         if includeSelf {
-            myShare = method == .equal ? splitAmount : (Double(customShares[selfKey] ?? "") ?? 0)
+            myShare = method == .equal ? splitAmount : remainingForSelf
         } else {
             myShare = 0
         }
@@ -422,6 +431,17 @@ struct SplitBillView: View {
                     .foregroundStyle(Color.secondary)
             }
 
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(bill.participants.filter { !$0.isCreator }) { participant in
+                    HStack {
+                        Text(participant.name)
+                            .font(.system(size: 12, weight: .medium))
+                        Spacer()
+                        statusBadge(participant.status)
+                    }
+                }
+            }
+
             HStack(spacing: 10) {
                 if bill.status == .settled {
                     Text("Settled")
@@ -462,6 +482,80 @@ struct SplitBillView: View {
         }
         .padding(16)
         .lightCard()
+    }
+
+    private func statusBadge(_ status: SplitParticipantStatus) -> some View {
+        Text(statusLabel(status))
+            .font(.system(size: 10, weight: .bold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(statusColor(status).opacity(0.15))
+            .foregroundStyle(statusColor(status))
+            .clipShape(Capsule())
+    }
+
+    private func statusLabel(_ status: SplitParticipantStatus) -> String {
+        switch status {
+        case .invited: return "Pending"
+        case .accepted: return "Accepted"
+        case .declined: return "Declined"
+        case .paid: return "Paid"
+        }
+    }
+
+    private func statusColor(_ status: SplitParticipantStatus) -> Color {
+        switch status {
+        case .invited: return Color.warning
+        case .accepted: return Color.uniBlue
+        case .declined: return Color.expense
+        case .paid: return Color.income
+        }
+    }
+
+    private func performSearch() {
+        let trimmed = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else { return }
+        isSearching = true
+        searchError = ""
+
+        if trimmed.contains("@") {
+            appState.findUserByEmail(trimmed) { emailResult in
+                DispatchQueue.main.async {
+                    switch emailResult {
+                    case .success(let user):
+                        if !selectedUsers.contains(where: { $0.id == user.id }) {
+                            searchResults = [user]
+                            searchError = ""
+                        }
+                        isSearching = false
+                    case .failure:
+                        self.performNameSearch(query: trimmed)
+                    }
+                }
+            }
+            return
+        }
+
+        performNameSearch(query: trimmed)
+    }
+
+    private func performNameSearch(query: String) {
+        appState.searchUsers(query: query) { result in
+            DispatchQueue.main.async {
+                isSearching = false
+                switch result {
+                case .success(let users):
+                    let filtered = users.filter { user in
+                        user.id != currentUserId && !selectedUsers.contains(where: { $0.id == user.id })
+                    }
+                    searchResults = filtered
+                    searchError = filtered.isEmpty ? "No matches" : ""
+                case .failure(let error):
+                    searchResults = []
+                    searchError = error.localizedDescription
+                }
+            }
+        }
     }
 }
 

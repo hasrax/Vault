@@ -100,7 +100,8 @@ struct UserService {
         email: String,
         completion: @escaping (Result<UserProfile, Error>) -> Void
     ) {
-        usersCollection.whereField("email", isEqualTo: email).limit(to: 1).getDocuments { snapshot, error in
+        let emailLower = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        usersCollection.whereField("emailLower", isEqualTo: emailLower).limit(to: 1).getDocuments { snapshot, error in
             if let error = error {
                 completion(.failure(error))
                 return
@@ -121,7 +122,7 @@ struct UserService {
             let profile = UserProfile(
                 id: doc.documentID,
                 name: name,
-                email: email,
+                email: emailLower,
                 createdAt: createdAt,
                 photoURL: photoURL,
                 monthlyBudget: monthlyBudget,

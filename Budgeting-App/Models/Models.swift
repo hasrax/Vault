@@ -111,6 +111,7 @@ struct Transaction: Identifiable, Codable {
     var note: String
     var linkedShiftId: String?
     var linkedSplitBillId: String?
+    var receiptImageUrl: String?
 
     init(
         id: UUID = UUID(),
@@ -123,7 +124,8 @@ struct Transaction: Identifiable, Codable {
         date: Date = Date(),
         note: String = "",
         linkedShiftId: String? = nil,
-        linkedSplitBillId: String? = nil
+        linkedSplitBillId: String? = nil,
+        receiptImageUrl: String? = nil
     ) {
         self.id             = id
         self.name           = name
@@ -136,6 +138,7 @@ struct Transaction: Identifiable, Codable {
         self.note           = note
         self.linkedShiftId  = linkedShiftId
         self.linkedSplitBillId = linkedSplitBillId
+        self.receiptImageUrl = receiptImageUrl
     }
 }
 

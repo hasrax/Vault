@@ -223,10 +223,14 @@ struct LoginView: View {
     }
 
     private func authenticateWithBiometrics() {
+        guard appState.isFaceIDEnabled else {
+            faceIdError = "Face ID is turned off in Settings."
+            return
+        }
         let ctx = LAContext()
         var error: NSError?
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            faceIdError = "Face ID not available. Enable it in simulator Features."
+            faceIdError = "Face ID not available. Simulator: Features > Face ID > Enrolled."
             return
         }
         guard !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
