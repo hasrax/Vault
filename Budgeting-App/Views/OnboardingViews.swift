@@ -12,16 +12,12 @@ private struct AppLogoMark: View {
     var size: CGFloat = 80
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(LinearGradient(colors: [Color(hex: "#8FB3FF"), Color(hex: "#8B5CF6")],
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: size, height: size)
-                .shadow(color: Color.uniBlue.opacity(0.35), radius: 16, y: 6)
-            Text("V")
-                .font(.system(size: size * 0.5, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-        }
+        Image("AppLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .shadow(color: Color.uniBlue.opacity(0.25), radius: 12, y: 4)
+            .accessibilityLabel("Vault logo")
     }
 }
 

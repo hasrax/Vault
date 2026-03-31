@@ -42,6 +42,13 @@ struct SplitBillView: View {
         return selfShare + others
     }
 
+    private var currentUserShare: Double {
+        if splitMethod == "custom" {
+            return includeSelf ? (Double(customShares[selfKey] ?? "") ?? 0) : 0
+        }
+        return splitAmount
+    }
+
     private var amountInputSection: some View {
         VStack(spacing: 8) {
             Text("Total Amount")
@@ -95,6 +102,31 @@ struct SplitBillView: View {
                                     .stroke(splitMethod == option.id ? Color.uniPurple : Color.clear,lineWidth:1.5))
                             }
                         }
+                    }
+
+                    if amount > 0 && totalPeople > 0 {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Split preview")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.secondary)
+                            Text("Each pays \(currentUserShare.currencyRS)")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.uniPurple)
+                            Text("Split between \(totalPeople) people")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Color.secondary)
+                            if splitMethod == "custom" {
+                                Text("Custom total: \(customTotal.currencyRS)")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(customTotal == amount ? Color.income : Color.secondary)
+                            }
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.uniPurple.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.uniPurple.opacity(0.2), lineWidth: 1))
                     }
                 }
 
@@ -179,25 +211,7 @@ struct SplitBillView: View {
                             shareRow(name: user.name, binding: shareBinding(for: user.id))
                         }
 
-                        Text("Custom total: \(customTotal.currencyRS)")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(customTotal == amount ? Color.income : Color.secondary)
                     }
-                }
-
-                // Preview
-                if amount > 0 && totalPeople > 0 && splitMethod == "equal" {
-                    VStack(spacing:8) {
-                        Text("Each person pays").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                        Text(splitAmount.currencyRS)
-                            .font(.system(size:32,weight:.bold,design:.rounded)).foregroundStyle(Color.uniPurple)
-                        Text("Split between \(totalPeople) people")
-                            .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                    }
-                    .frame(maxWidth:.infinity).padding(20)
-                    .background(Color.uniPurple.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius:16))
-                    .overlay(RoundedRectangle(cornerRadius:16).stroke(Color.uniPurple.opacity(0.2),lineWidth:1))
                 }
 
                 Button {
@@ -369,6 +383,8 @@ struct SplitBillView: View {
     private func splitBillCard(_ bill: SplitBill) -> some View {
         let me = bill.participants.first { $0.userId == currentUserId }
         let isCreator = bill.createdBy == currentUserId
+        let confirmedCount = bill.participants.filter { !$0.isCreator && $0.status == .accepted }.count
+        let invitedCount = bill.participants.filter { !$0.isCreator }.count
         let allPaid = bill.participants
             .filter { !$0.isCreator && $0.status != .declined }
             .allSatisfy { $0.status == .paid }
@@ -393,6 +409,16 @@ struct SplitBillView: View {
             if let me = me {
                 Text("Your share: \(me.shareAmount.currencyRS)")
                     .font(.system(size:12,weight:.medium))
+                    .foregroundStyle(Color.secondary)
+            }
+
+            if isCreator {
+                Text("Confirmed: \(confirmedCount)/\(invitedCount)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.secondary)
+            } else if let me = me, me.status == .accepted {
+                Text("Status: Confirmed")
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Color.secondary)
             }
 
