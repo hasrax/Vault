@@ -22,9 +22,13 @@ struct UserService {
         hasCompletedSetup: Bool = false,
         completion: @escaping (Result<UserProfile, Error>) -> Void
     ) {
+        let nameLower = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let emailLower = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let data: [String: Any] = [
             "name": name,
             "email": email,
+            "nameLower": nameLower,
+            "emailLower": emailLower,
             "createdAt": FieldValue.serverTimestamp(),
             "monthlyBudget": monthlyBudget,
             "needsPercent": needsPercent,
@@ -137,15 +141,114 @@ struct UserService {
         photoURL: String?,
         completion: ((Error?) -> Void)? = nil
     ) {
+        let nameLower = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let emailLower = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         var data: [String: Any] = [
             "name": name,
-            "email": email
+            "email": email,
+            "nameLower": nameLower,
+            "emailLower": emailLower
         ]
         if let photoURL = photoURL {
             data["photoURL"] = photoURL
         }
         usersCollection.document(uid).setData(data, merge: true) { error in
             completion?(error)
+        }
+    }
+
+    static func updateSearchFields(
+        uid: String,
+        name: String,
+        email: String,
+        completion: ((Error?) -> Void)? = nil
+    ) {
+        let nameLower = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let emailLower = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let data: [String: Any] = [
+            "nameLower": nameLower,
+            "emailLower": emailLower
+        ]
+        usersCollection.document(uid).setData(data, merge: true) { error in
+            completion?(error)
+        }
+    }
+
+    static func searchUsers(
+        query: String,
+        limit: Int = 10,
+        completion: @escaping (Result<[UserProfile], Error>) -> Void
+    ) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else {
+            completion(.success([]))
+            return
+        }
+
+        let group = DispatchGroup()
+        var results: [UserProfile] = []
+        var errors: [Error] = []
+
+        func parse(_ docs: [QueryDocumentSnapshot], emailFallback: String? = nil) {
+            for doc in docs {
+                let data = doc.data()
+                let name = data["name"] as? String ?? "User"
+                let email = (data["email"] as? String) ?? emailFallback ?? ""
+                let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
+                let photoURL = data["photoURL"] as? String
+                let monthlyBudget = data["monthlyBudget"] as? Double
+                let needsPercent = data["needsPercent"] as? Double
+                let wantsPercent = data["wantsPercent"] as? Double
+                let savingsPercent = data["savingsPercent"] as? Double
+                let hasCompletedSetup = data["hasCompletedSetup"] as? Bool ?? false
+                let profile = UserProfile(
+                    id: doc.documentID,
+                    name: name,
+                    email: email,
+                    createdAt: createdAt,
+                    photoURL: photoURL,
+                    monthlyBudget: monthlyBudget,
+                    needsPercent: needsPercent,
+                    wantsPercent: wantsPercent,
+                    savingsPercent: savingsPercent,
+                    hasCompletedSetup: hasCompletedSetup
+                )
+                if !results.contains(where: { $0.id == profile.id }) {
+                    results.append(profile)
+                }
+            }
+        }
+
+        group.enter()
+        usersCollection
+            .order(by: "nameLower")
+            .start(at: [trimmed])
+            .end(at: [trimmed + "\u{f8ff}"])
+            .limit(to: limit)
+            .getDocuments { snapshot, error in
+                if let error = error { errors.append(error) }
+                if let docs = snapshot?.documents { parse(docs) }
+                group.leave()
+            }
+
+        group.enter()
+        usersCollection
+            .order(by: "emailLower")
+            .start(at: [trimmed])
+            .end(at: [trimmed + "\u{f8ff}"])
+            .limit(to: limit)
+            .getDocuments { snapshot, error in
+                if let error = error { errors.append(error) }
+                if let docs = snapshot?.documents { parse(docs) }
+                group.leave()
+            }
+
+        group.notify(queue: .main) {
+            if let error = errors.first {
+                completion(.failure(error))
+            } else {
+                completion(.success(results))
+            }
         }
     }
 

@@ -16,10 +16,16 @@ struct SplitBillView: View {
     @State private var splitMethod = "equal"
     @State private var includeSelf = true
     @State private var selectedUsers: [UserProfile] = []
-    @State private var inviteEmail = ""
-    @State private var inviteError = ""
-    @State private var isInviting = false
+    @State private var searchQuery = ""
+    @State private var searchResults: [UserProfile] = []
+    @State private var searchError = ""
+    @State private var isSearching = false
     @State private var customShares: [String: String] = [:]
+
+    private let splitOptions: [(id: String, emoji: String, label: String)] = [
+        ("equal", "⚖️", "Equal"),
+        ("custom", "✏️", "Custom")
+    ]
 
     private var amount: Double { Double(amountText) ?? 0 }
     private var totalPeople: Int { selectedUsers.count + (includeSelf ? 1 : 0) }
@@ -74,19 +80,19 @@ struct SplitBillView: View {
                 VStack(alignment:.leading,spacing:10) {
                     Text("Split Method").font(.system(size:14,weight:.medium)).foregroundStyle(Color.primary)
                     HStack(spacing:10) {
-                        ForEach([("equal","⚖️","Equal"),("custom","✏️","Custom")],id:\.0) { id,emoji,label in
+                        ForEach(splitOptions, id: \.id) { option in
                             Button {
-                                splitMethod = id
+                                splitMethod = option.id
                             } label: {
                                 VStack(spacing:6) {
-                                    Text(emoji).font(.system(size:22))
-                                    Text(label).font(.system(size:11,weight:.medium)).foregroundStyle(splitMethod==id ? Color.uniPurple : Color.secondary)
+                                    Text(option.emoji).font(.system(size:22))
+                                    Text(option.label).font(.system(size:11,weight:.medium)).foregroundStyle(splitMethod == option.id ? Color.uniPurple : Color.secondary)
                                 }
                                 .frame(maxWidth:.infinity).padding(.vertical,14)
-                                .background(splitMethod == id ? Color.uniPurple.opacity(0.15) : Color(UIColor.secondarySystemBackground))
+                                .background(splitMethod == option.id ? Color.uniPurple.opacity(0.15) : Color(UIColor.secondarySystemBackground))
                                 .clipShape(RoundedRectangle(cornerRadius:12))
                                 .overlay(RoundedRectangle(cornerRadius:12)
-                                    .stroke(splitMethod==id ? Color.uniPurple : Color.clear,lineWidth:1.5))
+                                    .stroke(splitMethod == option.id ? Color.uniPurple : Color.clear,lineWidth:1.5))
                             }
                         }
                     }
@@ -96,36 +102,55 @@ struct SplitBillView: View {
                 VStack(alignment:.leading,spacing:10) {
                     Text("Split with").font(.system(size:14,weight:.medium)).foregroundStyle(Color.primary)
 
-                    HStack(spacing: 10) {
-                        TextField("Add by email", text: $inviteEmail)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.emailAddress)
-                            .padding(12)
-                            .background(Color(UIColor.systemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius:12))
-                            .overlay(RoundedRectangle(cornerRadius:12).stroke(Color.black.opacity(0.06),lineWidth:1))
+                    TextField("Search by name or email", text: $searchQuery)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
+                        .padding(12)
+                        .background(Color(UIColor.systemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius:12))
+                        .overlay(RoundedRectangle(cornerRadius:12).stroke(Color.black.opacity(0.06),lineWidth:1))
 
-                        Button {
-                            addInviteByEmail()
-                        } label: {
-                            if isInviting {
-                                ProgressView().tint(.white)
-                                    .frame(width: 44, height: 44)
-                            } else {
-                                Image(systemName: "plus")
-                                    .foregroundStyle(Color.white)
-                                    .frame(width: 44, height: 44)
-                            }
-                        }
-                        .background(Color.uniPurple)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .disabled(inviteEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-
-                    if !inviteError.isEmpty {
-                        Text(inviteError)
+                    if isSearching {
+                        Text("Searching...")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.secondary)
+                    } else if !searchError.isEmpty {
+                        Text(searchError)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(Color.expense)
+                    }
+
+                    if !searchResults.isEmpty {
+                        VStack(spacing: 8) {
+                            ForEach(searchResults, id: \.id) { user in
+                                Button {
+                                    selectedUsers.append(user)
+                                    searchResults.removeAll { $0.id == user.id }
+                                    searchQuery = ""
+                                    searchError = ""
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Circle().fill(Color.uniPurple.opacity(0.2)).frame(width: 34, height: 34)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(user.name)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(Color.primary)
+                                            Text(user.email)
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(Color.secondary)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "plus.circle.fill")
+                                            .foregroundStyle(Color.uniPurple)
+                                    }
+                                    .padding(12)
+                                    .background(Color(UIColor.systemBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.black.opacity(0.06), lineWidth: 1))
+                                }
+                            }
+                        }
                     }
 
                     // Self
@@ -209,6 +234,32 @@ struct SplitBillView: View {
                 BackButton { dismiss() }
             }
         }
+        .onChange(of: searchQuery) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if trimmed.count < 2 {
+                searchResults = []
+                searchError = ""
+                isSearching = false
+                return
+            }
+            isSearching = true
+            appState.searchUsers(query: trimmed) { result in
+                DispatchQueue.main.async {
+                    isSearching = false
+                    switch result {
+                    case .success(let users):
+                        let filtered = users.filter { user in
+                            user.id != currentUserId && !selectedUsers.contains(where: { $0.id == user.id })
+                        }
+                        searchResults = filtered
+                        searchError = filtered.isEmpty ? "No matches" : ""
+                    case .failure:
+                        searchResults = []
+                        searchError = "Search failed."
+                    }
+                }
+            }
+        }
     }
 
     private func personRow(avatar:String,name:String,color:Color,isSelected:Bool,toggle:@escaping()->Void) -> some View {
@@ -262,32 +313,6 @@ struct SplitBillView: View {
         )
     }
 
-    private func addInviteByEmail() {
-        let email = inviteEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !email.isEmpty else { return }
-        if email == currentUserEmail.lowercased() {
-            inviteError = "That is your email."
-            return
-        }
-        inviteError = ""
-        isInviting = true
-        appState.findUserByEmail(email) { result in
-            DispatchQueue.main.async {
-                isInviting = false
-                switch result {
-                case .success(let user):
-                    if selectedUsers.contains(where: { $0.id == user.id }) {
-                        inviteError = "User already added."
-                    } else {
-                        selectedUsers.append(user)
-                        inviteEmail = ""
-                    }
-                case .failure:
-                    inviteError = "No account found for that email."
-                }
-            }
-        }
-    }
 
     private func createSplitBill() {
         guard !currentUserId.isEmpty else { return }

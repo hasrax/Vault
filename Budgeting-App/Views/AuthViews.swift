@@ -18,6 +18,10 @@ struct LoginView: View {
     @State private var errorMessage = ""
     @State private var isLoading = false
     @State private var showSignUp = false
+    @State private var savedAccounts: [String] = []
+    @State private var faceIdError = ""
+    @State private var isFaceIdLoading = false
+    @State private var faceIdActiveEmail: String?
 
     var body: some View {
         ZStack {
@@ -57,6 +61,46 @@ struct LoginView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                             .overlay(RoundedRectangle(cornerRadius: 16)
                                 .stroke(Color.uniBlue.opacity(0.3), lineWidth: 1))
+                        }
+
+                        if !savedAccounts.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Saved accounts")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.white.opacity(0.6))
+                                ForEach(savedAccounts, id: \.self) { account in
+                                    Button {
+                                        signInWithFaceID(account)
+                                    } label: {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: "faceid")
+                                                .foregroundStyle(Color.uniBlue)
+                                            Text(account)
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                                .lineLimit(1)
+                                            Spacer()
+                                            if faceIdActiveEmail == account && isFaceIdLoading {
+                                                ProgressView().tint(.white)
+                                            } else {
+                                                Text("Use")
+                                                    .font(.system(size: 12, weight: .bold))
+                                                    .foregroundStyle(Color.white.opacity(0.8))
+                                            }
+                                        }
+                                        .padding(12)
+                                        .background(Color.white.opacity(0.08))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.white.opacity(0.12), lineWidth: 1))
+                                    }
+                                }
+                                if !faceIdError.isEmpty {
+                                    Label(faceIdError, systemImage: "exclamationmark.circle")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(Color.expense)
+                                }
+                            }
                         }
 
                         // Divider
@@ -138,6 +182,9 @@ struct LoginView: View {
             }
         }
         .fullScreenCover(isPresented: $showSignUp) { SignUpView() }
+        .onAppear {
+            savedAccounts = KeychainService.savedAccounts()
+        }
     }
 
     private func glassField(label: String, placeholder: String,
@@ -170,24 +217,41 @@ struct LoginView: View {
                 isLoading = false
                 if case let .failure(error) = result {
                     errorMessage = error.localizedDescription
+                } else {
+                    _ = KeychainService.saveCredentials(email: trimmedEmail, password: password)
+                    savedAccounts = KeychainService.savedAccounts()
                 }
             }
         }
     }
 
     private func authenticateWithBiometrics() {
-        let ctx = LAContext()
-        var error: NSError?
-        guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            // Simulator fallback
-            appState.restoreSession()
-            return
+        if savedAccounts.count == 1, let account = savedAccounts.first {
+            signInWithFaceID(account)
+        } else {
+            faceIdError = "Choose an account below."
         }
-        ctx.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
-                           localizedReason: "Sign in to Vault") { success, _ in
+    }
+
+    private func signInWithFaceID(_ account: String) {
+        faceIdActiveEmail = account
+        isFaceIdLoading = true
+        faceIdError = ""
+        KeychainService.loadCredentials(email: account, reason: "Sign in to Vault") { result in
             DispatchQueue.main.async {
-                if success { appState.restoreSession() }
-                else { errorMessage = "Face ID failed. Use your password." }
+                isFaceIdLoading = false
+                switch result {
+                case .success(let savedPassword):
+                    appState.signIn(email: account, password: savedPassword) { signInResult in
+                        DispatchQueue.main.async {
+                            if case let .failure(error) = signInResult {
+                                faceIdError = error.localizedDescription
+                            }
+                        }
+                    }
+                case .failure:
+                    faceIdError = "Face ID failed. Use your password."
+                }
             }
         }
     }
@@ -305,6 +369,8 @@ struct SignUpView: View {
                 isLoading = false
                 if case let .failure(error) = result {
                     errorMessage = error.localizedDescription
+                } else {
+                    _ = KeychainService.saveCredentials(email: trimmedEmail, password: password)
                 }
             }
         }

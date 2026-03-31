@@ -22,6 +22,7 @@ class AppState: ObservableObject {
     @Published var importantDates: [ImportantDate] = MockData.importantDates
     @Published var semesterGoals: [SemesterGoal] = MockData.semesterGoals
     @Published var workShifts: [WorkShift] = MockData.shifts
+    @Published var sessionTimeoutSeconds: TimeInterval = 60
     @Published var splitBills: [SplitBill] = []
 
     private var importantDatesListener: ListenerRegistration?
@@ -444,6 +445,10 @@ class AppState: ObservableObject {
             UserService.fetchUserByEmail(email: trimmed, completion: completion)
         }
 
+        func searchUsers(query: String, completion: @escaping (Result<[UserProfile], Error>) -> Void) {
+            UserService.searchUsers(query: query, completion: completion)
+        }
+
         func createSplitBill(
             title: String,
             totalAmount: Double,
@@ -563,6 +568,7 @@ class AppState: ObservableObject {
                             UserService.updateProfile(uid: uid, name: updated.name, email: email, photoURL: updated.photoURL)
                         }
                         self.applyProfile(updated)
+                        UserService.updateSearchFields(uid: uid, name: updated.name, email: email)
                     case .failure:
                         let email = fallbackEmail ?? ""
                         let base = email.split(separator: "@").first.map(String.init) ?? "User"
@@ -635,6 +641,8 @@ struct Budgeting_App: App {
 // Splash → Setup → Welcome/Login → Main app
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.scenePhase) var scenePhase
+    @State private var lastBackgroundAt: Date?
 
     var body: some View {
             ZStack {
@@ -655,7 +663,23 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedOnboarding)
         .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedSetup)
         .onAppear {
-                appState.restoreSession()
+            appState.restoreSession()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .background:
+                lastBackgroundAt = Date()
+            case .active:
+                if appState.isAuthenticated, let last = lastBackgroundAt {
+                    let elapsed = Date().timeIntervalSince(last)
+                    if elapsed >= appState.sessionTimeoutSeconds {
+                        appState.signOut()
+                    }
+                }
+                lastBackgroundAt = nil
+            default:
+                break
+            }
         }
     }
 }
