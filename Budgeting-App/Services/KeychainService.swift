@@ -10,8 +10,8 @@ import LocalAuthentication
 import Security
 
 struct KeychainService {
-    private static let service = "BudgetingApp.Auth"
     private static let accountsKey = "savedAccountEmails"
+    private static let service = "BudgetingApp.Auth"
 
     static func savedAccounts() -> [String] {
         UserDefaults.standard.stringArray(forKey: accountsKey) ?? []
@@ -29,8 +29,7 @@ struct KeychainService {
         ]
         SecItemDelete(baseQuery as CFDictionary)
 
-        var accessControl: SecAccessControl?
-        accessControl = SecAccessControlCreateWithFlags(
+        let accessControl = SecAccessControlCreateWithFlags(
             nil,
             kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
             .biometryCurrentSet,
@@ -84,17 +83,16 @@ struct KeychainService {
         }
     }
 
-    static func removeCredentials(email: String) {
+    static func removeAccount(email: String) {
         let account = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !account.isEmpty else { return }
-
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
         SecItemDelete(query as CFDictionary)
-        removeAccount(account)
+        removeAccountValue(account)
     }
 
     private static func addAccount(_ email: String) {
@@ -105,7 +103,7 @@ struct KeychainService {
         }
     }
 
-    private static func removeAccount(_ email: String) {
+    private static func removeAccountValue(_ email: String) {
         var list = savedAccounts()
         list.removeAll { $0 == email }
         UserDefaults.standard.set(list, forKey: accountsKey)

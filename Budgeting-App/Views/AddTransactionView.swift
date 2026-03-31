@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - Add Transaction View
 // Bottom sheet / full-screen modal for logging a new income or expense.
-// Used from: HomeView, HistoryView, SearchView, ReceiptScannerView.
+// Used from: HomeView, SearchView, ReceiptScannerView.
 struct AddTransactionView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss

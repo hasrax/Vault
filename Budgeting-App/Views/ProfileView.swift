@@ -91,8 +91,8 @@ struct ProfileView: View {
 
                 // ── Account ───────────────────────────────────────────────
                 Section("Account") {
-                    NavigationLink(destination: HistoryView()) {
-                        Label { Text("Transaction History").font(.system(size: 15, weight: .medium))
+                    NavigationLink(destination: SearchView(showBack: true)) {
+                        Label { Text("History").font(.system(size: 15, weight: .medium))
                         } icon: { iconBox(systemName: "clock", color: Color.uniPurple) }
                     }
                     NavigationLink(destination: SavingsView()) {

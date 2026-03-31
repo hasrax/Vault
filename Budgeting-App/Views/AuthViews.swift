@@ -20,8 +20,7 @@ struct LoginView: View {
     @State private var showSignUp = false
     @State private var savedAccounts: [String] = []
     @State private var faceIdError = ""
-    @State private var isFaceIdLoading = false
-    @State private var faceIdActiveEmail: String?
+    @State private var selectedAccount = ""
 
     var body: some View {
         ZStack {
@@ -63,44 +62,10 @@ struct LoginView: View {
                                 .stroke(Color.uniBlue.opacity(0.3), lineWidth: 1))
                         }
 
-                        if !savedAccounts.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Saved accounts")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(Color.white.opacity(0.6))
-                                ForEach(savedAccounts, id: \.self) { account in
-                                    Button {
-                                        signInWithFaceID(account)
-                                    } label: {
-                                        HStack(spacing: 12) {
-                                            Image(systemName: "faceid")
-                                                .foregroundStyle(Color.uniBlue)
-                                            Text(account)
-                                                .font(.system(size: 13, weight: .semibold))
-                                                .foregroundStyle(.white)
-                                                .lineLimit(1)
-                                            Spacer()
-                                            if faceIdActiveEmail == account && isFaceIdLoading {
-                                                ProgressView().tint(.white)
-                                            } else {
-                                                Text("Use")
-                                                    .font(.system(size: 12, weight: .bold))
-                                                    .foregroundStyle(Color.white.opacity(0.8))
-                                            }
-                                        }
-                                        .padding(12)
-                                        .background(Color.white.opacity(0.08))
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .overlay(RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.12), lineWidth: 1))
-                                    }
-                                }
-                                if !faceIdError.isEmpty {
-                                    Label(faceIdError, systemImage: "exclamationmark.circle")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(Color.expense)
-                                }
-                            }
+                        if !faceIdError.isEmpty {
+                            Label(faceIdError, systemImage: "exclamationmark.circle")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.expense)
                         }
 
                         // Divider
@@ -113,8 +78,37 @@ struct LoginView: View {
                         }
 
                         // Email
-                        glassField(label: "Email", placeholder: "your@university.lk",
-                                   text: $email, keyboard: .emailAddress)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Email")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.6))
+                            HStack(spacing: 8) {
+                                TextField("your@university.lk", text: $email)
+                                    .keyboardType(.emailAddress)
+                                    .autocorrectionDisabled()
+                                    .textInputAutocapitalization(.never)
+                                    .foregroundStyle(.white)
+                                if !savedAccounts.isEmpty {
+                                    Menu {
+                                        ForEach(savedAccounts, id: \.self) { account in
+                                            Button(account) {
+                                                selectedAccount = account
+                                                email = account
+                                            }
+                                        }
+                                    } label: {
+                                        Image(systemName: "chevron.down")
+                                            .foregroundStyle(Color.white.opacity(0.7))
+                                            .frame(width: 32, height: 32)
+                                    }
+                                }
+                            }
+                            .padding(14)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1))
+                        }
 
                         // Password
                         VStack(alignment: .leading, spacing: 6) {
@@ -184,6 +178,9 @@ struct LoginView: View {
         .fullScreenCover(isPresented: $showSignUp) { SignUpView() }
         .onAppear {
             savedAccounts = KeychainService.savedAccounts()
+            if selectedAccount.isEmpty {
+                selectedAccount = savedAccounts.first ?? ""
+            }
         }
     }
 
@@ -226,30 +223,39 @@ struct LoginView: View {
     }
 
     private func authenticateWithBiometrics() {
-        if savedAccounts.count == 1, let account = savedAccounts.first {
-            signInWithFaceID(account)
-        } else {
-            faceIdError = "Choose an account below."
+        let ctx = LAContext()
+        var error: NSError?
+        guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            faceIdError = "Face ID not available. Enable it in simulator Features."
+            return
         }
-    }
-
-    private func signInWithFaceID(_ account: String) {
-        faceIdActiveEmail = account
-        isFaceIdLoading = true
+        guard !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            faceIdError = "Enter or select an email first."
+            return
+        }
         faceIdError = ""
-        KeychainService.loadCredentials(email: account, reason: "Sign in to Vault") { result in
+        ctx.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
+                           localizedReason: "Sign in to Vault") { success, _ in
             DispatchQueue.main.async {
-                isFaceIdLoading = false
-                switch result {
-                case .success(let savedPassword):
-                    appState.signIn(email: account, password: savedPassword) { signInResult in
+                if success {
+                    let targetEmail = selectedAccount.isEmpty ? email : selectedAccount
+                    KeychainService.loadCredentials(email: targetEmail, reason: "Sign in to Vault") { result in
                         DispatchQueue.main.async {
-                            if case let .failure(error) = signInResult {
-                                faceIdError = error.localizedDescription
+                            switch result {
+                            case .success(let savedPassword):
+                                appState.signIn(email: targetEmail, password: savedPassword) { signInResult in
+                                    DispatchQueue.main.async {
+                                        if case let .failure(error) = signInResult {
+                                            faceIdError = error.localizedDescription
+                                        }
+                                    }
+                                }
+                            case .failure:
+                                faceIdError = "No saved password for that account."
                             }
                         }
                     }
-                case .failure:
+                } else {
                     faceIdError = "Face ID failed. Use your password."
                 }
             }

@@ -14,14 +14,26 @@ import SwiftUI
 struct SearchView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    let showBack: Bool
     @State private var searchText   = ""
     @State private var activeFilter: TxFilter = .all
+    @State private var selectedExpenseCategory: ExpenseCategory? = nil
+    @State private var selectedIncomeSource: IncomeSource? = nil
+    @State private var dateFilter: DateFilter = .all
     @State private var showAdd      = false
 
     enum TxFilter: String, CaseIterable {
         case all     = "All"
         case income  = "Income"
         case expense = "Expense"
+    }
+
+    enum DateFilter: String, CaseIterable {
+        case all = "All time"
+        case last7 = "Last 7 days"
+        case last30 = "Last 30 days"
+        case thisMonth = "This month"
+        case thisYear = "This year"
     }
 
     // MARK: - Computed
@@ -38,7 +50,24 @@ struct SearchView: View {
                 || tx.name.localizedCaseInsensitiveContains(searchText)
                 || (tx.category?.rawValue ?? "").localizedCaseInsensitiveContains(searchText)
                 || (tx.incomeSource?.rawValue ?? "").localizedCaseInsensitiveContains(searchText)
+            let matchesCategory: Bool = {
+                switch activeFilter {
+                case .expense:
+                    if let selected = selectedExpenseCategory { return tx.category == selected }
+                    return true
+                case .income:
+                    if let selected = selectedIncomeSource { return tx.incomeSource == selected }
+                    return true
+                case .all:
+                    return true
+                }
+            }()
+            let matchesDate: Bool = {
+                guard let start = dateFilterStart else { return true }
+                return tx.date >= start
+            }()
             return matchesFilter && matchesSearch
+                && matchesCategory && matchesDate
         }
     }
 
@@ -61,24 +90,26 @@ struct SearchView: View {
         VStack(spacing: 0) {
             // ── Header ──────────────────────────────────────────────────────
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    BackButton { dismiss() }
-                    Spacer()
+                if showBack {
+                    HStack {
+                        BackButton { dismiss() }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
 
-                Text("Transactions")
+                Text("History")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .padding(.horizontal, 20)
-                    .padding(.top, 16)
+                    .padding(.top, showBack ? 16 : 8)
                     .padding(.bottom, 14)
 
                 // Search bar
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
-                    TextField("Search transactions...", text: $searchText)
+                    TextField("Search history...", text: $searchText)
                         .autocorrectionDisabled()
                     if !searchText.isEmpty {
                         Button {
@@ -108,6 +139,55 @@ struct SearchView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
                 }
+
+                // Filters row
+                HStack(spacing: 10) {
+                    Menu {
+                        if activeFilter == .income {
+                            Button("All sources") { selectedIncomeSource = nil }
+                            ForEach(IncomeSource.allCases) { source in
+                                Button(source.rawValue) { selectedIncomeSource = source }
+                            }
+                        } else {
+                            Button("All categories") { selectedExpenseCategory = nil }
+                            ForEach(ExpenseCategory.allCases) { category in
+                                Button(category.rawValue) { selectedExpenseCategory = category }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(categoryLabel)
+                                .font(.system(size: 12, weight: .medium))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .clipShape(Capsule())
+                    }
+
+                    Menu {
+                        ForEach(DateFilter.allCases, id: \.self) { option in
+                            Button(option.rawValue) { dateFilter = option }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(dateFilter.rawValue)
+                                .font(.system(size: 12, weight: .medium))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .clipShape(Capsule())
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
             }
             .background(Color(UIColor.systemBackground))
 
@@ -185,6 +265,17 @@ struct SearchView: View {
         .sheet(isPresented: $showAdd) {
             AddTransactionView()
         }
+        .onChange(of: activeFilter) { _, newValue in
+            switch newValue {
+            case .income:
+                selectedExpenseCategory = nil
+            case .expense:
+                selectedIncomeSource = nil
+            case .all:
+                selectedExpenseCategory = nil
+                selectedIncomeSource = nil
+            }
+        }
     }
 
     // MARK: - Summary Card
@@ -206,10 +297,36 @@ struct SearchView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label): \(amount.currencyRS)")
     }
+
+    private var categoryLabel: String {
+        switch activeFilter {
+        case .income:
+            return selectedIncomeSource?.rawValue ?? "All sources"
+        case .expense, .all:
+            return selectedExpenseCategory?.rawValue ?? "All categories"
+        }
+    }
+
+    private var dateFilterStart: Date? {
+        let calendar = Calendar.current
+        let now = Date()
+        switch dateFilter {
+        case .all:
+            return nil
+        case .last7:
+            return calendar.date(byAdding: .day, value: -7, to: now)
+        case .last30:
+            return calendar.date(byAdding: .day, value: -30, to: now)
+        case .thisMonth:
+            return calendar.date(from: calendar.dateComponents([.year, .month], from: now))
+        case .thisYear:
+            return calendar.date(from: calendar.dateComponents([.year], from: now))
+        }
+    }
 }
 
 #Preview {
     NavigationStack {
-        SearchView().environmentObject(AppState())
+        SearchView(showBack: true).environmentObject(AppState())
     }
 }

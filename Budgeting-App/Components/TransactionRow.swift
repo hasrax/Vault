@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Single transaction row used in HomeView, HistoryView, TransactionsView.
+/// Single transaction row used in HomeView and TransactionsView.
 /// Shows coloured icon circle, title + subtitle, and coloured amount.
 struct TransactionRow: View {
     let transaction: Transaction

@@ -656,6 +656,7 @@ struct RootView: View {
                         SetupBudgetView()
                     } else {
                         MainTabView()
+                            .id(appState.isAuthenticated)
                     }
                 }
             }

@@ -54,7 +54,7 @@ struct HomeView: View {
             }
             // Navigation destinations
             .navigationDestination(isPresented: $showSearch) {
-                SearchView()
+                SearchView(showBack: true)
             }
             .navigationDestination(isPresented: $showBudget) {
                 BudgetView()
