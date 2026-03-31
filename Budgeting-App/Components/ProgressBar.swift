@@ -15,6 +15,11 @@ struct UniProgressBar: View {
     var height: CGFloat = 8
     var animates: Bool  = true
 
+    private var safeProgress: Double {
+        guard progress.isFinite else { return 0 }
+        return max(0, min(progress, 1.0))
+    }
+
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
@@ -25,17 +30,17 @@ struct UniProgressBar: View {
                 Capsule()
                     .fill(color)
                     .frame(
-                        width: max(geo.size.width * min(progress, 1.0), height),
+                        width: max(geo.size.width * safeProgress, height),
                         height: height
                     )
                     .animation(
                         animates ? .spring(duration: 0.6) : nil,
-                        value: progress
+                        value: safeProgress
                     )
             }
         }
         .frame(height: height)
-        .accessibilityValue("\(Int(progress * 100)) percent")
+        .accessibilityValue("\(Int(safeProgress * 100)) percent")
     }
 }
 

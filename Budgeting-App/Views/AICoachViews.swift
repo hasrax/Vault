@@ -7,6 +7,9 @@
 
 import SwiftUI
 import Combine
+import PhotosUI
+import Vision
+import VisionKit
 
 // MARK: - AI Coach View
 struct AICoachView: View {
@@ -282,10 +285,35 @@ struct ReceiptScannerView: View {
     @State private var isScanning      = false
     @State private var scannedAmount: Double? = nil
     @State private var showAdd         = false
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var receiptImage: UIImage?
+    @State private var receiptImageUrl: String?
+    @State private var receiptImageBase64: String?
+    @State private var isUploading = false
+    @State private var uploadError = ""
+    @State private var saveReceiptImage = true
+    @State private var useLiveScanner = false
+    @State private var liveScanText = ""
+    @State private var showFullScreenScanner = false
+    @State private var showImagePreview = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                HStack(spacing: 8) {
+                    Text("Scan mode")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.secondary)
+                    Spacer()
+                    Picker("Scan mode", selection: $useLiveScanner) {
+                        Text("Gallery").tag(false)
+                        Text("Live Camera").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 220)
+                }
+                .padding(.horizontal, 4)
+
                 cameraFrame
                 howItWorksCard
                 actionButtons
@@ -304,7 +332,39 @@ struct ReceiptScannerView: View {
             }
         }
         .sheet(isPresented: $showAdd) {
-            AddTransactionView(prefillAmount: scannedAmount)
+            AddTransactionView(
+                prefillAmount: scannedAmount,
+                prefillReceiptUrl: receiptImageUrl,
+                prefillReceiptBase64: receiptImageBase64
+            )
+        }
+        .fullScreenCover(isPresented: $showImagePreview) {
+            ReceiptImagePreviewView(
+                image: receiptImage,
+                onCancel: {
+                    showImagePreview = false
+                },
+                onScan: {
+                    if let image = receiptImage {
+                        recognizeText(in: image)
+                    }
+                    showImagePreview = false
+                }
+            )
+        }
+        .fullScreenCover(isPresented: $showFullScreenScanner) {
+            LiveScannerFullScreenView(
+                text: $liveScanText,
+                onCancel: { showFullScreenScanner = false },
+                onUseText: {
+                    scanLiveText()
+                    showFullScreenScanner = false
+                }
+            )
+        }
+        .onChange(of: selectedItem) { _, newItem in
+            guard let newItem else { return }
+            loadPhoto(item: newItem)
         }
     }
 
@@ -315,7 +375,32 @@ struct ReceiptScannerView: View {
                 .fill(Color(hex: "#1A1A1A"))
                 .frame(height: 300)
 
-            if isScanning {
+            if let img = receiptImage {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 300)
+                    .clipped()
+                    .overlay(Color.black.opacity(0.35))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+            }
+
+            if useLiveScanner {
+                if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+                    DataScannerView(text: $liveScanText)
+                        .frame(height: 300)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                } else {
+                    VStack(spacing: 10) {
+                        Image(systemName: "camera.badge.exclamationmark")
+                            .font(.system(size: 36))
+                            .foregroundStyle(Color.white.opacity(0.7))
+                        Text("Live scan not available")
+                            .foregroundStyle(Color.white.opacity(0.7))
+                            .font(.subheadline)
+                    }
+                }
+            } else if isScanning {
                 VStack(spacing: 16) {
                     ProgressView().tint(.white).scaleEffect(1.5)
                     Text("Scanning receipt...")
@@ -377,8 +462,8 @@ struct ReceiptScannerView: View {
     private var howItWorksCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("How it works").font(.system(size: 18, weight: .semibold))
-            Label("Point camera at any receipt or bill",               systemImage: "1.circle.fill").font(.subheadline)
-            Label("VisionKit reads the total amount automatically",    systemImage: "2.circle.fill").font(.subheadline)
+            Label("Pick a receipt photo or use live scan",             systemImage: "1.circle.fill").font(.subheadline)
+            Label("Vision reads the total amount automatically",       systemImage: "2.circle.fill").font(.subheadline)
             Label("Transaction is logged straight to your budget",     systemImage: "3.circle.fill").font(.subheadline)
         }
         .padding(16)
@@ -387,8 +472,24 @@ struct ReceiptScannerView: View {
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
+            Toggle("Save receipt image (compressed)", isOn: $saveReceiptImage)
+                .font(.system(size: 13, weight: .medium))
+
+            if isUploading {
+                HStack(spacing: 10) {
+                    ProgressView().tint(Color.uniBlue)
+                    Text("Uploading receipt...")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.secondary)
+                }
+            } else if !uploadError.isEmpty {
+                Text(uploadError)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.expense)
+            }
+
             if scannedAmount != nil {
-                Button { showAdd = true } label: {
+                Button { prepareToAddTransaction() } label: {
                     Label("Log this transaction", systemImage: "plus.circle.fill")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
@@ -397,27 +498,358 @@ struct ReceiptScannerView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
             }
-            Button { mockScan() } label: {
-                Label(scannedAmount == nil ? "Scan Receipt" : "Scan Another",
-                      systemImage: "camera.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).frame(height: 52)
-                    .background(isScanning
-                                ? LinearGradient(colors: [Color.gray], startPoint: .leading, endPoint: .trailing)
-                                : LinearGradient.primaryGrad)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+            if useLiveScanner {
+                Button { scanLiveText() } label: {
+                    Label("Scan from Live View", systemImage: "text.viewfinder")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).frame(height: 52)
+                        .background(isScanning
+                                    ? LinearGradient(colors: [Color.gray], startPoint: .leading, endPoint: .trailing)
+                                    : LinearGradient.primaryGrad)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(isScanning)
+
+                Button { showFullScreenScanner = true } label: {
+                    Label("Open Full Screen Scanner", systemImage: "viewfinder")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).frame(height: 52)
+                        .background(LinearGradient.primaryGrad)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(!(DataScannerViewController.isSupported && DataScannerViewController.isAvailable))
+            } else {
+                PhotosPicker(selection: $selectedItem, matching: .images) {
+                    Label(scannedAmount == nil ? "Choose Receipt Photo" : "Choose Another",
+                          systemImage: "photo.on.rectangle")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).frame(height: 52)
+                        .background(isScanning
+                                    ? LinearGradient(colors: [Color.gray], startPoint: .leading, endPoint: .trailing)
+                                    : LinearGradient.primaryGrad)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(isScanning)
             }
-            .disabled(isScanning)
         }
     }
 
-    private func mockScan() {
-        isScanning    = true
+    private func loadPhoto(item: PhotosPickerItem) {
+        isScanning = true
         scannedAmount = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            isScanning    = false
-            scannedAmount = (Double.random(in: 500...8000) * 10).rounded() / 10
+        uploadError = ""
+        receiptImageUrl = nil
+        receiptImageBase64 = nil
+
+        item.loadTransferable(type: Data.self) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let data):
+                    guard let data, let image = UIImage(data: data) else {
+                        isScanning = false
+                        uploadError = "Unable to load image."
+                        return
+                    }
+                    receiptImage = image
+                    isScanning = false
+                    showImagePreview = true
+                case .failure:
+                    isScanning = false
+                    uploadError = "Failed to read image."
+                }
+            }
+        }
+    }
+
+    private func recognizeText(in image: UIImage) {
+        guard let cgImage = image.cgImage else {
+            isScanning = false
+            uploadError = "Invalid image."
+            return
+        }
+        let request = VNRecognizeTextRequest { request, error in
+            DispatchQueue.main.async {
+                self.isScanning = false
+                if let _ = error {
+                    self.uploadError = "Text scan failed."
+                    return
+                }
+                let strings = (request.results as? [VNRecognizedTextObservation])?
+                    .compactMap { $0.topCandidates(1).first?.string } ?? []
+                self.scannedAmount = extractAmount(from: strings)
+                if self.scannedAmount == nil {
+                    self.uploadError = "Could not find a total amount."
+                }
+            }
+        }
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        DispatchQueue.global(qos: .userInitiated).async {
+            try? handler.perform([request])
+        }
+    }
+
+    private func extractAmount(from lines: [String]) -> Double? {
+        let lower = lines.map { $0.lowercased() }
+        let keywords = ["total", "amount", "subtotal", "balance", "due"]
+        let prioritized = lower.filter { line in
+            keywords.contains { line.contains($0) }
+        }
+
+        let candidates = (prioritized.isEmpty ? lower : prioritized)
+            .flatMap { extractNumbers(from: $0) }
+
+        return candidates.max()
+    }
+
+    private func extractNumbers(from text: String) -> [Double] {
+        let pattern = "([0-9]+(?:[\\.,][0-9]{2})?)"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
+        let range = NSRange(text.startIndex..., in: text)
+        return regex.matches(in: text, options: [], range: range).compactMap { match in
+            guard let r = Range(match.range(at: 1), in: text) else { return nil }
+            let raw = text[r].replacingOccurrences(of: ",", with: ".")
+            return Double(raw)
+        }
+    }
+
+    private func prepareToAddTransaction() {
+        guard saveReceiptImage, let image = receiptImage else {
+            showAdd = true
+            return
+        }
+        uploadError = ""
+        if let encoded = ReceiptImageService.encodeReceiptImage(image: image, maxDimension: 640, quality: 0.55) {
+            receiptImageBase64 = encoded
+            showAdd = true
+        } else {
+            uploadError = "Unable to save receipt image."
+        }
+    }
+
+    private func scanLiveText() {
+        let lines = liveScanText
+            .split(separator: "\n")
+            .map { String($0) }
+        scannedAmount = extractAmount(from: lines)
+        if scannedAmount == nil {
+            uploadError = "Could not find a total amount."
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct DataScannerView: UIViewControllerRepresentable {
+    @Binding var text: String
+
+    func makeUIViewController(context: Context) -> DataScannerViewController {
+        let scanner = DataScannerViewController(
+            recognizedDataTypes: [.text()],
+            qualityLevel: .balanced,
+            recognizesMultipleItems: true,
+            isGuidanceEnabled: true,
+            isHighlightingEnabled: true
+        )
+        scanner.delegate = context.coordinator
+        try? scanner.startScanning()
+        return scanner
+    }
+
+    func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    final class Coordinator: NSObject, DataScannerViewControllerDelegate {
+        var text: Binding<String>
+
+        init(text: Binding<String>) {
+            self.text = text
+        }
+
+        func dataScanner(_ dataScanner: DataScannerViewController, didAdd items: [RecognizedItem], allItems: [RecognizedItem]) {
+            updateText(items: allItems)
+        }
+
+        func dataScanner(_ dataScanner: DataScannerViewController, didUpdate items: [RecognizedItem], allItems: [RecognizedItem]) {
+            updateText(items: allItems)
+        }
+
+        private func updateText(items: [RecognizedItem]) {
+            let lines = items.compactMap { item -> String? in
+                if case let .text(textItem) = item { return textItem.transcript }
+                return nil
+            }
+            text.wrappedValue = lines.joined(separator: "\n")
+        }
+    }
+}
+
+private struct LiveScannerFullScreenView: View {
+    @Binding var text: String
+    var onCancel: () -> Void
+    var onUseText: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+                DataScannerView(text: $text)
+                    .ignoresSafeArea()
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "camera.badge.exclamationmark")
+                        .font(.system(size: 36))
+                        .foregroundStyle(Color.white.opacity(0.8))
+                    Text("Live scan not available")
+                        .foregroundStyle(Color.white.opacity(0.8))
+                        .font(.subheadline)
+                    Button("Close") { onCancel() }
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.2))
+                        .clipShape(Capsule())
+                }
+            }
+
+            VStack {
+                HStack {
+                    Button { onCancel() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
+                    Spacer()
+                }
+                .padding(.top, 12)
+                .padding(.horizontal, 16)
+
+                Spacer()
+
+                VStack(spacing: 10) {
+                    Text("Fill the screen with the receipt")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.8))
+                    Button { onUseText() } label: {
+                        Label("Use Detected Text", systemImage: "text.viewfinder")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(LinearGradient.primaryGrad)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+            }
+        }
+    }
+}
+
+private struct ReceiptImagePreviewView: View {
+    let image: UIImage?
+    var onCancel: () -> Void
+    var onScan: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if let image {
+                ZoomableImageView(image: image)
+                    .ignoresSafeArea()
+            } else {
+                Text("No image")
+                    .foregroundStyle(Color.white.opacity(0.7))
+            }
+
+            VStack {
+                HStack {
+                    Button { onCancel() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
+                    Spacer()
+                }
+                .padding(.top, 12)
+                .padding(.horizontal, 16)
+
+                Spacer()
+
+                VStack(spacing: 10) {
+                    Text("Pinch to zoom, then scan")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.8))
+                    Button { onScan() } label: {
+                        Label("Scan This Image", systemImage: "text.viewfinder")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(LinearGradient.primaryGrad)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+            }
+        }
+    }
+}
+
+private struct ZoomableImageView: UIViewRepresentable {
+    let image: UIImage
+
+    func makeUIView(context: Context) -> UIScrollView {
+        let scrollView = UIScrollView()
+        scrollView.minimumZoomScale = 1.0
+        scrollView.maximumZoomScale = 6.0
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.backgroundColor = .black
+        scrollView.delegate = context.coordinator
+
+        let imageView = UIImageView(image: image)
+        imageView.contentMode = .scaleAspectFit
+        imageView.backgroundColor = .black
+        imageView.frame = scrollView.bounds
+        imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        scrollView.addSubview(imageView)
+        context.coordinator.imageView = imageView
+        return scrollView
+    }
+
+    func updateUIView(_ uiView: UIScrollView, context: Context) {
+        context.coordinator.imageView?.image = image
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator: NSObject, UIScrollViewDelegate {
+        var imageView: UIImageView?
+
+        func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+            imageView
         }
     }
 }

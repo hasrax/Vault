@@ -146,18 +146,89 @@ struct BudgetView: View {
 // MARK: - Analytics View
 struct AnalyticsView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
     @State private var timeFilter = "Month"
     private let timeFilters = ["Week", "Month", "Year"]
 
-    private var topCategories: [(ExpenseCategory, Double, Double)] {
-        let total = MockData.spendingByCategory.reduce(0) { $0 + $1.spent }
-        return MockData.spendingByCategory
-            .sorted { $0.spent > $1.spent }
-            .prefix(5)
-            .map { ($0.category, $0.spent, total > 0 ? $0.spent / total : 0) }
+    private var filteredExpenses: [Transaction] {
+        let expenses = appState.transactions.filter { $0.type == .expense }
+        guard let start = startDate else { return expenses }
+        return expenses.filter { $0.date >= start }
     }
-    private var totalSpent: Double { MockData.spendingByCategory.reduce(0){$0+$1.spent} }
-    private var maxWeekly: Double   { MockData.weeklySpending.map(\.amount).max() ?? 1 }
+
+    private var startDate: Date? {
+        let cal = Calendar.current
+        let now = Date()
+        switch timeFilter {
+        case "Week":
+            return cal.date(byAdding: .day, value: -6, to: cal.startOfDay(for: now))
+        case "Month":
+            return cal.date(byAdding: .day, value: -27, to: cal.startOfDay(for: now))
+        case "Year":
+            return cal.date(byAdding: .month, value: -11, to: cal.startOfDay(for: now))
+        default:
+            return nil
+        }
+    }
+
+    private var totalSpent: Double {
+        filteredExpenses.reduce(0) { $0 + $1.amount }
+    }
+
+    private var topCategories: [(BudgetCategory, Double, Double)] {
+        let totals = BudgetCategory.allCases.map { cat in
+            (cat, filteredExpenses.filter { $0.budgetCategory == cat }.reduce(0) { $0 + $1.amount })
+        }
+        let total = totals.reduce(0) { $0 + $1.1 }
+        return totals
+            .sorted { $0.1 > $1.1 }
+            .map { ($0.0, $0.1, total > 0 ? $0.1 / total : 0) }
+    }
+
+    private var weeklySpending: [WeeklySpend] {
+        let cal = Calendar.current
+        let now = cal.startOfDay(for: Date())
+
+        switch timeFilter {
+        case "Week":
+            let fmt = DateFormatter()
+            fmt.dateFormat = "EEE"
+            return (0..<7).map { offset in
+                let day = cal.date(byAdding: .day, value: -6 + offset, to: now) ?? now
+                let dayTotal = filteredExpenses
+                    .filter { cal.isDate($0.date, inSameDayAs: day) }
+                    .reduce(0) { $0 + $1.amount }
+                return WeeklySpend(day: fmt.string(from: day), amount: dayTotal)
+            }
+        case "Month":
+            let start = cal.date(byAdding: .day, value: -27, to: now) ?? now
+            var buckets = Array(repeating: 0.0, count: 4)
+            for tx in filteredExpenses {
+                let days = cal.dateComponents([.day], from: start, to: tx.date).day ?? 0
+                let idx = min(3, max(0, days / 7))
+                buckets[idx] += tx.amount
+            }
+            return buckets.enumerated().map { idx, amount in
+                WeeklySpend(day: "W\(idx + 1)", amount: amount)
+            }
+        case "Year":
+            let fmt = DateFormatter()
+            fmt.dateFormat = "MMM"
+            return (0..<12).map { offset in
+                let monthDate = cal.date(byAdding: .month, value: -11 + offset, to: now) ?? now
+                let comps = cal.dateComponents([.year, .month], from: monthDate)
+                let amount = filteredExpenses
+                    .filter {
+                        let txComps = cal.dateComponents([.year, .month], from: $0.date)
+                        return txComps.year == comps.year && txComps.month == comps.month
+                    }
+                    .reduce(0) { $0 + $1.amount }
+                return WeeklySpend(day: fmt.string(from: monthDate), amount: amount)
+            }
+        default:
+            return []
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -183,100 +254,82 @@ struct AnalyticsView: View {
                 .background(Color(UIColor.secondarySystemBackground))
                 .clipShape(RoundedRectangle(cornerRadius:14))
 
-                // Total spending card
-                VStack(spacing: 12) {
-                    Text("Total Spending").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                    Text(totalSpent.currencyRS)
-                        .font(.system(size:40,weight:.bold,design:.rounded))
-                    HStack(spacing:6) {
-                        Image(systemName:"arrow.down").font(.system(size: 12))
-                        Text("12% less than last month").font(.system(size:13,weight:.medium))
+                if filteredExpenses.isEmpty {
+                    ContentUnavailableView(
+                        "No analytics yet",
+                        systemImage: "chart.bar.xaxis",
+                        description: Text("Add a few expenses to see trends here.")
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                } else {
+                    // Total spending card
+                    VStack(spacing: 12) {
+                        Text("Total Spending").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text(totalSpent.currencyRS)
+                            .font(.system(size:40,weight:.bold,design:.rounded))
                     }
-                    .foregroundStyle(Color.income)
-                    .padding(.horizontal,12).padding(.vertical,6)
-                    .background(Color.income.opacity(0.1))
-                    .clipShape(Capsule())
-                }
-                .frame(maxWidth:.infinity)
-                .padding(24)
-                .lightCard()
+                    .frame(maxWidth:.infinity)
+                    .padding(24)
+                    .lightCard()
 
-                // Weekly bar chart
-                VStack(alignment:.leading, spacing:14) {
-                    Text("Weekly Spending").font(.system(size: 18, weight: .semibold))
-                    Chart(MockData.weeklySpending) { day in
-                        BarMark(
-                            x:.value("Day", day.day),
-                            y:.value("Amount", day.amount)
-                        )
-                        .foregroundStyle(day.day == "Fri"
-                            ? LinearGradient.primaryGrad
-                            : LinearGradient(colors:[Color.uniBlue.opacity(0.25)],startPoint:.top,endPoint:.bottom))
-                        .cornerRadius(6)
-                        .annotation(position:.top) {
-                            Text(day.amount.shortCurrency)
-                                .font(.system(size:9,weight:.semibold))
-                                .foregroundStyle(Color.secondary)
+                    // Weekly bar chart
+                    VStack(alignment:.leading, spacing:14) {
+                        Text("Spending Trend").font(.system(size: 18, weight: .semibold))
+                        Chart(weeklySpending) { day in
+                            BarMark(
+                                x:.value("Day", day.day),
+                                y:.value("Amount", day.amount)
+                            )
+                            .foregroundStyle(LinearGradient.primaryGrad)
+                            .cornerRadius(6)
                         }
+                        .frame(height: 160)
+                        .chartYAxis(.hidden)
                     }
-                    .frame(height: 160)
-                    .chartYAxis(.hidden)
-                }
-                .padding(20)
-                .lightCard()
+                    .padding(20)
+                    .lightCard()
 
-                // Top categories
-                VStack(alignment:.leading, spacing:14) {
-                    Text("Top Spending Categories").font(.system(size: 18, weight: .semibold))
-                    VStack(spacing:0) {
-                        ForEach(Array(topCategories.enumerated()), id:\.offset) { idx, item in
-                            let (cat, spent, pct) = item
-                            VStack(spacing:0) {
-                                HStack(spacing:14) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius:10)
-                                            .fill(cat.color.opacity(0.12))
-                                            .frame(width:44,height:44)
-                                        Text(cat.icon).font(.system(size:20))
-                                    }
-                                    VStack(alignment:.leading,spacing:4) {
-                                        HStack {
-                                            Text(cat.rawValue).font(.system(size: 15, weight: .semibold))
-                                            Spacer()
-                                            Text(spent.currencyRS).font(.system(size: 15, weight: .semibold))
+                    // Top categories
+                    VStack(alignment:.leading, spacing:14) {
+                        Text("Top Spending Categories").font(.system(size: 18, weight: .semibold))
+                        VStack(spacing:0) {
+                            ForEach(Array(topCategories.enumerated()), id:\.offset) { idx, item in
+                                let (cat, spent, pct) = item
+                                VStack(spacing:0) {
+                                    HStack(spacing:14) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius:10)
+                                                .fill(cat.color.opacity(0.12))
+                                                .frame(width:44,height:44)
+                                            Image(systemName: cat.icon)
+                                                .font(.system(size:18))
+                                                .foregroundStyle(cat.color)
                                         }
-                                        HStack(spacing:10) {
-                                            UniProgressBar(progress:pct,color:cat.color)
-                                            Text("\(Int(pct*100))%")
-                                                .font(.system(size: 11)).foregroundStyle(Color.secondary)
-                                                .frame(width:30)
+                                        VStack(alignment:.leading,spacing:4) {
+                                            HStack {
+                                                Text(cat.rawValue).font(.system(size: 15, weight: .semibold))
+                                                Spacer()
+                                                Text(spent.currencyRS).font(.system(size: 15, weight: .semibold))
+                                            }
+                                            HStack(spacing:10) {
+                                                UniProgressBar(progress:pct,color:cat.color)
+                                                Text("\(Int(pct*100))%")
+                                                    .font(.system(size: 11)).foregroundStyle(Color.secondary)
+                                                    .frame(width:30)
+                                            }
                                         }
                                     }
-                                }
-                                .padding(.vertical,14)
-                                if idx < topCategories.count - 1 {
-                                    Divider().padding(.leading,58)
+                                    .padding(.vertical,14)
+                                    if idx < topCategories.count - 1 {
+                                        Divider().padding(.leading,58)
+                                    }
                                 }
                             }
                         }
                     }
+                    .padding(.horizontal,16).padding(.vertical,20)
+                    .lightCard()
                 }
-                .padding(.horizontal,16).padding(.vertical,20)
-                .lightCard()
-
-                // Insights
-                VStack(alignment:.leading, spacing:12) {
-                    Text("Insights").font(.system(size: 18, weight: .semibold))
-                    InsightCard(emoji:"🎯", title:"Great job on groceries!",
-                                message:"You spent 20% less than last month",
-                                bgColor:Color.income.opacity(0.08),
-                                borderColor:Color.income.opacity(0.2))
-                    InsightCard(emoji:"☕", title:"Coffee spending alert",
-                                message:"Making coffee at home could save you Rs 12,000 each month",
-                                bgColor:Color.warning.opacity(0.08),
-                                borderColor:Color.warning.opacity(0.2))
-                }
-                .padding(.bottom, 20)
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)

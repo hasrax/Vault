@@ -13,7 +13,7 @@ struct HomeView: View {
     @State private var activeCategory: BudgetCategory = .needs
     @State private var showAddTransaction = false
     @State private var showNotifications  = false
-    @State private var budgetLimits       = MockData.budgetLimits
+    @State private var addTransactionType: TransactionType = .expense
 
     // Navigation destinations
     @State private var showSearch         = false
@@ -34,6 +34,33 @@ struct HomeView: View {
         budgetLimits.first { $0.category == activeCategory }
     }
 
+    private var budgetLimits: [BudgetLimit] {
+        let needsLimit = appState.monthlyBudget * (appState.needsPercent / 100)
+        let wantsLimit = appState.monthlyBudget * (appState.wantsPercent / 100)
+        let savingsLimit = appState.monthlyBudget * (appState.savingsPercent / 100)
+        return [
+            BudgetLimit(category: .needs,   limit: needsLimit,   spent: spent(for: .needs)),
+            BudgetLimit(category: .wants,   limit: wantsLimit,   spent: spent(for: .wants)),
+            BudgetLimit(category: .savings, limit: savingsLimit, spent: spent(for: .savings))
+        ]
+    }
+
+    private func spent(for category: BudgetCategory) -> Double {
+        appState.transactions
+            .filter { $0.type == .expense && $0.budgetCategory == category }
+            .reduce(0) { $0 + $1.amount }
+    }
+
+    private func allocationAmount(for category: BudgetCategory) -> Double {
+        let percent: Double
+        switch category {
+        case .needs:   percent = appState.needsPercent
+        case .wants:   percent = appState.wantsPercent
+        case .savings: percent = appState.savingsPercent
+        }
+        return appState.monthlyBudget * (percent / 100)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -47,7 +74,7 @@ struct HomeView: View {
             .background(Color(UIColor.systemGroupedBackground))
             // Sheets
             .sheet(isPresented: $showAddTransaction) {
-                AddTransactionView()
+                AddTransactionView(prefillType: addTransactionType)
             }
             .sheet(isPresented: $showNotifications) {
                 NotificationsView()
@@ -180,7 +207,7 @@ struct HomeView: View {
                                     Text(cat.rawValue)
                                         .font(.system(size: 11))
                                         .foregroundStyle(Color.white.opacity(0.5))
-                                    Text((appState.monthlyBudget * cat.percentage).shortCurrency)
+                                    Text(allocationAmount(for: cat).shortCurrency)
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundStyle(Color.white)
                                 }
@@ -294,7 +321,10 @@ struct HomeView: View {
                     .foregroundStyle(Color.secondary)
             }
             HStack(spacing: 12) {
-                Button { showAddTransaction = true } label: {
+                Button {
+                    addTransactionType = .expense
+                    showAddTransaction = true
+                } label: {
                     Label("Expense", systemImage: "minus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.expense)
@@ -306,7 +336,10 @@ struct HomeView: View {
                                 .stroke(Color.expense.opacity(0.45), lineWidth: 1)
                         )
                 }
-                Button { showAddTransaction = true } label: {
+                Button {
+                    addTransactionType = .income
+                    showAddTransaction = true
+                } label: {
                     Label("Income", systemImage: "plus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.income)

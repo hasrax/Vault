@@ -10,6 +10,12 @@ import FirebaseAuth
 import FirebaseStorage
 
 struct ReceiptImageService {
+    static func encodeReceiptImage(image: UIImage, maxDimension: CGFloat = 640, quality: CGFloat = 0.55) -> String? {
+        guard let resized = image.scaledDown(maxDimension: maxDimension),
+              let data = resized.jpegData(compressionQuality: quality) else { return nil }
+        return data.base64EncodedString()
+    }
+
     static func uploadReceiptImage(image: UIImage, completion: @escaping (Result<String, Error>) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else {
             completion(.failure(NSError(domain: "ReceiptImageService", code: 401)))

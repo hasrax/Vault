@@ -289,7 +289,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Budgeting-App/Info.plist";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan receipts using the camera";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to sign in quickly";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select a receipt photo to scan";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -323,7 +325,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Budgeting-App/Info.plist";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan receipts using the camera";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to sign in quickly";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select a receipt photo to scan";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

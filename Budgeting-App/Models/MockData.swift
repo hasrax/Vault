@@ -68,10 +68,10 @@ struct MockData {
 
     // MARK: - Savings Goals
     static var savingsGoals: [SavingsGoal] = [
-        SavingsGoal(name: "New Laptop",     icon: "💻", color: .uniBlue,   targetAmount: 120000, currentAmount: 45000, deadline: monthsAhead(4)),
-        SavingsGoal(name: "Emergency Fund", icon: "🛡️", color: .uniGreen,  targetAmount: 50000,  currentAmount: 5000,  deadline: monthsAhead(6)),
-        SavingsGoal(name: "Summer Trip",    icon: "✈️", color: .uniPurple, targetAmount: 80000,  currentAmount: 12000, deadline: monthsAhead(5)),
-        SavingsGoal(name: "Textbooks",      icon: "📚", color: .uniOrange, targetAmount: 15000,  currentAmount: 15000, deadline: nil),
+        SavingsGoal(name: "New Laptop",     icon: "💻", colorHex: "#3B82F6", targetAmount: 120000, currentAmount: 45000, deadline: monthsAhead(4)),
+        SavingsGoal(name: "Emergency Fund", icon: "🛡️", colorHex: "#22C55E", targetAmount: 50000,  currentAmount: 5000,  deadline: monthsAhead(6)),
+        SavingsGoal(name: "Summer Trip",    icon: "✈️", colorHex: "#8B5CF6", targetAmount: 80000,  currentAmount: 12000, deadline: monthsAhead(5)),
+        SavingsGoal(name: "Textbooks",      icon: "📚", colorHex: "#F97316", targetAmount: 15000,  currentAmount: 15000, deadline: nil),
     ]
 
     // MARK: - Work Shifts

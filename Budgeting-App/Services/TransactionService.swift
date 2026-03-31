@@ -33,11 +33,45 @@ struct TransactionService {
             "note": tx.note,
             "linkedShiftId": tx.linkedShiftId as Any,
             "linkedSplitBillId": tx.linkedSplitBillId as Any,
-            "receiptImageUrl": tx.receiptImageUrl as Any
+            "receiptImageUrl": tx.receiptImageUrl as Any,
+            "receiptImageBase64": tx.receiptImageBase64 as Any
         ]
         col.document(tx.id.uuidString).setData(data, merge: true) { error in
             completion?(error)
         }
+    }
+
+    private static func decodeTransaction(_ doc: QueryDocumentSnapshot) -> Transaction {
+        let data = doc.data()
+        let name = data["name"] as? String ?? ""
+        let amount = data["amount"] as? Double ?? 0
+        let typeRaw = data["type"] as? String ?? TransactionType.expense.rawValue
+        let type = TransactionType(rawValue: typeRaw) ?? .expense
+        let categoryRaw = data["category"] as? String
+        let incomeRaw = data["incomeSource"] as? String
+        let budgetRaw = data["budgetCategory"] as? String ?? BudgetCategory.wants.rawValue
+        let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
+        let note = data["note"] as? String ?? ""
+        let linkedShiftId = data["linkedShiftId"] as? String
+        let linkedSplitBillId = data["linkedSplitBillId"] as? String
+        let receiptImageUrl = data["receiptImageUrl"] as? String
+        let receiptImageBase64 = data["receiptImageBase64"] as? String
+
+        return Transaction(
+            id: UUID(uuidString: doc.documentID) ?? UUID(),
+            name: name,
+            amount: amount,
+            type: type,
+            category: categoryRaw.flatMap(ExpenseCategory.init(rawValue:)),
+            incomeSource: incomeRaw.flatMap(IncomeSource.init(rawValue:)),
+            budgetCategory: BudgetCategory(rawValue: budgetRaw) ?? .wants,
+            date: date,
+            note: note,
+            linkedShiftId: linkedShiftId,
+            linkedSplitBillId: linkedSplitBillId,
+            receiptImageUrl: receiptImageUrl,
+            receiptImageBase64: receiptImageBase64
+        )
     }
 
     static func fetchTransactions(completion: @escaping (Result<[Transaction], Error>) -> Void) {
@@ -50,36 +84,22 @@ struct TransactionService {
                 completion(.failure(error))
                 return
             }
-            let txs: [Transaction] = snapshot?.documents.compactMap { doc in
-                let data = doc.data()
-                let name = data["name"] as? String ?? ""
-                let amount = data["amount"] as? Double ?? 0
-                let typeRaw = data["type"] as? String ?? TransactionType.expense.rawValue
-                let type = TransactionType(rawValue: typeRaw) ?? .expense
-                let categoryRaw = data["category"] as? String
-                let incomeRaw = data["incomeSource"] as? String
-                let budgetRaw = data["budgetCategory"] as? String ?? BudgetCategory.wants.rawValue
-                let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
-                let note = data["note"] as? String ?? ""
-                let linkedShiftId = data["linkedShiftId"] as? String
-                let linkedSplitBillId = data["linkedSplitBillId"] as? String
-                let receiptImageUrl = data["receiptImageUrl"] as? String
+            let txs: [Transaction] = snapshot?.documents.map(decodeTransaction) ?? []
+            completion(.success(txs))
+        }
+    }
 
-                return Transaction(
-                    id: UUID(uuidString: doc.documentID) ?? UUID(),
-                    name: name,
-                    amount: amount,
-                    type: type,
-                    category: categoryRaw.flatMap(ExpenseCategory.init(rawValue:)),
-                    incomeSource: incomeRaw.flatMap(IncomeSource.init(rawValue:)),
-                    budgetCategory: BudgetCategory(rawValue: budgetRaw) ?? .wants,
-                    date: date,
-                    note: note,
-                    linkedShiftId: linkedShiftId,
-                    linkedSplitBillId: linkedSplitBillId,
-                    receiptImageUrl: receiptImageUrl
-                )
-            } ?? []
+    static func listenTransactions(completion: @escaping (Result<[Transaction], Error>) -> Void) -> ListenerRegistration? {
+        guard let col = userCollection() else {
+            completion(.failure(NSError(domain: "TransactionService", code: 401)))
+            return nil
+        }
+        return col.order(by: "date", descending: true).addSnapshotListener { snapshot, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            let txs: [Transaction] = snapshot?.documents.map(decodeTransaction) ?? []
             completion(.success(txs))
         }
     }

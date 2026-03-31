@@ -22,6 +22,7 @@ class AppState: ObservableObject {
     @Published var importantDates: [ImportantDate] = MockData.importantDates
     @Published var semesterGoals: [SemesterGoal] = MockData.semesterGoals
     @Published var workShifts: [WorkShift] = MockData.shifts
+    @Published var savingsGoals: [SavingsGoal] = []
     @Published var sessionTimeoutSeconds: TimeInterval = 30
     @Published var splitBills: [SplitBill] = []
 
@@ -29,6 +30,8 @@ class AppState: ObservableObject {
     private var semesterGoalsListener: ListenerRegistration?
     private var workShiftsListener: ListenerRegistration?
     private var splitBillsListener: ListenerRegistration?
+    private var transactionsListener: ListenerRegistration?
+    private var savingsGoalsListener: ListenerRegistration?
     
         func restoreSession() {
             guard let user = Auth.auth().currentUser else { return }
@@ -38,6 +41,8 @@ class AppState: ObservableObject {
             loadTransactions()
             startPlannerListeners()
             startSplitBillListeners()
+            startTransactionListener()
+            startSavingsGoalsListener()
         }
     
         func signIn(email: String, password: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -83,8 +88,11 @@ class AppState: ObservableObject {
             currentUser = nil
             transactions = []
             splitBills = []
+            savingsGoals = []
+            stopTransactionListener()
             stopPlannerListeners()
             stopSplitBillListeners()
+            stopSavingsGoalsListener()
         }
 
         func changePassword(newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -205,6 +213,22 @@ class AppState: ObservableObject {
             }
         }
 
+        func startTransactionListener() {
+            stopTransactionListener()
+            transactionsListener = TransactionService.listenTransactions { result in
+                DispatchQueue.main.async {
+                    if case let .success(items) = result {
+                        self.transactions = items
+                    }
+                }
+            }
+        }
+
+        func stopTransactionListener() {
+            transactionsListener?.remove()
+            transactionsListener = nil
+        }
+
         func loadPlannerData() {
             PlannerService.fetchImportantDates { result in
                 DispatchQueue.main.async {
@@ -271,6 +295,22 @@ class AppState: ObservableObject {
         func stopSplitBillListeners() {
             splitBillsListener?.remove()
             splitBillsListener = nil
+        }
+
+        func startSavingsGoalsListener() {
+            stopSavingsGoalsListener()
+            savingsGoalsListener = SavingsGoalService.listenGoals { result in
+                DispatchQueue.main.async {
+                    if case let .success(items) = result {
+                        self.savingsGoals = items
+                    }
+                }
+            }
+        }
+
+        func stopSavingsGoalsListener() {
+            savingsGoalsListener?.remove()
+            savingsGoalsListener = nil
         }
 
         func addSemesterGoal(title: String, progress: Int?) {
@@ -548,6 +588,71 @@ class AppState: ObservableObject {
         func addTransaction(_ tx: Transaction) {
             transactions.insert(tx, at: 0)
             TransactionService.addTransaction(tx)
+        }
+
+        func addSavingsGoal(
+            name: String,
+            icon: String,
+            colorHex: String,
+            targetAmount: Double,
+            currentAmount: Double,
+            deadline: Date?
+        ) {
+            let goal = SavingsGoal(
+                name: name,
+                icon: icon,
+                colorHex: colorHex,
+                targetAmount: targetAmount,
+                currentAmount: currentAmount,
+                deadline: deadline
+            )
+            savingsGoals.insert(goal, at: 0)
+            SavingsGoalService.addGoal(goal)
+
+            if currentAmount > 0 {
+                let tx = Transaction(
+                    name: "Savings: \(goal.name)",
+                    amount: currentAmount,
+                    type: .expense,
+                    category: nil,
+                    incomeSource: nil,
+                    budgetCategory: .savings,
+                    date: Date(),
+                    note: "Initial savings"
+                )
+                addTransaction(tx)
+            }
+        }
+
+        func updateSavingsGoal(_ goal: SavingsGoal) {
+            if let idx = savingsGoals.firstIndex(where: { $0.id == goal.id }) {
+                savingsGoals[idx] = goal
+            }
+            SavingsGoalService.updateGoal(goal)
+        }
+
+        func deleteSavingsGoal(_ goal: SavingsGoal) {
+            savingsGoals.removeAll { $0.id == goal.id }
+            SavingsGoalService.deleteGoal(goal.id)
+        }
+
+        func addMoney(to goal: SavingsGoal, amount: Double) {
+            guard amount > 0 else { return }
+            var updated = goal
+            updated.currentAmount += amount
+            updateSavingsGoal(updated)
+
+            let tx = Transaction(
+                name: "Savings: \(goal.name)",
+                amount: amount,
+                type: .expense,
+                category: nil,
+                incomeSource: nil,
+                budgetCategory: .savings,
+                date: Date(),
+                note: "Savings goal contribution"
+            )
+            addTransaction(tx)
         }
     
         func deleteTransactions(_ ids: [UUID]) {

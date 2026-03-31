@@ -17,18 +17,33 @@ struct AddTransactionView: View {
     // Form state
     @State private var txType:            TransactionType = .expense
     @State private var amountText:        String = ""
-    @State private var selectedCategory:  ExpenseCategory = .dining
-    @State private var selectedIncome:    IncomeSource = .parttime
+    @State private var selectedBudget:    BudgetCategory = .needs
     @State private var name:              String = ""
     @State private var note:              String = ""
     @State private var date:              Date = Date()
     @State private var showValidationMsg  = false
     @State private var showReceiptScanner = false
+    @State private var receiptImageUrl: String? = nil
+    @State private var receiptImageBase64: String? = nil
 
     // Prefill support — used when coming from ReceiptScannerView
-    init(prefillAmount: Double? = nil) {
+    init(
+        prefillType: TransactionType? = nil,
+        prefillAmount: Double? = nil,
+        prefillReceiptUrl: String? = nil,
+        prefillReceiptBase64: String? = nil
+    ) {
+        if let type = prefillType {
+            _txType = State(initialValue: type)
+        }
         if let amt = prefillAmount {
             _amountText = State(initialValue: String(Int(amt)))
+        }
+        if let url = prefillReceiptUrl {
+            _receiptImageUrl = State(initialValue: url)
+        }
+        if let base64 = prefillReceiptBase64 {
+            _receiptImageBase64 = State(initialValue: base64)
         }
     }
 
@@ -144,42 +159,23 @@ struct AddTransactionView: View {
     // MARK: - Category chips
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Category")
+            Text("Budget Bucket")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.primary)
 
-            if txType == .expense {
-                // Expense subcategories
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
-                    spacing: 8
-                ) {
-                    ForEach(ExpenseCategory.allCases) { cat in
-                        categoryChip(
-                            emoji:      cat.icon,
-                            label:      cat.rawValue,
-                            isSelected: selectedCategory == cat,
-                            color:      cat.color
-                        ) {
-                            selectedCategory = cat
-                        }
-                    }
-                }
-            } else {
-                // Income sources
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 100), spacing: 8)],
-                    spacing: 8
-                ) {
-                    ForEach(IncomeSource.allCases) { src in
-                        categoryChip(
-                            emoji:      src.icon,
-                            label:      src.rawValue,
-                            isSelected: selectedIncome == src,
-                            color:      Color.income
-                        ) {
-                            selectedIncome = src
-                        }
+            // Needs / Wants / Savings buckets (for expense and income)
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 90), spacing: 8)],
+                spacing: 8
+            ) {
+                ForEach(BudgetCategory.allCases) { cat in
+                    categoryChip(
+                        emoji:      cat.emoji,
+                        label:      cat.rawValue,
+                        isSelected: selectedBudget == cat,
+                        color:      cat.color
+                    ) {
+                        selectedBudget = cat
                     }
                 }
             }
@@ -247,6 +243,17 @@ struct AddTransactionView: View {
                 text:        $note
             )
 
+            if receiptImageUrl != nil || receiptImageBase64 != nil {
+                HStack {
+                    Image(systemName: "paperclip")
+                        .foregroundStyle(Color.uniBlue)
+                    Text("Receipt attached")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.secondary)
+                    Spacer()
+                }
+            }
+
             // Validation message
             if showValidationMsg {
                 Label("Please fill in description and amount", systemImage: "exclamationmark.circle")
@@ -265,11 +272,13 @@ struct AddTransactionView: View {
             name:           name,
             amount:         amount,
             type:           txType,
-            category:       txType == .expense ? selectedCategory : nil,
-            incomeSource:   txType == .income  ? selectedIncome   : nil,
-            budgetCategory: txType == .expense ? selectedCategory.budgetCategory : .savings,
+            category:       nil,
+            incomeSource:   nil,
+            budgetCategory: selectedBudget,
             date:           date,
-            note:           note
+            note:           note,
+            receiptImageUrl: receiptImageUrl,
+            receiptImageBase64: receiptImageBase64
         )
         appState.addTransaction(newTx)
         dismiss()

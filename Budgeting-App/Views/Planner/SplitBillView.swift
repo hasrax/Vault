@@ -42,9 +42,19 @@ struct SplitBillView: View {
         return selfShare + others
     }
 
+    private var otherCustomTotal: Double {
+        selectedUsers.reduce(0.0) { sum, user in
+            sum + (Double(customShares[user.id] ?? "") ?? 0)
+        }
+    }
+
+    private var remainingForSelf: Double {
+        max(0, amount - otherCustomTotal)
+    }
+
     private var currentUserShare: Double {
         if splitMethod == "custom" {
-            return includeSelf ? (Double(customShares[selfKey] ?? "") ?? 0) : 0
+            return includeSelf ? remainingForSelf : 0
         }
         return splitAmount
     }
@@ -227,12 +237,24 @@ struct SplitBillView: View {
                         Text("Custom shares")
                             .font(.system(size:14,weight:.medium))
                             .foregroundStyle(Color.primary)
-
-                        if includeSelf {
-                            shareRow(name: "You", binding: shareBinding(for: selfKey))
-                        }
                         ForEach(selectedUsers, id: \.id) { user in
                             shareRow(name: user.name, binding: shareBinding(for: user.id))
+                        }
+
+                        if includeSelf {
+                            HStack {
+                                Text("You (remaining)")
+                                    .font(.system(size: 14, weight: .medium))
+                                Spacer()
+                                Text(remainingForSelf.currencyRS)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Color.uniBlue)
+                            }
+                            .padding(12)
+                            .background(Color(UIColor.systemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius:12))
+                            .overlay(RoundedRectangle(cornerRadius:12)
+                                .stroke(Color.black.opacity(0.06),lineWidth:1))
                         }
 
                     }

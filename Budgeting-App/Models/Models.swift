@@ -112,6 +112,7 @@ struct Transaction: Identifiable, Codable {
     var linkedShiftId: String?
     var linkedSplitBillId: String?
     var receiptImageUrl: String?
+    var receiptImageBase64: String?
 
     init(
         id: UUID = UUID(),
@@ -125,7 +126,8 @@ struct Transaction: Identifiable, Codable {
         note: String = "",
         linkedShiftId: String? = nil,
         linkedSplitBillId: String? = nil,
-        receiptImageUrl: String? = nil
+        receiptImageUrl: String? = nil,
+        receiptImageBase64: String? = nil
     ) {
         self.id             = id
         self.name           = name
@@ -139,6 +141,7 @@ struct Transaction: Identifiable, Codable {
         self.linkedShiftId  = linkedShiftId
         self.linkedSplitBillId = linkedSplitBillId
         self.receiptImageUrl = receiptImageUrl
+        self.receiptImageBase64 = receiptImageBase64
     }
 }
 
@@ -177,11 +180,11 @@ struct BudgetLimit: Identifiable {
 
 // MARK: - Savings Goal
 
-struct SavingsGoal: Identifiable {
+struct SavingsGoal: Identifiable, Codable {
     let id: UUID
     var name: String
     var icon: String
-    var color: Color
+    var colorHex: String
     var targetAmount: Double
     var currentAmount: Double
     var deadline: Date?
@@ -190,7 +193,7 @@ struct SavingsGoal: Identifiable {
         id: UUID = UUID(),
         name: String,
         icon: String,
-        color: Color,
+        colorHex: String,
         targetAmount: Double,
         currentAmount: Double,
         deadline: Date? = nil
@@ -198,11 +201,13 @@ struct SavingsGoal: Identifiable {
         self.id            = id
         self.name          = name
         self.icon          = icon
-        self.color         = color
+        self.colorHex      = colorHex
         self.targetAmount  = targetAmount
         self.currentAmount = currentAmount
         self.deadline      = deadline
     }
+
+    var color: Color { Color(hex: colorHex) }
 
     var progress:   Double { targetAmount > 0 ? min(currentAmount / targetAmount, 1.0) : 0 }
     var isComplete: Bool   { currentAmount >= targetAmount }
