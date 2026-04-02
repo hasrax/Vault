@@ -68,10 +68,10 @@ struct MockData {
 
     // MARK: - Savings Goals
     static var savingsGoals: [SavingsGoal] = [
-        SavingsGoal(name: "New Laptop",     icon: "💻", color: .uniBlue,   targetAmount: 120000, currentAmount: 45000, deadline: monthsAhead(4)),
-        SavingsGoal(name: "Emergency Fund", icon: "🛡️", color: .uniGreen,  targetAmount: 50000,  currentAmount: 5000,  deadline: monthsAhead(6)),
-        SavingsGoal(name: "Summer Trip",    icon: "✈️", color: .uniPurple, targetAmount: 80000,  currentAmount: 12000, deadline: monthsAhead(5)),
-        SavingsGoal(name: "Textbooks",      icon: "📚", color: .uniOrange, targetAmount: 15000,  currentAmount: 15000, deadline: nil),
+        SavingsGoal(name: "New Laptop",     icon: "💻", colorHex: "#3B82F6", targetAmount: 120000, currentAmount: 45000, deadline: monthsAhead(4)),
+        SavingsGoal(name: "Emergency Fund", icon: "🛡️", colorHex: "#22C55E", targetAmount: 50000,  currentAmount: 5000,  deadline: monthsAhead(6)),
+        SavingsGoal(name: "Summer Trip",    icon: "✈️", colorHex: "#8B5CF6", targetAmount: 80000,  currentAmount: 12000, deadline: monthsAhead(5)),
+        SavingsGoal(name: "Textbooks",      icon: "📚", colorHex: "#F97316", targetAmount: 15000,  currentAmount: 15000, deadline: nil),
     ]
 
     // MARK: - Work Shifts
@@ -119,7 +119,7 @@ struct MockData {
     // MARK: - AI Coach starter messages
     static var coachMessages: [CoachMessage] = [
         CoachMessage(
-            text: "Hi! I'm your Budgify AI coach. I track your spending patterns to help you stay on budget. Ask me anything!",
+            text: "Hi! I'm your Vault AI coach. I track your spending patterns to help you stay on budget. Ask me anything!",
             isFromUser: false,
             riskLevel: .safe
         ),
@@ -127,12 +127,12 @@ struct MockData {
 
     // MARK: - Planner Modules
     static var plannerModules: [PlannerModule] = [
-        PlannerModule(id: "semesterPlanner", title: "Semester Planner",  description: "Track academic weeks, tuition fees, and every major assignment in one glance.", pill: "Deadlines", gradient: .semesterGrad, destination: "semesterPlanner"),
-        PlannerModule(id: "workSchedule",    title: "Work Schedule",     description: "See upcoming shifts, projected earnings, and how many hours you still owe.",    pill: "Work",      gradient: .workGrad,     destination: "workSchedule"),
-        PlannerModule(id: "mealPlan",        title: "Meal & Study Plan", description: "Balance swipes, dining rupees, and study expenses so you don't run out.",       pill: "Lifestyle", gradient: .orangeGrad,   destination: "mealPlan"),
-        PlannerModule(id: "savings",         title: "Savings Goals",     description: "Auto-allocate rupees toward books, rent, and the semester emergency stash.",    pill: "Future",    gradient: .greenGrad,    destination: "savings"),
-        PlannerModule(id: "splitBill",       title: "Split Bill",        description: "Settle rupee spends with roommates and friends in one view.",                   pill: "Roomies",   gradient: .splitGrad,    destination: "splitBill"),
-        PlannerModule(id: "analytics",       title: "Analytics",         description: "Spending insights, weekly charts, and tips to spend smarter.",                  pill: "Insights",  gradient: .tealGrad,     destination: "analytics"),
+        PlannerModule(id: "semesterPlanner", title: "Semester Planner",  description: "Track academic weeks, tuition fees, and every major assignment in one glance.", pill: "Deadlines", icon: "📅", gradient: .semesterGrad, destination: "semesterPlanner"),
+        PlannerModule(id: "workSchedule",    title: "Work Schedule",     description: "See upcoming shifts, projected earnings, and how many hours you still owe.",    pill: "Work",      icon: "💼", gradient: .workGrad,     destination: "workSchedule"),
+        PlannerModule(id: "mealPlan",        title: "Meal & Study Plan", description: "Balance swipes, dining rupees, and study expenses so you don't run out.",       pill: "Lifestyle", icon: "🍽️", gradient: .orangeGrad,   destination: "mealPlan"),
+        PlannerModule(id: "savings",         title: "Savings Goals",     description: "Auto-allocate rupees toward books, rent, and the semester emergency stash.",    pill: "Future",    icon: "🎯", gradient: .greenGrad,    destination: "savings"),
+        PlannerModule(id: "splitBill",       title: "Split Bill",        description: "Settle rupee spends with roommates and friends in one view.",                   pill: "Roomies",   icon: "🤝", gradient: .splitGrad,    destination: "splitBill"),
+        PlannerModule(id: "analytics",       title: "Analytics",         description: "Spending insights, weekly charts, and tips to spend smarter.",                  pill: "Insights",  icon: "📊", gradient: .tealGrad,     destination: "analytics"),
     ]
 
     // MARK: - Computed totals

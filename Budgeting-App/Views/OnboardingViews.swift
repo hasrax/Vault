@@ -12,37 +12,18 @@ private struct AppLogoMark: View {
     var size: CGFloat = 80
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(LinearGradient.primaryGrad)
-                .frame(width: size, height: size)
-                .shadow(color: Color.uniBlue.opacity(0.25), radius: 16, y: 6)
-            Text("B")
-                .font(.system(size: size * 0.5, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-        }
+        Image("AppLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .shadow(color: Color.uniBlue.opacity(0.25), radius: 12, y: 4)
+            .accessibilityLabel("Vault logo")
     }
 }
 
 private struct OnboardingBackground: View {
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(hex: "#F8FAFF"), Color(hex: "#EEF2FF")],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-
-            LinearGradient(colors: [Color.uniBlue.opacity(0.22), Color.clear],
-                           startPoint: .topTrailing, endPoint: .bottom)
-                .ignoresSafeArea()
-
-            LinearGradient(colors: [Color.clear, Color.uniPurple.opacity(0.18)],
-                           startPoint: .top, endPoint: .bottomLeading)
-                .ignoresSafeArea()
-
-            LinearGradient(colors: [Color.uniBlue.opacity(0.26), Color.clear],
-                           startPoint: .top, endPoint: .center)
-                .ignoresSafeArea()
-        }
+        AuthBackground()
     }
 }
 
@@ -65,15 +46,15 @@ struct SplashView: View {
                 .scaleEffect(scale)
                 .opacity(opacity)
 
-                Text("Budgify")
+                Text("Vault")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.primary)
+                    .foregroundStyle(Color.white)
                     .padding(.top, 24)
                     .opacity(opacity)
 
                 Text("Smart budgeting for campus life")
                     .font(.subheadline)
-                    .foregroundStyle(Color.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
                     .padding(.top, 8)
                     .opacity(opacity)
 
@@ -81,7 +62,7 @@ struct SplashView: View {
 
                 // Loading bar
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.black.opacity(0.08)).frame(width: 40, height: 4)
+                    Capsule().fill(Color.white.opacity(0.12)).frame(width: 40, height: 4)
                     Capsule()
                         .fill(LinearGradient(colors:[Color.uniBlue, Color(hex:"#60A5FA")],
                                              startPoint:.leading, endPoint:.trailing))
@@ -129,15 +110,15 @@ struct WelcomeView: View {
                 // Logo
                 AppLogoMark(size: 80)
 
-                Text("Welcome to Budgify")
+                Text("Welcome to Vault")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.primary)
+                    .foregroundStyle(Color.white)
                     .multilineTextAlignment(.center)
                     .padding(.top, 24)
 
                 Text("The smart way to manage your student budget")
                     .font(.subheadline)
-                    .foregroundStyle(Color.secondary)
+                    .foregroundStyle(Color.white.opacity(0.6))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
                     .padding(.top, 10)
@@ -148,18 +129,18 @@ struct WelcomeView: View {
                         HStack(spacing: 14) {
                             Text(emoji).font(.system(size: 22))
                                 .frame(width: 44, height: 44)
-                                .background(Color.uniBlue.opacity(0.10))
+                                .background(Color.white.opacity(0.08))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.primary)
-                                Text(desc).font(.caption1).foregroundStyle(Color.secondary)
+                                Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.white)
+                                Text(desc).font(.caption1).foregroundStyle(Color.white.opacity(0.6))
                             }
                             Spacer()
                         }
                         .padding(14)
-                        .background(Color.white)
+                        .background(Color.appSurface2)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black.opacity(0.05), lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.appStroke, lineWidth: 1))
                     }
                 }
                 .padding(.horizontal, 24)
@@ -176,7 +157,7 @@ struct WelcomeView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(LinearGradient.primaryGrad)
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
 
@@ -185,7 +166,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("I already have an account")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.secondary)
+                            .foregroundStyle(Color.white.opacity(0.6))
                     }
                 }
                 .padding(.horizontal, 24)
@@ -200,7 +181,10 @@ struct WelcomeView: View {
 // MARK: - Setup Budget Screen
 struct SetupBudgetView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) var dismiss
+    var isEditing: Bool = false
     @State private var budget: Double = 45000
+    @State private var budgetInput = ""
     @State private var needsPct: Double = 50
     @State private var wantsPct: Double = 25
     @State private var savingsPct: Double = 25
@@ -220,11 +204,15 @@ struct SetupBudgetView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Header
                     VStack(alignment: .leading, spacing: 8) {
+                        if isEditing {
+                            BackButton(isDark: true) { dismiss() }
+                                .padding(.bottom, 12)
+                        }
                         Text("Set Your Budget")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.primary)
+                            .foregroundStyle(Color.white)
                         Text("Choose your monthly budget and allocation strategy")
-                            .font(.subheadline).foregroundStyle(Color.secondary)
+                            .font(.subheadline).foregroundStyle(Color.white.opacity(0.6))
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 60)
@@ -232,18 +220,33 @@ struct SetupBudgetView: View {
 
                     // Budget Display
                     VStack(spacing: 4) {
-                        Text("Monthly Budget").font(.caption1).foregroundStyle(Color.secondary)
+                        Text("Monthly Budget").font(.caption1).foregroundStyle(Color.white.opacity(0.6))
                         Text(budget.currencyRS)
                             .font(.system(size: 42, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.primary)
-                        Text("per month").font(.caption1).foregroundStyle(Color.secondary)
+                            .foregroundStyle(Color.white)
+                        Text("per month").font(.caption1).foregroundStyle(Color.white.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
                     .padding(24)
-                    .background(Color.white)
+                    .background(Color.appSurface2)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black.opacity(0.05), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.appStroke, lineWidth: 1))
                     .padding(.horizontal, 24)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Enter monthly income")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                        TextField("e.g. 45000", text: $budgetInput)
+                            .keyboardType(.numberPad)
+                            .foregroundStyle(.white)
+                            .padding(14)
+                            .background(Color.appSurface2)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appStroke, lineWidth: 1))
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 14)
 
                     // Budget presets
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -251,15 +254,16 @@ struct SetupBudgetView: View {
                             ForEach(budgetPresets, id: \.self) { preset in
                                 Button {
                                     budget = preset
+                                    budgetInput = String(Int(preset))
                                 } label: {
                                     Text(preset.shortCurrency)
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(budget == preset ? .white : Color.primary)
+                                        .foregroundStyle(budget == preset ? .white : Color.white.opacity(0.7))
                                         .padding(.horizontal, 16).padding(.vertical, 10)
-                                        .background(budget == preset ? Color.uniBlue : Color.white)
+                                        .background(budget == preset ? Color.ctaBlue : Color.appSurface)
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                                         .overlay(RoundedRectangle(cornerRadius: 10)
-                                            .stroke(budget == preset ? Color.clear : Color.black.opacity(0.06), lineWidth: 1))
+                                            .stroke(budget == preset ? Color.clear : Color.appStroke, lineWidth: 1))
                                 }
                             }
                         }
@@ -271,7 +275,7 @@ struct SetupBudgetView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Allocation Strategy")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.primary)
+                            .foregroundStyle(Color.white)
 
                         // Presets
                         HStack(spacing: 10) {
@@ -282,12 +286,12 @@ struct SetupBudgetView: View {
                                 } label: {
                                     Text(label)
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(isActive ? .white : Color.primary)
+                                        .foregroundStyle(isActive ? .white : Color.white.opacity(0.7))
                                         .frame(maxWidth: .infinity).padding(.vertical, 12)
-                                        .background(isActive ? Color.uniBlue : Color.white)
+                                        .background(isActive ? Color.ctaBlue : Color.appSurface)
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                                         .overlay(RoundedRectangle(cornerRadius: 10)
-                                            .stroke(isActive ? Color.clear : Color.black.opacity(0.06), lineWidth: 1))
+                                            .stroke(isActive ? Color.clear : Color.appStroke, lineWidth: 1))
                                 }
                             }
                         }
@@ -303,19 +307,19 @@ struct SetupBudgetView: View {
                                     Circle().fill(cat.color).frame(width: 10, height: 10)
                                     Text(cat.rawValue)
                                         .font(.system(size: 15, weight: .medium))
-                                        .foregroundStyle(Color.primary)
+                                        .foregroundStyle(Color.white)
                                     Spacer()
                                     Text("\(Int(pct))%")
                                         .font(.system(size: 15, weight: .semibold))
-                                        .foregroundStyle(Color.primary)
+                                        .foregroundStyle(Color.white)
                                     Text((budget * pct / 100).currencyRS)
-                                        .font(.caption1).foregroundStyle(Color.secondary)
+                                        .font(.caption1).foregroundStyle(Color.white.opacity(0.6))
                                         .frame(width: 90, alignment: .trailing)
                                 }
                                 .padding(14)
-                                .background(Color.white)
+                                .background(Color.appSurface2)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black.opacity(0.06), lineWidth: 1))
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appStroke, lineWidth: 1))
                             }
                         }
                     }
@@ -324,23 +328,34 @@ struct SetupBudgetView: View {
 
                     // CTA
                     Button {
-                        appState.monthlyBudget = budget
-                        appState.needsPercent = needsPct
-                        appState.wantsPercent = wantsPct
-                        appState.savingsPercent = savingsPct
-                        appState.hasCompletedSetup = true
+                        appState.saveBudget(monthly: budget, needs: needsPct, wants: wantsPct, savings: savingsPct)
+                        if isEditing { dismiss() }
                     } label: {
-                        Text("Complete Setup")
+                        Text(isEditing ? "Save Changes" : "Complete Setup")
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color(hex: "#0B1020"))
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(LinearGradient.primaryGrad)
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 32)
                     .padding(.bottom, 60)
                 }
+            }
+        }
+        .onAppear {
+            budget = appState.monthlyBudget
+            needsPct = appState.needsPercent
+            wantsPct = appState.wantsPercent
+            savingsPct = appState.savingsPercent
+            budgetInput = String(Int(appState.monthlyBudget))
+        }
+        .onChange(of: budgetInput) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue { budgetInput = filtered }
+            if let value = Double(filtered), value > 0 {
+                budget = value
             }
         }
     }

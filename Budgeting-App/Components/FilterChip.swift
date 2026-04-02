@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Pill-shaped filter chip — used in HistoryView, BudgetView, WorkScheduleView.
+/// Pill-shaped filter chip — used in TransactionsView, BudgetView, WorkScheduleView.
 struct FilterChip: View {
     let label: String
     let isSelected: Bool

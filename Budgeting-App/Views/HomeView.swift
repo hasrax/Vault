@@ -13,8 +13,7 @@ struct HomeView: View {
     @State private var activeCategory: BudgetCategory = .needs
     @State private var showAddTransaction = false
     @State private var showNotifications  = false
-    @State private var transactions       = MockData.transactions
-    @State private var budgetLimits       = MockData.budgetLimits
+    @State private var addTransactionType: TransactionType = .expense
 
     // Navigation destinations
     @State private var showSearch         = false
@@ -24,13 +23,42 @@ struct HomeView: View {
     @State private var showSplitBill      = false
     @State private var showMealPlan       = false
     @State private var showSavings        = false
+    @State private var showSemesterPlanner = false
+    @State private var showAnalytics      = false
 
-    private var totalExpense: Double { transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
-    private var totalIncome:  Double { transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
     private var balance:      Double { appState.monthlyBudget + totalIncome - totalExpense }
 
     private var currentLimit: BudgetLimit? {
         budgetLimits.first { $0.category == activeCategory }
+    }
+
+    private var budgetLimits: [BudgetLimit] {
+        let needsLimit = appState.monthlyBudget * (appState.needsPercent / 100)
+        let wantsLimit = appState.monthlyBudget * (appState.wantsPercent / 100)
+        let savingsLimit = appState.monthlyBudget * (appState.savingsPercent / 100)
+        return [
+            BudgetLimit(category: .needs,   limit: needsLimit,   spent: spent(for: .needs)),
+            BudgetLimit(category: .wants,   limit: wantsLimit,   spent: spent(for: .wants)),
+            BudgetLimit(category: .savings, limit: savingsLimit, spent: spent(for: .savings))
+        ]
+    }
+
+    private func spent(for category: BudgetCategory) -> Double {
+        appState.transactions
+            .filter { $0.type == .expense && $0.budgetCategory == category }
+            .reduce(0) { $0 + $1.amount }
+    }
+
+    private func allocationAmount(for category: BudgetCategory) -> Double {
+        let percent: Double
+        switch category {
+        case .needs:   percent = appState.needsPercent
+        case .wants:   percent = appState.wantsPercent
+        case .savings: percent = appState.savingsPercent
+        }
+        return appState.monthlyBudget * (percent / 100)
     }
 
     var body: some View {
@@ -46,20 +74,23 @@ struct HomeView: View {
             .background(Color(UIColor.systemGroupedBackground))
             // Sheets
             .sheet(isPresented: $showAddTransaction) {
-                AddTransactionView(transactions: $transactions)
+                AddTransactionView(prefillType: addTransactionType)
             }
             .sheet(isPresented: $showNotifications) {
                 NotificationsView()
             }
             // Navigation destinations
             .navigationDestination(isPresented: $showSearch) {
-                SearchView()
+                SearchView(showBack: true)
             }
             .navigationDestination(isPresented: $showBudget) {
                 BudgetView()
             }
             .navigationDestination(isPresented: $showPlanner) {
                 PlannerView()
+            }
+            .navigationDestination(isPresented: $showSemesterPlanner) {
+                SemesterPlannerView()
             }
             .navigationDestination(isPresented: $showWorkSchedule) {
                 WorkScheduleView()
@@ -73,13 +104,16 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showSavings) {
                 SavingsView()
             }
+            .navigationDestination(isPresented: $showAnalytics) {
+                AnalyticsView()
+            }
         }
     }
 
     // MARK: - Dark Header
     private var darkHeader: some View {
         ZStack(alignment: .bottom) {
-            LinearGradient.headerGrad
+            AuthBackground()
                 .frame(minHeight: 380)
                 .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
 
@@ -92,7 +126,8 @@ struct HomeView: View {
                             .frame(width: 40, height: 40)
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
-                        Text("Hi, \(MockData.userName)!")
+                        let displayName = appState.currentUser?.name ?? MockData.userName
+                        Text("Hi, \(displayName)!")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color.white)
                     }
@@ -129,7 +164,7 @@ struct HomeView: View {
                     VStack(spacing: 3) {
                         Text("Income")
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalIncome.currencyRS)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.income)
@@ -138,7 +173,7 @@ struct HomeView: View {
                     VStack(spacing: 3) {
                         Text("Spent")
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalExpense.currencyRS)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.expense)
@@ -153,13 +188,17 @@ struct HomeView: View {
                     .padding(.top, 24)
 
                 HStack(spacing: 24) {
-                    DonutChart(
-                        needs:      appState.needsPercent,
-                        wants:      appState.wantsPercent,
-                        savings:    appState.savingsPercent,
-                        centerText: balance.shortCurrency,
-                        centerSub:  "Monthly"
-                    )
+                    Button { showBudget = true } label: {
+                        DonutChart(
+                            needs:      appState.needsPercent,
+                            wants:      appState.wantsPercent,
+                            savings:    appState.savingsPercent,
+                            centerText: balance.shortCurrency,
+                            centerSub:  "Monthly"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open Budget Settings")
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(BudgetCategory.allCases) { cat in
                             HStack(spacing: 8) {
@@ -168,7 +207,7 @@ struct HomeView: View {
                                     Text(cat.rawValue)
                                         .font(.system(size: 11))
                                         .foregroundStyle(Color.white.opacity(0.5))
-                                    Text((appState.monthlyBudget * cat.percentage).shortCurrency)
+                                    Text(allocationAmount(for: cat).shortCurrency)
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundStyle(Color.white)
                                 }
@@ -282,21 +321,35 @@ struct HomeView: View {
                     .foregroundStyle(Color.secondary)
             }
             HStack(spacing: 12) {
-                Button { showAddTransaction = true } label: {
+                Button {
+                    addTransactionType = .expense
+                    showAddTransaction = true
+                } label: {
                     Label("Expense", systemImage: "minus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(Color.expense)
                         .frame(maxWidth: .infinity).frame(height: 44)
-                        .background(Color.expense)
+                        .background(Color.expense.opacity(0.16))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.expense.opacity(0.45), lineWidth: 1)
+                        )
                 }
-                Button { showAddTransaction = true } label: {
+                Button {
+                    addTransactionType = .income
+                    showAddTransaction = true
+                } label: {
                     Label("Income", systemImage: "plus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(Color.income)
                         .frame(maxWidth: .infinity).frame(height: 44)
-                        .background(Color.income)
+                        .background(Color.income.opacity(0.16))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.income.opacity(0.45), lineWidth: 1)
+                        )
                 }
             }
         }
@@ -312,23 +365,23 @@ struct HomeView: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
                 spacing: 10
             ) {
-                QuickActionButton(emoji: "📊", label: "Budget",  gradient: .primaryGrad) {
-                    showBudget = true
+                QuickActionButton(emoji: "📅", label: "Semester", gradient: .purpleGrad) {
+                    showSemesterPlanner = true
                 }
-                QuickActionButton(emoji: "📅", label: "Planner", gradient: .purpleGrad) {
-                    showPlanner = true
-                }
-                QuickActionButton(emoji: "💼", label: "Jobs",    gradient: .greenGrad) {
+                QuickActionButton(emoji: "💼", label: "Shifts",   gradient: .greenGrad) {
                     showWorkSchedule = true
                 }
-                QuickActionButton(emoji: "🍕", label: "Split",   gradient: .orangeGrad) {
-                    showSplitBill = true
-                }
-                QuickActionButton(emoji: "🛒", label: "Meals",   gradient: .tealGrad) {
+                QuickActionButton(emoji: "🍽️", label: "Meals",    gradient: .tealGrad) {
                     showMealPlan = true
                 }
-                QuickActionButton(emoji: "🐷", label: "Savings", gradient: .pinkGrad) {
+                QuickActionButton(emoji: "🎯", label: "Savings",  gradient: .pinkGrad) {
                     showSavings = true
+                }
+                QuickActionButton(emoji: "🤝", label: "Split",    gradient: .orangeGrad) {
+                    showSplitBill = true
+                }
+                QuickActionButton(emoji: "📊", label: "Analytics", gradient: .primaryGrad) {
+                    showAnalytics = true
                 }
             }
         }
@@ -339,24 +392,39 @@ struct HomeView: View {
     // MARK: - Planner Highlights (all wired)
     private var plannerHighlights: some View {
         VStack(spacing: 12) {
-            SectionHeader(title: "Planner highlights", actionLabel: "Go to planner") {
+            SectionHeader(title: "Planner highlights", actionLabel: "All six") {
                 showPlanner = true
             }
             VStack(spacing: 8) {
                 PlannerHighlightCard(
                     title: "Semester Planner",
-                    detail: "9 weeks remaining"
-                ) { showPlanner = true }
+                    detail: "Key dates and targets"
+                ) { showSemesterPlanner = true }
 
                 PlannerHighlightCard(
                     title: "Work Schedule",
-                    detail: "2 shifts this week"
+                    detail: "Track hours and pay"
                 ) { showWorkSchedule = true }
 
                 PlannerHighlightCard(
+                    title: "Meal Plan",
+                    detail: "Swipes and dining"
+                ) { showMealPlan = true }
+
+                PlannerHighlightCard(
+                    title: "Savings",
+                    detail: "Goals and buffers"
+                ) { showSavings = true }
+
+                PlannerHighlightCard(
                     title: "Split Bill",
-                    detail: "Settle dinner with Hasini & co."
+                    detail: "Settle with friends"
                 ) { showSplitBill = true }
+
+                PlannerHighlightCard(
+                    title: "Analytics",
+                    detail: "Trends and insights"
+                ) { showAnalytics = true }
             }
         }
         .padding(16)
@@ -369,7 +437,7 @@ struct HomeView: View {
             SectionHeader(title: "Recent Transactions", actionLabel: "See all") {
                 showSearch = true
             }
-            ForEach(Array(transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
+            ForEach(Array(appState.transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
                 TransactionRow(transaction: tx)
                 if idx < 3 {
                     Divider().padding(.leading, 56)

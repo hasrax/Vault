@@ -8,24 +8,6 @@
 import SwiftUI
 import LocalAuthentication
 
-private struct AuthBackground: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(hex: "#0B1020"), Color(hex: "#101827")],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-
-            LinearGradient(colors: [Color.uniBlue.opacity(0.30), Color.clear],
-                           startPoint: .topTrailing, endPoint: .bottom)
-                .ignoresSafeArea()
-
-            LinearGradient(colors: [Color.clear, Color.uniPurple.opacity(0.26)],
-                           startPoint: .top, endPoint: .bottomLeading)
-                .ignoresSafeArea()
-        }
-    }
-}
-
 // MARK: - Login
 struct LoginView: View {
     @EnvironmentObject var appState: AppState
@@ -36,6 +18,9 @@ struct LoginView: View {
     @State private var errorMessage = ""
     @State private var isLoading = false
     @State private var showSignUp = false
+    @State private var savedAccounts: [String] = []
+    @State private var faceIdError = ""
+    @State private var selectedAccount = ""
 
     var body: some View {
         ZStack {
@@ -77,6 +62,12 @@ struct LoginView: View {
                                 .stroke(Color.uniBlue.opacity(0.3), lineWidth: 1))
                         }
 
+                        if !faceIdError.isEmpty {
+                            Label(faceIdError, systemImage: "exclamationmark.circle")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.expense)
+                        }
+
                         // Divider
                         HStack {
                             Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
@@ -87,8 +78,37 @@ struct LoginView: View {
                         }
 
                         // Email
-                        glassField(label: "Email", placeholder: "your@university.lk",
-                                   text: $email, keyboard: .emailAddress)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Email")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.6))
+                            HStack(spacing: 8) {
+                                TextField("your@university.lk", text: $email)
+                                    .keyboardType(.emailAddress)
+                                    .autocorrectionDisabled()
+                                    .textInputAutocapitalization(.never)
+                                    .foregroundStyle(.white)
+                                if !savedAccounts.isEmpty {
+                                    Menu {
+                                        ForEach(savedAccounts, id: \.self) { account in
+                                            Button(account) {
+                                                selectedAccount = account
+                                                email = account
+                                            }
+                                        }
+                                    } label: {
+                                        Image(systemName: "chevron.down")
+                                            .foregroundStyle(Color.white.opacity(0.7))
+                                            .frame(width: 32, height: 32)
+                                    }
+                                }
+                            }
+                            .padding(14)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1))
+                        }
 
                         // Password
                         VStack(alignment: .leading, spacing: 6) {
@@ -138,18 +158,9 @@ struct LoginView: View {
                                 else { Text("Sign In").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white) }
                             }
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(
-                                Group {
-                                    if email.isEmpty || password.isEmpty {
-                                        Color.white.opacity(0.12)
-                                    } else {
-                                        Color.uniBlue
-                                    }
-                                }
-                            )
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(email.isEmpty || password.isEmpty)
 
                         Button {
                             showSignUp = true
@@ -165,6 +176,12 @@ struct LoginView: View {
             }
         }
         .fullScreenCover(isPresented: $showSignUp) { SignUpView() }
+        .onAppear {
+            savedAccounts = KeychainService.savedAccounts()
+            if selectedAccount.isEmpty {
+                selectedAccount = savedAccounts.first ?? ""
+            }
+        }
     }
 
     private func glassField(label: String, placeholder: String,
@@ -185,27 +202,66 @@ struct LoginView: View {
     }
 
     private func signIn() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmedEmail.isEmpty, !password.isEmpty else {
+            errorMessage = "Enter your email and password."
+            return
+        }
         isLoading = true
         errorMessage = ""
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            isLoading = false
-            appState.isAuthenticated = true
+        appState.signIn(email: trimmedEmail, password: password) { result in
+            DispatchQueue.main.async {
+                isLoading = false
+                if case let .failure(error) = result {
+                    errorMessage = error.localizedDescription
+                } else {
+                    _ = KeychainService.saveCredentials(email: trimmedEmail, password: password)
+                    savedAccounts = KeychainService.savedAccounts()
+                }
+            }
         }
     }
 
     private func authenticateWithBiometrics() {
+        guard appState.isFaceIDEnabled else {
+            faceIdError = "Face ID is turned off in Settings."
+            return
+        }
         let ctx = LAContext()
         var error: NSError?
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            // Simulator fallback
-            appState.isAuthenticated = true
+            faceIdError = "Face ID not available. Simulator: Features > Face ID > Enrolled."
             return
         }
+        guard !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            faceIdError = "Enter or select an email first."
+            return
+        }
+        faceIdError = ""
         ctx.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
-                           localizedReason: "Sign in to Budgify") { success, _ in
+                           localizedReason: "Sign in to Vault") { success, _ in
             DispatchQueue.main.async {
-                if success { appState.isAuthenticated = true }
-                else { errorMessage = "Face ID failed. Use your password." }
+                if success {
+                    let targetEmail = selectedAccount.isEmpty ? email : selectedAccount
+                    KeychainService.loadCredentials(email: targetEmail, reason: "Sign in to Vault") { result in
+                        DispatchQueue.main.async {
+                            switch result {
+                            case .success(let savedPassword):
+                                appState.signIn(email: targetEmail, password: savedPassword) { signInResult in
+                                    DispatchQueue.main.async {
+                                        if case let .failure(error) = signInResult {
+                                            faceIdError = error.localizedDescription
+                                        }
+                                    }
+                                }
+                            case .failure:
+                                faceIdError = "No saved password for that account."
+                            }
+                        }
+                    }
+                } else {
+                    faceIdError = "Face ID failed. Use your password."
+                }
             }
         }
     }
@@ -220,6 +276,8 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var agreedToTerms = false
+    @State private var errorMessage = ""
+    @State private var isLoading = false
 
     var isValid: Bool {
         !name.isEmpty && !email.isEmpty && password.count >= 6 && password == confirmPassword && agreedToTerms
@@ -270,19 +328,27 @@ struct SignUpView: View {
 
                     VStack(spacing: 12) {
                         Button {
-                            appState.isAuthenticated = true
+                            signUp()
                         } label: {
-                            Text("Create Account")
-                                .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                                .frame(maxWidth: .infinity).frame(height: 56)
-                                .background(isValid ? LinearGradient.primaryGrad : LinearGradient(colors:[Color.white.opacity(0.12),Color.white.opacity(0.12)],startPoint:.leading,endPoint:.trailing))
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                            Group {
+                                if isLoading { ProgressView().tint(.white) }
+                                else { Text("Create Account") }
+                            }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).frame(height: 56)
+                            .background(LinearGradient.ctaGrad)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .disabled(!isValid)
 
                         Button { dismiss() } label: {
                             Text("Already have an account? Sign In")
                                 .font(.system(size: 15)).foregroundStyle(Color.white.opacity(0.5))
+                        }
+                        if !errorMessage.isEmpty {
+                            Label(errorMessage, systemImage: "exclamationmark.circle")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.expense)
                         }
                     }
                     .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 60)
@@ -297,6 +363,26 @@ struct SignUpView: View {
         case "Email":            return $email
         case "Password":         return $password
         default:                 return $confirmPassword
+        }
+    }
+
+    private func signUp() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard isValid else {
+            errorMessage = "Please complete all fields and accept terms."
+            return
+        }
+        isLoading = true
+        errorMessage = ""
+        appState.signUp(name: name, email: trimmedEmail, password: password) { result in
+            DispatchQueue.main.async {
+                isLoading = false
+                if case let .failure(error) = result {
+                    errorMessage = error.localizedDescription
+                } else {
+                    _ = KeychainService.saveCredentials(email: trimmedEmail, password: password)
+                }
+            }
         }
     }
 

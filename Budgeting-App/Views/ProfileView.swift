@@ -11,6 +11,10 @@ import Combine
 // MARK: - Profile View
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
+    @State private var showDeleteAlert = false
+    @State private var deleteError = ""
+    @State private var testToken = ""
+    @State private var testMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -20,16 +24,16 @@ struct ProfileView: View {
                 Section {
                     HStack(spacing: 16) {
                         ZStack {
-                            Circle()
-                                .fill(LinearGradient.primaryGrad)
+                            profileAvatar
                                 .frame(width: 68, height: 68)
                                 .shadow(color: Color.uniBlue.opacity(0.35), radius: 10, y: 4)
-                            Text(MockData.userAvatar).font(.system(size: 28))
                         }
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(MockData.userName)
+                            let displayName = appState.currentUser?.name ?? MockData.userName
+                            let displayEmail = appState.currentUser?.email ?? MockData.userEmail
+                            Text(displayName)
                                 .font(.system(size: 18, weight: .bold))
-                            Text(MockData.userEmail)
+                            Text(displayEmail)
                                 .font(.system(size: 14))
                                 .foregroundStyle(.secondary)
                             Text("Student · LKR")
@@ -42,6 +46,13 @@ struct ProfileView: View {
                         Spacer()
                     }
                     .padding(.vertical, 10)
+                }
+
+                Section {
+                    NavigationLink(destination: EditProfileView()) {
+                        Label { Text("Edit Profile").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "pencil", color: Color.uniBlue) }
+                    }
                 }
 
                 // ── Preferences ───────────────────────────────────────────
@@ -80,10 +91,23 @@ struct ProfileView: View {
                     }.tint(Color.uniBlue)
                 }
 
+                Section("Push Test") {
+                    TextField("Paste token (any text)", text: $testToken)
+                    TextField("Message (optional)", text: $testMessage)
+                    Button("Send Test Notification") {
+                        let body = testMessage.isEmpty ? "Token: \(testToken)" : testMessage
+                        NotificationService.sendLocalNotification(
+                            title: "Push (simulated)",
+                            body: body
+                        )
+                    }
+                    .disabled(testToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
                 // ── Account ───────────────────────────────────────────────
                 Section("Account") {
-                    NavigationLink(destination: HistoryView()) {
-                        Label { Text("Transaction History").font(.system(size: 15, weight: .medium))
+                    NavigationLink(destination: SearchView(showBack: true)) {
+                        Label { Text("History").font(.system(size: 15, weight: .medium))
                         } icon: { iconBox(systemName: "clock", color: Color.uniPurple) }
                     }
                     NavigationLink(destination: SavingsView()) {
@@ -93,6 +117,10 @@ struct ProfileView: View {
                     NavigationLink(destination: BudgetView()) {
                         Label { Text("Budget Settings").font(.system(size: 15, weight: .medium))
                         } icon: { iconBox(systemName: "slider.horizontal.3", color: Color.uniBlue) }
+                    }
+                    NavigationLink(destination: ChangePasswordView()) {
+                        Label { Text("Change Password").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "key.fill", color: Color.uniOrange) }
                     }
                 }
 
@@ -128,17 +156,48 @@ struct ProfileView: View {
                     LabeledContent("Framework",  value: "SwiftUI + MVVM")
                 }
 
+                Section("Support") {
+                    NavigationLink(destination: FAQView()) {
+                        Label { Text("FAQ").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "questionmark.circle", color: Color.uniTeal) }
+                    }
+                    NavigationLink(destination: HelpView()) {
+                        Label { Text("Help & Support").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "lifepreserver", color: Color.uniBlue) }
+                    }
+                    NavigationLink(destination: TermsView()) {
+                        Label { Text("Terms of Service").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "doc.text", color: Color.uniOrange) }
+                    }
+                    NavigationLink(destination: PrivacyView()) {
+                        Label { Text("Privacy Policy").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "lock.shield", color: Color.uniPurple) }
+                    }
+                }
+
+                if !deleteError.isEmpty {
+                    Section {
+                        Label(deleteError, systemImage: "exclamationmark.circle")
+                            .foregroundStyle(Color.expense)
+                    }
+                }
+
                 // ── Sign out ──────────────────────────────────────────────
                 Section {
                     Button(role: .destructive) {
-                        withAnimation { appState.isAuthenticated = false }
+                        withAnimation { appState.signOut() }
                     } label: {
                         Label("Sign Out",
                               systemImage: "rectangle.portrait.and.arrow.right")
                     }
                     Button(role: .destructive) {
+                        showDeleteAlert = true
+                    } label: {
+                        Label("Delete Account", systemImage: "trash")
+                    }
+                    Button(role: .destructive) {
                         withAnimation {
-                            appState.isAuthenticated        = false
+                            appState.signOut()
                             appState.hasCompletedOnboarding = false
                             appState.hasCompletedSetup      = false
                         }
@@ -150,6 +209,25 @@ struct ProfileView: View {
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
+            .alert("Delete account?", isPresented: $showDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    appState.deleteAccount { result in
+                        DispatchQueue.main.async {
+                            if case let .failure(error) = result {
+                                deleteError = error.localizedDescription
+                            }
+                        }
+                    }
+                }
+            } message: {
+                Text("This permanently deletes your account and data.")
+            }
+        }
+        .onChange(of: appState.notificationsEnabled) { _, enabled in
+            if enabled {
+                NotificationService.requestAuthorization()
+            }
         }
     }
 
@@ -163,6 +241,26 @@ struct ProfileView: View {
                 .font(.system(size: 16))
                 .foregroundStyle(color)
         }
+    }
+
+    private var profileAvatar: some View {
+        Group {
+            if let urlStr = appState.currentUser?.photoURL,
+               let url = URL(string: urlStr) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image): image.resizable().scaledToFill()
+                    default:
+                        Circle().fill(LinearGradient.primaryGrad)
+                            .overlay(Text(MockData.userAvatar).font(.system(size: 28)))
+                    }
+                }
+            } else {
+                Circle().fill(LinearGradient.primaryGrad)
+                    .overlay(Text(MockData.userAvatar).font(.system(size: 28)))
+            }
+        }
+        .clipShape(Circle())
     }
 }
 

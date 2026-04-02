@@ -6,13 +6,34 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		05F715EF2F7A6B4B0082B351 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715EE2F7A6B4B0082B351 /* FirebaseAnalytics */; };
+		05F715F12F7A6B4B0082B351 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715F02F7A6B4B0082B351 /* FirebaseAuth */; };
+		05F715F32F7A6B4B0082B351 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715F22F7A6B4B0082B351 /* FirebaseFirestore */; };
+		05F715F52F7A6B4B0082B351 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715F42F7A6B4B0082B351 /* FirebaseMessaging */; };
+		05F715F72F7A6B4B0082B351 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715F62F7A6B4B0082B351 /* FirebaseStorage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		05EA6E092F74FD600016FE08 /* Budgeting-App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Budgeting-App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		055959FA2F7B95A4007A5673 /* Exceptions for "Budgeting-App" folder in "Budgeting-App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 05EA6E082F74FD600016FE08 /* Budgeting-App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		05EA6E0B2F74FD600016FE08 /* Budgeting-App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				055959FA2F7B95A4007A5673 /* Exceptions for "Budgeting-App" folder in "Budgeting-App" target */,
+			);
 			path = "Budgeting-App";
 			sourceTree = "<group>";
 		};
@@ -23,6 +44,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05F715F52F7A6B4B0082B351 /* FirebaseMessaging in Frameworks */,
+				05F715EF2F7A6B4B0082B351 /* FirebaseAnalytics in Frameworks */,
+				05F715F12F7A6B4B0082B351 /* FirebaseAuth in Frameworks */,
+				05F715F72F7A6B4B0082B351 /* FirebaseStorage in Frameworks */,
+				05F715F32F7A6B4B0082B351 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +91,11 @@
 			);
 			name = "Budgeting-App";
 			packageProductDependencies = (
+				05F715EE2F7A6B4B0082B351 /* FirebaseAnalytics */,
+				05F715F02F7A6B4B0082B351 /* FirebaseAuth */,
+				05F715F22F7A6B4B0082B351 /* FirebaseFirestore */,
+				05F715F42F7A6B4B0082B351 /* FirebaseMessaging */,
+				05F715F62F7A6B4B0082B351 /* FirebaseStorage */,
 			);
 			productName = "Budgeting-App";
 			productReference = 05EA6E092F74FD600016FE08 /* Budgeting-App.app */;
@@ -94,6 +125,9 @@
 			);
 			mainGroup = 05EA6E002F74FD600016FE08;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				05F715ED2F7A6B4B0082B351 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 05EA6E0A2F74FD600016FE08 /* Products */;
 			projectDirPath = "";
@@ -249,10 +283,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Budgeting-App/Info.plist";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan receipts using the camera";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to sign in quickly";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select a receipt photo to scan";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -280,10 +319,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Budgeting-App/Info.plist";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan receipts using the camera";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to sign in quickly";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select a receipt photo to scan";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -328,6 +372,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		05F715ED2F7A6B4B0082B351 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.11.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		05F715EE2F7A6B4B0082B351 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 05F715ED2F7A6B4B0082B351 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		05F715F02F7A6B4B0082B351 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 05F715ED2F7A6B4B0082B351 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		05F715F22F7A6B4B0082B351 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 05F715ED2F7A6B4B0082B351 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		05F715F42F7A6B4B0082B351 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 05F715ED2F7A6B4B0082B351 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		05F715F62F7A6B4B0082B351 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 05F715ED2F7A6B4B0082B351 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 05EA6E012F74FD600016FE08 /* Project object */;
 }

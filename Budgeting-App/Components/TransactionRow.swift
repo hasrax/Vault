@@ -7,19 +7,37 @@
 
 import SwiftUI
 
-/// Single transaction row used in HomeView, HistoryView, TransactionsView.
+/// Single transaction row used in HomeView and TransactionsView.
 /// Shows coloured icon circle, title + subtitle, and coloured amount.
 struct TransactionRow: View {
     let transaction: Transaction
 
     private var icon: String {
-        transaction.category?.icon ?? transaction.incomeSource?.icon ?? "💰"
+        if let category = transaction.category {
+            return category.icon
+        }
+        if transaction.type == .expense {
+            return transaction.budgetCategory.emoji
+        }
+        return transaction.incomeSource?.icon ?? "💰"
     }
     private var iconColor: Color {
-        transaction.category?.color ?? (transaction.type == .income ? Color.income : Color.uniBlue)
+        if let category = transaction.category {
+            return category.color
+        }
+        if transaction.type == .expense {
+            return transaction.budgetCategory.color
+        }
+        return Color.income
     }
     private var categoryLabel: String {
-        transaction.category?.rawValue ?? transaction.incomeSource?.rawValue ?? "Other"
+        if let category = transaction.category {
+            return category.rawValue
+        }
+        if transaction.type == .expense {
+            return transaction.budgetCategory.rawValue
+        }
+        return transaction.incomeSource?.rawValue ?? "Other"
     }
 
     var body: some View {

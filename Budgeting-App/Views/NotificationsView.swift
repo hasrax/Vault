@@ -22,10 +22,14 @@ struct NotificationsView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.large)
+            .navigationBarBackButtonHidden(true)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    BackButton { dismiss() }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }

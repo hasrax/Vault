@@ -109,6 +109,10 @@ struct Transaction: Identifiable, Codable {
     var budgetCategory: BudgetCategory
     var date: Date
     var note: String
+    var linkedShiftId: String?
+    var linkedSplitBillId: String?
+    var receiptImageUrl: String?
+    var receiptImageBase64: String?
 
     init(
         id: UUID = UUID(),
@@ -119,7 +123,11 @@ struct Transaction: Identifiable, Codable {
         incomeSource: IncomeSource? = nil,
         budgetCategory: BudgetCategory = .wants,
         date: Date = Date(),
-        note: String = ""
+        note: String = "",
+        linkedShiftId: String? = nil,
+        linkedSplitBillId: String? = nil,
+        receiptImageUrl: String? = nil,
+        receiptImageBase64: String? = nil
     ) {
         self.id             = id
         self.name           = name
@@ -130,6 +138,10 @@ struct Transaction: Identifiable, Codable {
         self.budgetCategory = budgetCategory
         self.date           = date
         self.note           = note
+        self.linkedShiftId  = linkedShiftId
+        self.linkedSplitBillId = linkedSplitBillId
+        self.receiptImageUrl = receiptImageUrl
+        self.receiptImageBase64 = receiptImageBase64
     }
 }
 
@@ -168,11 +180,11 @@ struct BudgetLimit: Identifiable {
 
 // MARK: - Savings Goal
 
-struct SavingsGoal: Identifiable {
+struct SavingsGoal: Identifiable, Codable {
     let id: UUID
     var name: String
     var icon: String
-    var color: Color
+    var colorHex: String
     var targetAmount: Double
     var currentAmount: Double
     var deadline: Date?
@@ -181,7 +193,7 @@ struct SavingsGoal: Identifiable {
         id: UUID = UUID(),
         name: String,
         icon: String,
-        color: Color,
+        colorHex: String,
         targetAmount: Double,
         currentAmount: Double,
         deadline: Date? = nil
@@ -189,11 +201,13 @@ struct SavingsGoal: Identifiable {
         self.id            = id
         self.name          = name
         self.icon          = icon
-        self.color         = color
+        self.colorHex      = colorHex
         self.targetAmount  = targetAmount
         self.currentAmount = currentAmount
         self.deadline      = deadline
     }
+
+    var color: Color { Color(hex: colorHex) }
 
     var progress:   Double { targetAmount > 0 ? min(currentAmount / targetAmount, 1.0) : 0 }
     var isComplete: Bool   { currentAmount >= targetAmount }
@@ -299,6 +313,70 @@ struct Roommate: Identifiable {
         self.name   = name
         self.avatar = avatar
         self.color  = color
+    }
+}
+
+// MARK: - Split Bill
+
+enum SplitMethod: String, Codable {
+    case equal
+    case custom
+}
+
+enum SplitBillStatus: String, Codable {
+    case open
+    case settled
+    case cancelled
+}
+
+enum SplitParticipantStatus: String, Codable {
+    case invited
+    case accepted
+    case declined
+    case paid
+}
+
+struct SplitParticipant: Identifiable, Codable {
+    var userId: String
+    var name: String
+    var email: String
+    var shareAmount: Double
+    var status: SplitParticipantStatus
+    var isCreator: Bool
+
+    var id: String { userId }
+}
+
+struct SplitBill: Identifiable, Codable {
+    let id: UUID
+    var title: String
+    var totalAmount: Double
+    var createdBy: String
+    var createdAt: Date
+    var splitMethod: SplitMethod
+    var status: SplitBillStatus
+    var participants: [SplitParticipant]
+    var participantIds: [String]
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        totalAmount: Double,
+        createdBy: String,
+        createdAt: Date = Date(),
+        splitMethod: SplitMethod,
+        status: SplitBillStatus = .open,
+        participants: [SplitParticipant]
+    ) {
+        self.id = id
+        self.title = title
+        self.totalAmount = totalAmount
+        self.createdBy = createdBy
+        self.createdAt = createdAt
+        self.splitMethod = splitMethod
+        self.status = status
+        self.participants = participants
+        self.participantIds = participants.map { $0.userId }
     }
 }
 
@@ -410,6 +488,22 @@ struct PlannerModule: Identifiable {
     var title: String
     var description: String
     var pill: String
+    var icon: String
     var gradient: LinearGradient
     var destination: String
+}
+
+// MARK: - User Profile
+
+struct UserProfile: Identifiable {
+    let id: String
+    var name: String
+    var email: String
+    var createdAt: Date?
+    var photoURL: String?
+    var monthlyBudget: Double?
+    var needsPercent: Double?
+    var wantsPercent: Double?
+    var savingsPercent: Double?
+    var hasCompletedSetup: Bool
 }
