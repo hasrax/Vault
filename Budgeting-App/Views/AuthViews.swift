@@ -10,7 +10,7 @@ import LocalAuthentication
 
 // MARK: - Login
 struct LoginView: View {
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) var dismiss
     @State private var email = ""
     @State private var password = ""
@@ -209,7 +209,7 @@ struct LoginView: View {
         }
         isLoading = true
         errorMessage = ""
-        appState.signIn(email: trimmedEmail, password: password) { result in
+        authVM.signIn(email: trimmedEmail, password: password) { result in
             DispatchQueue.main.async {
                 isLoading = false
                 if case let .failure(error) = result {
@@ -223,7 +223,7 @@ struct LoginView: View {
     }
 
     private func authenticateWithBiometrics() {
-        guard appState.isFaceIDEnabled else {
+        guard authVM.isFaceIDEnabled else {
             faceIdError = "Face ID is turned off in Settings."
             return
         }
@@ -247,7 +247,7 @@ struct LoginView: View {
                         DispatchQueue.main.async {
                             switch result {
                             case .success(let savedPassword):
-                                appState.signIn(email: targetEmail, password: savedPassword) { signInResult in
+                                authVM.signIn(email: targetEmail, password: savedPassword) { signInResult in
                                     DispatchQueue.main.async {
                                         if case let .failure(error) = signInResult {
                                             faceIdError = error.localizedDescription
@@ -269,7 +269,7 @@ struct LoginView: View {
 
 // MARK: - Sign Up
 struct SignUpView: View {
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) var dismiss
     @State private var name = ""
     @State private var email = ""
@@ -374,7 +374,7 @@ struct SignUpView: View {
         }
         isLoading = true
         errorMessage = ""
-        appState.signUp(name: name, email: trimmedEmail, password: password) { result in
+        authVM.signUp(name: name, email: trimmedEmail, password: password) { result in
             DispatchQueue.main.async {
                 isLoading = false
                 if case let .failure(error) = result {
@@ -410,5 +410,11 @@ struct SignUpView: View {
     }
 }
 
-#Preview("Login")  { LoginView().environmentObject(AppState()) }
-#Preview("SignUp") { SignUpView().environmentObject(AppState()) }
+#Preview("Login")  {
+    let state = AppState()
+    return LoginView().environmentObject(AuthViewModel(appState: state))
+}
+#Preview("SignUp") {
+    let state = AppState()
+    return SignUpView().environmentObject(AuthViewModel(appState: state))
+}

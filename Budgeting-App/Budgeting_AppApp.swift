@@ -40,7 +40,6 @@ class AppState: ObservableObject {
                 self.isAuthenticated = true
             }
             loadTransactions()
-            startSplitBillListeners()
             startTransactionListener()
             startSavingsGoalsListener()
             flushPendingWrites(uid: user.uid)
@@ -91,7 +90,6 @@ class AppState: ObservableObject {
             splitBills = []
             savingsGoals = []
             stopTransactionListener()
-            stopSplitBillListeners()
             stopSavingsGoalsListener()
         }
 
@@ -823,13 +821,19 @@ class AppState: ObservableObject {
 // MARK: - App Entry Point
 @main
 struct Budgeting_App: App {
-    @StateObject private var appState = AppState()
+    @StateObject private var appState: AppState
+    @StateObject private var authVM: AuthViewModel
     @StateObject private var transactionsVM: TransactionsViewModel
     @StateObject private var savingsVM: SavingsGoalsViewModel
     @StateObject private var plannerVM: PlannerViewModel
+    @StateObject private var splitBillsVM: SplitBillsViewModel
 
     init() {
             FirebaseApp.configure()
+            let state = AppState()
+            _appState = StateObject(wrappedValue: state)
+            _authVM = StateObject(wrappedValue: AuthViewModel(appState: state))
+
             let txVM = TransactionsViewModel(userIdProvider: { Auth.auth().currentUser?.uid })
             _transactionsVM = StateObject(wrappedValue: txVM)
             _savingsVM = StateObject(
@@ -841,15 +845,24 @@ struct Budgeting_App: App {
                 )
             )
             _plannerVM = StateObject(wrappedValue: PlannerViewModel(transactionsVM: txVM))
+            _splitBillsVM = StateObject(
+                wrappedValue: SplitBillsViewModel(
+                    userIdProvider: { Auth.auth().currentUser?.uid },
+                    currentUserProvider: { state.currentUser },
+                    transactionsVM: txVM
+                )
+            )
         }
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(authVM)
                 .environmentObject(transactionsVM)
                 .environmentObject(savingsVM)
                 .environmentObject(plannerVM)
+                .environmentObject(splitBillsVM)
                 .preferredColorScheme(appState.isDarkMode ? .dark : .light)
         }
     }
@@ -860,9 +873,11 @@ struct Budgeting_App: App {
 // Splash → Setup → Welcome/Login → Main app
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var transactionsVM: TransactionsViewModel
     @EnvironmentObject var savingsVM: SavingsGoalsViewModel
     @EnvironmentObject var plannerVM: PlannerViewModel
+    @EnvironmentObject var splitBillsVM: SplitBillsViewModel
     @Environment(\.scenePhase) var scenePhase
     @State private var lastBackgroundAt: Date?
     private let lastBackgroundKey = "lastBackgroundAt"
@@ -871,30 +886,30 @@ struct RootView: View {
             ZStack {
                 AppBackground()
                 Group {
-                    if !appState.hasCompletedOnboarding {
+                    if !authVM.hasCompletedOnboarding {
                         SplashView()
-                    } else if !appState.isAuthenticated {
+                    } else if !authVM.isAuthenticated {
                         WelcomeView()
-                    } else if !appState.hasCompletedSetup {
+                    } else if !authVM.hasCompletedSetup {
                         SetupBudgetView()
                     } else {
                         MainTabView()
-                            .id(appState.isAuthenticated)
+                            .id(authVM.isAuthenticated)
                     }
                 }
             }
-        .animation(.easeInOut(duration: 0.35), value: appState.isAuthenticated)
-        .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedOnboarding)
-        .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedSetup)
+        .animation(.easeInOut(duration: 0.35), value: authVM.isAuthenticated)
+        .animation(.easeInOut(duration: 0.35), value: authVM.hasCompletedOnboarding)
+        .animation(.easeInOut(duration: 0.35), value: authVM.hasCompletedSetup)
         .onAppear {
-            if appState.hasCompletedOnboarding {
-                appState.signOut()
+            if authVM.hasCompletedOnboarding {
+                authVM.signOut()
             }
             if let ts = UserDefaults.standard.object(forKey: lastBackgroundKey) as? TimeInterval {
                 let last = Date(timeIntervalSince1970: ts)
                 let elapsed = Date().timeIntervalSince(last)
-                if elapsed >= appState.sessionTimeoutSeconds {
-                    appState.signOut()
+                if elapsed >= authVM.sessionTimeoutSeconds {
+                    authVM.signOut()
                 }
             }
         }
@@ -904,10 +919,10 @@ struct RootView: View {
                 lastBackgroundAt = Date()
                 UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastBackgroundKey)
             case .active:
-                if appState.isAuthenticated, let last = lastBackgroundAt {
+                if authVM.isAuthenticated, let last = lastBackgroundAt {
                     let elapsed = Date().timeIntervalSince(last)
-                    if elapsed >= appState.sessionTimeoutSeconds {
-                        appState.signOut()
+                    if elapsed >= authVM.sessionTimeoutSeconds {
+                        authVM.signOut()
                     }
                 }
                 lastBackgroundAt = nil
@@ -915,7 +930,7 @@ struct RootView: View {
                 break
             }
         }
-        .onChange(of: appState.isAuthenticated) { _, isAuthed in
+        .onChange(of: authVM.isAuthenticated) { _, isAuthed in
             if isAuthed, let uid = Auth.auth().currentUser?.uid {
                 transactionsVM.loadCached(uid: uid)
                 transactionsVM.loadRemote(uid: uid)
@@ -925,6 +940,7 @@ struct RootView: View {
                 savingsVM.startListener(uid: uid)
                 plannerVM.loadRemote()
                 plannerVM.startListeners()
+                splitBillsVM.startListener()
             } else {
                 transactionsVM.stopListener()
                 transactionsVM.transactions = []
@@ -934,6 +950,8 @@ struct RootView: View {
                 plannerVM.importantDates = []
                 plannerVM.semesterGoals = []
                 plannerVM.workShifts = []
+                splitBillsVM.stopListener()
+                splitBillsVM.splitBills = []
             }
         }
     }
