@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - Work Schedule
 struct WorkScheduleView: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var plannerVM: PlannerViewModel
     @State private var activeTab = "week"
     @State private var viewMode = "hours"
     @State private var showAddShift = false
@@ -29,7 +29,7 @@ struct WorkScheduleView: View {
     @State private var repeatWeeks = 4
     @State private var sortNewestFirst = true
     @State private var editShift: WorkShift?
-    private var shifts: [WorkShift] { appState.workShifts }
+    private var shifts: [WorkShift] { plannerVM.workShifts }
     private var shiftDays: Set<String> { Set(shifts.map(\.day)) }
     private var completed: [WorkShift] { shifts.filter{$0.status == .completed} }
     private var upcoming: [WorkShift]  { shifts.filter{$0.status == .upcoming} }
@@ -146,7 +146,7 @@ struct WorkScheduleView: View {
                                 }
                                 .disabled(shift.status == .completed)
                                 Button(role: .destructive) {
-                                    appState.deleteWorkShift(shift)
+                                    plannerVM.deleteWorkShift(shift)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -256,7 +256,7 @@ struct WorkScheduleView: View {
                             if viewMode == "monthly" && repeatMonthly {
                                 let pay = Double(shiftPay) ?? 0
                                 let monthDate = firstOfMonth(selectedDate)
-                                appState.addMonthlyShifts(
+                                plannerVM.addMonthlyShifts(
                                     startDate: monthDate,
                                     months: repeatMonths,
                                     role: role,
@@ -269,7 +269,7 @@ struct WorkScheduleView: View {
                             } else if viewMode == "monthly" {
                                 let pay = Double(shiftPay) ?? 0
                                 let monthDate = firstOfMonth(selectedDate)
-                                appState.addMonthlyShifts(
+                                plannerVM.addMonthlyShifts(
                                     startDate: monthDate,
                                     months: 1,
                                     role: role,
@@ -285,7 +285,7 @@ struct WorkScheduleView: View {
                                 let hours = Int(shiftHours) ?? 0
                                 let pay = Double(shiftPay) ?? 0
                                 if repeatWeekly {
-                                    appState.addWeeklyShifts(
+                                    plannerVM.addWeeklyShifts(
                                         startDate: selectedDate,
                                         weeks: repeatWeeks,
                                         role: role,
@@ -296,7 +296,7 @@ struct WorkScheduleView: View {
                                         status: shiftStatus
                                     )
                                 } else {
-                                    appState.addWorkShift(
+                                    plannerVM.addWorkShift(
                                         day: day,
                                         date: date,
                                         role: role,
@@ -367,7 +367,7 @@ struct WorkScheduleView: View {
                                 pay: pay,
                                 status: shiftStatus
                             )
-                            appState.updateWorkShift(updated)
+                            plannerVM.updateWorkShift(updated)
                             editShift = nil
                         }
                     }
@@ -452,4 +452,8 @@ struct WorkScheduleView: View {
     }
 }
 
-#Preview("Work") { NavigationStack { WorkScheduleView().environmentObject(AppState()) } }
+#Preview("Work") {
+    let vm = PlannerViewModel(transactionsVM: TransactionsViewModel())
+    vm.workShifts = MockData.shifts
+    return NavigationStack { WorkScheduleView().environmentObject(vm) }
+}

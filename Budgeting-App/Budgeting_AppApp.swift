@@ -40,7 +40,6 @@ class AppState: ObservableObject {
                 self.isAuthenticated = true
             }
             loadTransactions()
-            startPlannerListeners()
             startSplitBillListeners()
             startTransactionListener()
             startSavingsGoalsListener()
@@ -92,7 +91,6 @@ class AppState: ObservableObject {
             splitBills = []
             savingsGoals = []
             stopTransactionListener()
-            stopPlannerListeners()
             stopSplitBillListeners()
             stopSavingsGoalsListener()
         }
@@ -828,6 +826,7 @@ struct Budgeting_App: App {
     @StateObject private var appState = AppState()
     @StateObject private var transactionsVM: TransactionsViewModel
     @StateObject private var savingsVM: SavingsGoalsViewModel
+    @StateObject private var plannerVM: PlannerViewModel
 
     init() {
             FirebaseApp.configure()
@@ -841,6 +840,7 @@ struct Budgeting_App: App {
                     }
                 )
             )
+            _plannerVM = StateObject(wrappedValue: PlannerViewModel(transactionsVM: txVM))
         }
     
     var body: some Scene {
@@ -849,6 +849,7 @@ struct Budgeting_App: App {
                 .environmentObject(appState)
                 .environmentObject(transactionsVM)
                 .environmentObject(savingsVM)
+                .environmentObject(plannerVM)
                 .preferredColorScheme(appState.isDarkMode ? .dark : .light)
         }
     }
@@ -861,6 +862,7 @@ struct RootView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var transactionsVM: TransactionsViewModel
     @EnvironmentObject var savingsVM: SavingsGoalsViewModel
+    @EnvironmentObject var plannerVM: PlannerViewModel
     @Environment(\.scenePhase) var scenePhase
     @State private var lastBackgroundAt: Date?
     private let lastBackgroundKey = "lastBackgroundAt"
@@ -921,11 +923,17 @@ struct RootView: View {
                 savingsVM.loadCached(uid: uid)
                 savingsVM.loadRemote(uid: uid)
                 savingsVM.startListener(uid: uid)
+                plannerVM.loadRemote()
+                plannerVM.startListeners()
             } else {
                 transactionsVM.stopListener()
                 transactionsVM.transactions = []
                 savingsVM.stopListener()
                 savingsVM.goals = []
+                plannerVM.stopListeners()
+                plannerVM.importantDates = []
+                plannerVM.semesterGoals = []
+                plannerVM.workShifts = []
             }
         }
     }

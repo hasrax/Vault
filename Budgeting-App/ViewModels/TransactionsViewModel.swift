@@ -69,11 +69,47 @@ final class TransactionsViewModel: ObservableObject {
         addTransaction(tx)
     }
 
+    func updateLinkedShiftTransaction(_ shift: WorkShift) {
+        if let existing = transactions.first(where: { $0.linkedShiftId == shift.id.uuidString }) {
+            var updated = existing
+            updated.name = "Work: \(shift.role)"
+            updated.amount = shift.pay
+            updated.date = parseShiftDate(shift.date) ?? Date()
+            updateTransaction(updated)
+        } else if shift.pay > 0 {
+            let tx = Transaction(
+                name: "Work: \(shift.role)",
+                amount: shift.pay,
+                type: .income,
+                incomeSource: .parttime,
+                budgetCategory: .savings,
+                date: parseShiftDate(shift.date) ?? Date(),
+                note: "Shift income",
+                linkedShiftId: shift.id.uuidString
+            )
+            addTransaction(tx)
+        }
+    }
+
+    func deleteLinkedShiftTransaction(shiftId: String) {
+        if let tx = transactions.first(where: { $0.linkedShiftId == shiftId }) {
+            deleteTransactions([tx.id])
+        }
+    }
+
     func deleteTransactions(_ ids: [UUID]) {
         transactions.removeAll { ids.contains($0.id) }
         TransactionService.deleteTransactions(ids)
         if let uid = userIdProvider() {
             CoreDataCache.shared.deleteTransactions(ids, ownerId: uid)
         }
+    }
+
+    private func parseShiftDate(_ dateString: String) -> Date? {
+        let fmt1 = DateFormatter()
+        fmt1.dateFormat = "MMM d"
+        let fmt2 = DateFormatter()
+        fmt2.dateFormat = "MMM yyyy"
+        return fmt1.date(from: dateString) ?? fmt2.date(from: dateString)
     }
 }

@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - Semester Planner
 struct SemesterPlannerView: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var plannerVM: PlannerViewModel
     @State private var activeTab = "overview"
     @State private var showAddGoal = false
     @State private var newGoalTitle = ""
@@ -95,7 +95,7 @@ struct SemesterPlannerView: View {
                             let trimmed = newGoalTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !trimmed.isEmpty else { return }
                             let progress = Int(newGoalProgress)
-                            appState.addSemesterGoal(title: trimmed, progress: progress)
+                            plannerVM.addSemesterGoal(title: trimmed, progress: progress)
                             newGoalTitle = ""
                             newGoalProgress = ""
                             showAddGoal = false
@@ -142,7 +142,7 @@ struct SemesterPlannerView: View {
                             guard !title.isEmpty else { return }
                             let amount = Double(dateAmount)
                             let icon = dateIcon.isEmpty ? "📌" : dateIcon
-                            appState.addImportantDate(title: title, date: selectedDate, type: dateType, amount: amount, icon: icon)
+                            plannerVM.addImportantDate(title: title, date: selectedDate, type: dateType, amount: amount, icon: icon)
                             dateTitle = ""
                             dateAmount = ""
                             dateIcon = "📌"
@@ -176,7 +176,7 @@ struct SemesterPlannerView: View {
                             guard !title.isEmpty else { return }
                             let progress = Int(newGoalProgress)
                             let updated = SemesterGoal(id: goal.id, title: title, completed: goal.completed, progress: progress)
-                            appState.updateSemesterGoal(updated)
+                            plannerVM.updateSemesterGoal(updated)
                             editGoal = nil
                         }
                     }
@@ -226,7 +226,7 @@ struct SemesterPlannerView: View {
                             let amount = Double(dateAmount)
                             let icon = dateIcon.isEmpty ? "📌" : dateIcon
                             let updated = ImportantDate(id: item.id, title: title, date: selectedDate, type: dateType, amount: amount, icon: icon)
-                            appState.updateImportantDate(updated)
+                            plannerVM.updateImportantDate(updated)
                             editDate = nil
                         }
                     }
@@ -342,7 +342,7 @@ struct SemesterPlannerView: View {
 
     private var calendarTab: some View {
         VStack(spacing:14) {
-            ForEach(appState.importantDates.sorted { $0.date < $1.date }) { (item: ImportantDate) in
+            ForEach(plannerVM.importantDates.sorted { $0.date < $1.date }) { (item: ImportantDate) in
                 HStack(spacing:14) {
                     ZStack {
                         RoundedRectangle(cornerRadius:12)
@@ -381,7 +381,7 @@ struct SemesterPlannerView: View {
                         Label("Edit", systemImage: "pencil")
                     }
                     Button(role: .destructive) {
-                        appState.deleteImportantDate(item)
+                        plannerVM.deleteImportantDate(item)
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
@@ -399,10 +399,10 @@ struct SemesterPlannerView: View {
 
     private var goalsTab: some View {
         VStack(spacing:12) {
-            ForEach(appState.semesterGoals) { (goal: SemesterGoal) in
+            ForEach(plannerVM.semesterGoals) { (goal: SemesterGoal) in
                 HStack(alignment:.top,spacing:14) {
                     Button {
-                        appState.toggleSemesterGoal(goal)
+                        plannerVM.toggleSemesterGoal(goal)
                     } label: {
                         ZStack {
                             Circle()
@@ -452,7 +452,7 @@ struct SemesterPlannerView: View {
                     }
                     .disabled(goal.completed)
                     Button(role: .destructive) {
-                        appState.deleteSemesterGoal(goal)
+                        plannerVM.deleteSemesterGoal(goal)
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
@@ -490,4 +490,9 @@ struct SemesterPlannerView: View {
     }
 }
 
-#Preview("Semester")  { NavigationStack { SemesterPlannerView().environmentObject(AppState()) } }
+#Preview("Semester")  {
+    let vm = PlannerViewModel(transactionsVM: TransactionsViewModel())
+    vm.importantDates = MockData.importantDates
+    vm.semesterGoals = MockData.semesterGoals
+    return NavigationStack { SemesterPlannerView().environmentObject(vm) }
+}
