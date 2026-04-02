@@ -14,6 +14,7 @@ import SwiftUI
 struct SearchView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     let showBack: Bool
     @State private var searchText   = ""
     @State private var activeFilter: TxFilter = .all
@@ -38,7 +39,7 @@ struct SearchView: View {
 
     // MARK: - Computed
     private var filtered: [Transaction] {
-        appState.transactions.filter { tx in
+        transactionsVM.transactions.filter { tx in
             let matchesFilter: Bool = {
                 switch activeFilter {
                 case .all:     return true
@@ -82,8 +83,8 @@ struct SearchView: View {
             .map { (fmt.string(from: $0.key), $0.value) }
     }
 
-    private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
-    private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private var totalIncome:  Double { transactionsVM.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var totalExpense: Double { transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
 
     // MARK: - Body
     var body: some View {
@@ -326,7 +327,11 @@ struct SearchView: View {
 }
 
 #Preview {
-    NavigationStack {
-        SearchView(showBack: true).environmentObject(AppState())
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return NavigationStack {
+        SearchView(showBack: true)
+            .environmentObject(AppState())
+            .environmentObject(vm)
     }
 }

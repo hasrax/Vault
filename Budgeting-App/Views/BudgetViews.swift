@@ -12,6 +12,7 @@ import Charts
 struct BudgetView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     @State private var activeFilter: BudgetFilter = .all
     @State private var showAnalytics = false
     @State private var showEditBudget = false
@@ -26,13 +27,13 @@ struct BudgetView: View {
         let wantsLimit = appState.monthlyBudget * appState.wantsPercent / 100
         let savingsLimit = appState.monthlyBudget * appState.savingsPercent / 100
 
-        let needsSpent = appState.transactions
+        let needsSpent = transactionsVM.transactions
             .filter { $0.budgetCategory == .needs && $0.type == .expense }
             .reduce(0) { $0 + $1.amount }
-        let wantsSpent = appState.transactions
+        let wantsSpent = transactionsVM.transactions
             .filter { $0.budgetCategory == .wants && $0.type == .expense }
             .reduce(0) { $0 + $1.amount }
-        let savingsSpent = appState.transactions
+        let savingsSpent = transactionsVM.transactions
             .filter { $0.budgetCategory == .savings && $0.type == .expense }
             .reduce(0) { $0 + $1.amount }
 
@@ -147,11 +148,12 @@ struct BudgetView: View {
 struct AnalyticsView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     @State private var timeFilter = "Month"
     private let timeFilters = ["Week", "Month", "Year"]
 
     private var filteredExpenses: [Transaction] {
-        let expenses = appState.transactions.filter { $0.type == .expense }
+        let expenses = transactionsVM.transactions.filter { $0.type == .expense }
         guard let start = startDate else { return expenses }
         return expenses.filter { $0.date >= start }
     }
@@ -347,5 +349,18 @@ struct AnalyticsView: View {
     }
 }
 
-#Preview("Budget")    { BudgetView().environmentObject(AppState()) }
-#Preview("Analytics") { NavigationStack { AnalyticsView() } }
+#Preview("Budget") {
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return BudgetView()
+        .environmentObject(AppState())
+        .environmentObject(vm)
+}
+#Preview("Analytics") {
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return NavigationStack { AnalyticsView()
+        .environmentObject(AppState())
+        .environmentObject(vm)
+    }
+}

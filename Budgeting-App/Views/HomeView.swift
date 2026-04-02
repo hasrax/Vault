@@ -10,6 +10,7 @@ import SwiftUI
 // MARK: - Home View
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     @State private var activeCategory: BudgetCategory = .needs
     @State private var showAddTransaction = false
     @State private var showNotifications  = false
@@ -26,8 +27,8 @@ struct HomeView: View {
     @State private var showSemesterPlanner = false
     @State private var showAnalytics      = false
 
-    private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
-    private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var totalExpense: Double { transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private var totalIncome:  Double { transactionsVM.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
     private var balance:      Double { appState.monthlyBudget + totalIncome - totalExpense }
 
     private var currentLimit: BudgetLimit? {
@@ -46,7 +47,7 @@ struct HomeView: View {
     }
 
     private func spent(for category: BudgetCategory) -> Double {
-        appState.transactions
+        transactionsVM.transactions
             .filter { $0.type == .expense && $0.budgetCategory == category }
             .reduce(0) { $0 + $1.amount }
     }
@@ -437,7 +438,7 @@ struct HomeView: View {
             SectionHeader(title: "Recent Transactions", actionLabel: "See all") {
                 showSearch = true
             }
-            ForEach(Array(appState.transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
+            ForEach(Array(transactionsVM.transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
                 TransactionRow(transaction: tx)
                 if idx < 3 {
                     Divider().padding(.leading, 56)
@@ -451,4 +452,10 @@ struct HomeView: View {
 
 // RoundedCorner is defined in DesignSystem.swift
 
-#Preview { HomeView().environmentObject(AppState()) }
+#Preview {
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return HomeView()
+        .environmentObject(AppState())
+        .environmentObject(vm)
+}

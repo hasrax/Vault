@@ -826,15 +826,29 @@ class AppState: ObservableObject {
 @main
 struct Budgeting_App: App {
     @StateObject private var appState = AppState()
+    @StateObject private var transactionsVM: TransactionsViewModel
+    @StateObject private var savingsVM: SavingsGoalsViewModel
 
     init() {
             FirebaseApp.configure()
+            let txVM = TransactionsViewModel(userIdProvider: { Auth.auth().currentUser?.uid })
+            _transactionsVM = StateObject(wrappedValue: txVM)
+            _savingsVM = StateObject(
+                wrappedValue: SavingsGoalsViewModel(
+                    userIdProvider: { Auth.auth().currentUser?.uid },
+                    addTransaction: { tx in
+                        txVM.addTransaction(tx)
+                    }
+                )
+            )
         }
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(transactionsVM)
+                .environmentObject(savingsVM)
                 .preferredColorScheme(appState.isDarkMode ? .dark : .light)
         }
     }
@@ -845,6 +859,8 @@ struct Budgeting_App: App {
 // Splash → Setup → Welcome/Login → Main app
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
+    @EnvironmentObject var savingsVM: SavingsGoalsViewModel
     @Environment(\.scenePhase) var scenePhase
     @State private var lastBackgroundAt: Date?
     private let lastBackgroundKey = "lastBackgroundAt"
@@ -895,6 +911,21 @@ struct RootView: View {
                 lastBackgroundAt = nil
             default:
                 break
+            }
+        }
+        .onChange(of: appState.isAuthenticated) { _, isAuthed in
+            if isAuthed, let uid = Auth.auth().currentUser?.uid {
+                transactionsVM.loadCached(uid: uid)
+                transactionsVM.loadRemote(uid: uid)
+                transactionsVM.startListener(uid: uid)
+                savingsVM.loadCached(uid: uid)
+                savingsVM.loadRemote(uid: uid)
+                savingsVM.startListener(uid: uid)
+            } else {
+                transactionsVM.stopListener()
+                transactionsVM.transactions = []
+                savingsVM.stopListener()
+                savingsVM.goals = []
             }
         }
     }
