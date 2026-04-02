@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21507" systemVersion="23G93" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="CachedTransaction" representedClassName="NSManagedObject" syncable="YES">
+        <attribute name="id" attributeType="UUID" optional="NO"/>
+        <attribute name="ownerId" attributeType="String" optional="NO"/>
+        <attribute name="name" attributeType="String" optional="NO"/>
+        <attribute name="amount" attributeType="Double" optional="NO"/>
+        <attribute name="type" attributeType="String" optional="NO"/>
+        <attribute name="budgetCategory" attributeType="String" optional="NO"/>
+        <attribute name="date" attributeType="Date" optional="NO"/>
+        <attribute name="note" attributeType="String" optional="YES"/>
+        <attribute name="receiptImageUrl" attributeType="String" optional="YES"/>
+        <attribute name="receiptImageBase64" attributeType="String" optional="YES"/>
+        <attribute name="linkedShiftId" attributeType="String" optional="YES"/>
+        <attribute name="linkedSplitBillId" attributeType="String" optional="YES"/>
+    </entity>
+    <entity name="CachedSavingsGoal" representedClassName="NSManagedObject" syncable="YES">
+        <attribute name="id" attributeType="UUID" optional="NO"/>
+        <attribute name="ownerId" attributeType="String" optional="NO"/>
+        <attribute name="name" attributeType="String" optional="NO"/>
+        <attribute name="icon" attributeType="String" optional="NO"/>
+        <attribute name="colorHex" attributeType="String" optional="NO"/>
+        <attribute name="targetAmount" attributeType="Double" optional="NO"/>
+        <attribute name="currentAmount" attributeType="Double" optional="NO"/>
+        <attribute name="deadline" attributeType="Date" optional="YES"/>
+    </entity>
+    <entity name="CachedUserProfile" representedClassName="NSManagedObject" syncable="YES">
+        <attribute name="id" attributeType="String" optional="NO"/>
+        <attribute name="ownerId" attributeType="String" optional="NO"/>
+        <attribute name="name" attributeType="String" optional="NO"/>
+        <attribute name="email" attributeType="String" optional="NO"/>
+        <attribute name="photoURL" attributeType="String" optional="YES"/>
+        <attribute name="monthlyBudget" attributeType="Double" optional="YES"/>
+        <attribute name="needsPercent" attributeType="Double" optional="YES"/>
+        <attribute name="wantsPercent" attributeType="Double" optional="YES"/>
+        <attribute name="savingsPercent" attributeType="Double" optional="YES"/>
+        <attribute name="hasCompletedSetup" attributeType="Boolean" optional="NO" defaultValueString="NO"/>
+    </entity>
+    <entity name="PendingWrite" representedClassName="NSManagedObject" syncable="YES">
+        <attribute name="id" attributeType="UUID" optional="NO"/>
+        <attribute name="ownerId" attributeType="String" optional="NO"/>
+        <attribute name="type" attributeType="String" optional="NO"/>
+        <attribute name="payload" attributeType="String" optional="NO"/>
+        <attribute name="createdAt" attributeType="Date" optional="NO"/>
+    </entity>
+</model>

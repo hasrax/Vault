@@ -13,6 +13,8 @@ struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @State private var showDeleteAlert = false
     @State private var deleteError = ""
+    @State private var testToken = ""
+    @State private var testMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -87,6 +89,19 @@ struct ProfileView: View {
                             }
                         } icon: { iconBox(systemName: "bell.fill", color: Color.uniOrange) }
                     }.tint(Color.uniBlue)
+                }
+
+                Section("Push Test") {
+                    TextField("Paste token (any text)", text: $testToken)
+                    TextField("Message (optional)", text: $testMessage)
+                    Button("Send Test Notification") {
+                        let body = testMessage.isEmpty ? "Token: \(testToken)" : testMessage
+                        NotificationService.sendLocalNotification(
+                            title: "Push (simulated)",
+                            body: body
+                        )
+                    }
+                    .disabled(testToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
 
                 // ── Account ───────────────────────────────────────────────
@@ -207,6 +222,11 @@ struct ProfileView: View {
                 }
             } message: {
                 Text("This permanently deletes your account and data.")
+            }
+        }
+        .onChange(of: appState.notificationsEnabled) { _, enabled in
+            if enabled {
+                NotificationService.requestAuthorization()
             }
         }
     }

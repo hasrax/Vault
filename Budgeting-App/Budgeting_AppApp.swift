@@ -35,6 +35,7 @@ class AppState: ObservableObject {
     
         func restoreSession() {
             guard let user = Auth.auth().currentUser else { return }
+            loadCachedData(uid: user.uid)
             loadUserProfile(uid: user.uid, fallbackEmail: user.email) {
                 self.isAuthenticated = true
             }
@@ -43,6 +44,7 @@ class AppState: ObservableObject {
             startSplitBillListeners()
             startTransactionListener()
             startSavingsGoalsListener()
+            flushPendingWrites(uid: user.uid)
         }
     
         func signIn(email: String, password: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -167,6 +169,7 @@ class AppState: ObservableObject {
                         updated.email = email
                         if let photoURL = photoURL { updated.photoURL = photoURL }
                         self.currentUser = updated
+                        CoreDataCache.shared.saveUserProfile(updated, ownerId: uid)
                         completion(.success(()))
                     }
                 }
@@ -201,6 +204,16 @@ class AppState: ObservableObject {
                 wantsPercent: wants,
                 savingsPercent: savings
             ) { _ in }
+
+            if var profile = currentUser {
+                profile.monthlyBudget = monthly
+                profile.needsPercent = needs
+                profile.wantsPercent = wants
+                profile.savingsPercent = savings
+                profile.hasCompletedSetup = true
+                currentUser = profile
+                CoreDataCache.shared.saveUserProfile(profile, ownerId: uid)
+            }
         }
     
         func loadTransactions() {
@@ -208,6 +221,9 @@ class AppState: ObservableObject {
                 DispatchQueue.main.async {
                     if case let .success(items) = result {
                         self.transactions = items
+                        if let uid = Auth.auth().currentUser?.uid {
+                            CoreDataCache.shared.replaceTransactions(items, ownerId: uid)
+                        }
                     }
                 }
             }
@@ -219,6 +235,9 @@ class AppState: ObservableObject {
                 DispatchQueue.main.async {
                     if case let .success(items) = result {
                         self.transactions = items
+                        if let uid = Auth.auth().currentUser?.uid {
+                            CoreDataCache.shared.replaceTransactions(items, ownerId: uid)
+                        }
                     }
                 }
             }
@@ -303,6 +322,9 @@ class AppState: ObservableObject {
                 DispatchQueue.main.async {
                     if case let .success(items) = result {
                         self.savingsGoals = items
+                        if let uid = Auth.auth().currentUser?.uid {
+                            CoreDataCache.shared.replaceSavingsGoals(items, ownerId: uid)
+                        }
                     }
                 }
             }
@@ -587,7 +609,17 @@ class AppState: ObservableObject {
     
         func addTransaction(_ tx: Transaction) {
             transactions.insert(tx, at: 0)
-            TransactionService.addTransaction(tx)
+            if let uid = Auth.auth().currentUser?.uid {
+                CoreDataCache.shared.upsertTransaction(tx, ownerId: uid)
+            }
+            TransactionService.addTransaction(tx) { error in
+                if error != nil, let uid = Auth.auth().currentUser?.uid {
+                    if let data = try? JSONEncoder().encode(tx),
+                       let payload = String(data: data, encoding: .utf8) {
+                        CoreDataCache.shared.enqueuePendingWrite(ownerId: uid, type: "transaction_upsert", payload: payload)
+                    }
+                }
+            }
         }
 
         func addSavingsGoal(
@@ -607,7 +639,17 @@ class AppState: ObservableObject {
                 deadline: deadline
             )
             savingsGoals.insert(goal, at: 0)
-            SavingsGoalService.addGoal(goal)
+            if let uid = Auth.auth().currentUser?.uid {
+                CoreDataCache.shared.upsertSavingsGoal(goal, ownerId: uid)
+            }
+            SavingsGoalService.addGoal(goal) { error in
+                if error != nil, let uid = Auth.auth().currentUser?.uid {
+                    if let data = try? JSONEncoder().encode(goal),
+                       let payload = String(data: data, encoding: .utf8) {
+                        CoreDataCache.shared.enqueuePendingWrite(ownerId: uid, type: "savings_goal_upsert", payload: payload)
+                    }
+                }
+            }
 
             if currentAmount > 0 {
                 let tx = Transaction(
@@ -628,12 +670,25 @@ class AppState: ObservableObject {
             if let idx = savingsGoals.firstIndex(where: { $0.id == goal.id }) {
                 savingsGoals[idx] = goal
             }
-            SavingsGoalService.updateGoal(goal)
+            if let uid = Auth.auth().currentUser?.uid {
+                CoreDataCache.shared.upsertSavingsGoal(goal, ownerId: uid)
+            }
+            SavingsGoalService.updateGoal(goal) { error in
+                if error != nil, let uid = Auth.auth().currentUser?.uid {
+                    if let data = try? JSONEncoder().encode(goal),
+                       let payload = String(data: data, encoding: .utf8) {
+                        CoreDataCache.shared.enqueuePendingWrite(ownerId: uid, type: "savings_goal_upsert", payload: payload)
+                    }
+                }
+            }
         }
 
         func deleteSavingsGoal(_ goal: SavingsGoal) {
             savingsGoals.removeAll { $0.id == goal.id }
             SavingsGoalService.deleteGoal(goal.id)
+            if let uid = Auth.auth().currentUser?.uid {
+                CoreDataCache.shared.deleteSavingsGoal(goal.id, ownerId: uid)
+            }
         }
 
         func addMoney(to goal: SavingsGoal, amount: Double) {
@@ -658,6 +713,9 @@ class AppState: ObservableObject {
         func deleteTransactions(_ ids: [UUID]) {
             transactions.removeAll { ids.contains($0.id) }
             TransactionService.deleteTransactions(ids)
+            if let uid = Auth.auth().currentUser?.uid {
+                CoreDataCache.shared.deleteTransactions(ids, ownerId: uid)
+            }
         }
     
         private func loadUserProfile(uid: String, fallbackEmail: String?, completion: (() -> Void)? = nil) {
@@ -673,6 +731,7 @@ class AppState: ObservableObject {
                             UserService.updateProfile(uid: uid, name: updated.name, email: email, photoURL: updated.photoURL)
                         }
                         self.applyProfile(updated)
+                        CoreDataCache.shared.saveUserProfile(updated, ownerId: uid)
                         UserService.updateSearchFields(uid: uid, name: updated.name, email: email)
                     case .failure:
                         let email = fallbackEmail ?? ""
@@ -682,6 +741,7 @@ class AppState: ObservableObject {
                                 switch serviceResult {
                                 case .success(let profile):
                                     self.applyProfile(profile)
+                                    CoreDataCache.shared.saveUserProfile(profile, ownerId: uid)
                                 case .failure:
                                     let profile = UserProfile(
                                         id: uid,
@@ -696,6 +756,7 @@ class AppState: ObservableObject {
                                         hasCompletedSetup: false
                                     )
                                     self.applyProfile(profile)
+                                    CoreDataCache.shared.saveUserProfile(profile, ownerId: uid)
                                 }
                             }
                         }
@@ -720,6 +781,44 @@ class AppState: ObservableObject {
             let fmt2 = DateFormatter()
             fmt2.dateFormat = "MMM yyyy"
             return fmt1.date(from: dateString) ?? fmt2.date(from: dateString)
+        }
+
+        private func loadCachedData(uid: String) {
+            transactions = CoreDataCache.shared.fetchTransactions(ownerId: uid)
+            savingsGoals = CoreDataCache.shared.fetchSavingsGoals(ownerId: uid)
+            if let cached = CoreDataCache.shared.fetchUserProfile(ownerId: uid) {
+                applyProfile(cached)
+            }
+        }
+
+        private func flushPendingWrites(uid: String) {
+            let pending = CoreDataCache.shared.fetchPendingWrites(ownerId: uid)
+            guard !pending.isEmpty else { return }
+
+            for item in pending {
+                switch item.type {
+                case "transaction_upsert":
+                    if let data = item.payload.data(using: .utf8),
+                       let tx = try? JSONDecoder().decode(Transaction.self, from: data) {
+                        TransactionService.addTransaction(tx) { error in
+                            if error == nil {
+                                CoreDataCache.shared.deletePendingWrite(item.id)
+                            }
+                        }
+                    }
+                case "savings_goal_upsert":
+                    if let data = item.payload.data(using: .utf8),
+                       let goal = try? JSONDecoder().decode(SavingsGoal.self, from: data) {
+                        SavingsGoalService.updateGoal(goal) { error in
+                            if error == nil {
+                                CoreDataCache.shared.deletePendingWrite(item.id)
+                            }
+                        }
+                    }
+                default:
+                    break
+                }
+            }
         }
 }
 
@@ -770,7 +869,9 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedOnboarding)
         .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedSetup)
         .onAppear {
-            appState.restoreSession()
+            if appState.hasCompletedOnboarding {
+                appState.signOut()
+            }
             if let ts = UserDefaults.standard.object(forKey: lastBackgroundKey) as? TimeInterval {
                 let last = Date(timeIntervalSince1970: ts)
                 let elapsed = Date().timeIntervalSince(last)
