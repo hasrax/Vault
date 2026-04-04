@@ -64,7 +64,7 @@ joblib.dump(model, "coach_model.joblib")
 mlmodel = ct.converters.sklearn.convert(
     model,
     input_features=[(c, ct.models.datatypes.Double()) for c in X.columns],
-    output_feature_names=["label"],
+    classifier_config=ct.ClassifierConfig(list(model.classes_), predicted_feature_name="label"),
 )
 mlmodel.save("CoachModel.mlmodel")
 print("Saved CoachModel.mlmodel")
