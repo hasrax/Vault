@@ -284,6 +284,8 @@ struct ReceiptScannerView: View {
     @Environment(\.dismiss) var dismiss
     @State private var isScanning      = false
     @State private var scannedAmount: Double? = nil
+    @State private var amountCandidates: [Double] = []
+    @State private var selectedCandidate: Double? = nil
     @State private var showAdd         = false
     @State private var selectedItem: PhotosPickerItem?
     @State private var receiptImage: UIImage?
@@ -376,13 +378,21 @@ struct ReceiptScannerView: View {
                 .frame(height: 300)
 
             if let img = receiptImage {
-                Image(uiImage: img)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 300)
-                    .clipped()
-                    .overlay(Color.black.opacity(0.35))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                Button {
+                    showImagePreview = true
+                } label: {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 300)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
             }
 
             if useLiveScanner {
@@ -499,6 +509,47 @@ struct ReceiptScannerView: View {
                 }
             }
 
+            if scannedAmount == nil, !amountCandidates.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Detected totals")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                    ForEach(amountCandidates, id: \ .self) { value in
+                        Button {
+                            selectedCandidate = value
+                        } label: {
+                            HStack {
+                                Text(value.currencyRS)
+                                    .font(.system(size: 14, weight: .semibold))
+                                Spacer()
+                                if selectedCandidate == value {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(Color.uniBlue)
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Button("Confirm Amount") {
+                        if let selectedCandidate {
+                            scannedAmount = selectedCandidate
+                        }
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(LinearGradient.primaryGrad)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .disabled(selectedCandidate == nil)
+                }
+            }
+
             if useLiveScanner {
                 Button { scanLiveText() } label: {
                     Label("Scan from Live View", systemImage: "text.viewfinder")
@@ -541,6 +592,8 @@ struct ReceiptScannerView: View {
     private func loadPhoto(item: PhotosPickerItem) {
         isScanning = true
         scannedAmount = nil
+        amountCandidates = []
+        selectedCandidate = nil
         uploadError = ""
         receiptImageUrl = nil
         receiptImageBase64 = nil
@@ -580,8 +633,10 @@ struct ReceiptScannerView: View {
                 }
                 let strings = (request.results as? [VNRecognizedTextObservation])?
                     .compactMap { $0.topCandidates(1).first?.string } ?? []
-                self.scannedAmount = extractAmount(from: strings)
-                if self.scannedAmount == nil {
+                let amounts = extractAmounts(from: strings)
+                self.amountCandidates = amounts
+                self.selectedCandidate = amounts.first
+                if amounts.isEmpty {
                     self.uploadError = "Could not find a total amount."
                 }
             }
@@ -595,28 +650,57 @@ struct ReceiptScannerView: View {
         }
     }
 
-    private func extractAmount(from lines: [String]) -> Double? {
+    private func extractAmounts(from lines: [String]) -> [Double] {
         let lower = lines.map { $0.lowercased() }
-        let keywords = ["total", "amount", "subtotal", "balance", "due"]
+        let keywords = ["total", "amount", "subtotal", "balance", "due", "payable", "grand", "net"]
         let prioritized = lower.filter { line in
             keywords.contains { line.contains($0) }
         }
 
-        let candidates = (prioritized.isEmpty ? lower : prioritized)
-            .flatMap { extractNumbers(from: $0) }
+        let sourceLines = prioritized.isEmpty ? lower : prioritized
+        let candidates = sourceLines.flatMap { extractNumbers(from: $0) }
+        if !candidates.isEmpty {
+            return normalizeCandidates(candidates)
+        }
 
-        return candidates.max()
+        let fallbackCandidates = lower.flatMap { extractNumbers(from: $0) }
+        return normalizeCandidates(fallbackCandidates)
     }
 
     private func extractNumbers(from text: String) -> [Double] {
-        let pattern = "([0-9]+(?:[\\.,][0-9]{2})?)"
+        let pattern = "([0-9]{1,3}(?:[\\.,][0-9]{3})*(?:[\\.,][0-9]{2})?|[0-9]+(?:[\\.,][0-9]{2})?)"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
         let range = NSRange(text.startIndex..., in: text)
         return regex.matches(in: text, options: [], range: range).compactMap { match in
             guard let r = Range(match.range(at: 1), in: text) else { return nil }
-            let raw = text[r].replacingOccurrences(of: ",", with: ".")
-            return Double(raw)
+            let raw = String(text[r])
+            let normalized = normalizeNumberString(raw)
+            return Double(normalized)
         }
+    }
+
+    private func normalizeNumberString(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.contains(",") && trimmed.contains(".") {
+            return trimmed.replacingOccurrences(of: ",", with: "")
+        }
+
+        if trimmed.contains(",") {
+            let parts = trimmed.split(separator: ",")
+            if let last = parts.last, last.count == 2 {
+                let intPart = parts.dropLast().joined()
+                return intPart + "." + last
+            }
+            return trimmed.replacingOccurrences(of: ",", with: "")
+        }
+
+        return trimmed
+    }
+
+    private func normalizeCandidates(_ values: [Double]) -> [Double] {
+        let unique = Array(Set(values))
+        let sorted = unique.sorted(by: >)
+        return Array(sorted.prefix(5))
     }
 
     private func prepareToAddTransaction() {
@@ -637,8 +721,10 @@ struct ReceiptScannerView: View {
         let lines = liveScanText
             .split(separator: "\n")
             .map { String($0) }
-        scannedAmount = extractAmount(from: lines)
-        if scannedAmount == nil {
+        let amounts = extractAmounts(from: lines)
+        amountCandidates = amounts
+        selectedCandidate = amounts.first
+        if amounts.isEmpty {
             uploadError = "Could not find a total amount."
         }
     }
