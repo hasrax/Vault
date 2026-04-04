@@ -14,5 +14,6 @@ struct vaultBundle: WidgetBundle {
         vault()
         vaultControl()
         vaultLiveActivity()
+        VaultSummaryWidget()
     }
 }

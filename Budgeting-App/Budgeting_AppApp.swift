@@ -903,8 +903,13 @@ struct RootView: View {
                 )
             )
             .modifier(
-                WidgetUpdateModifier(
+                WidgetBudgetUpdateModifier(
                     appState: appState,
+                    onUpdate: updateWidgetSnapshot
+                )
+            )
+            .modifier(
+                WidgetDataUpdateModifier(
                     transactionsVM: transactionsVM,
                     plannerVM: plannerVM,
                     onUpdate: updateWidgetSnapshot
@@ -1290,10 +1295,8 @@ private struct RootNotificationTriggersModifier: ViewModifier {
     }
 }
 
-private struct WidgetUpdateModifier: ViewModifier {
+private struct WidgetBudgetUpdateModifier: ViewModifier {
     let appState: AppState
-    let transactionsVM: TransactionsViewModel
-    let plannerVM: PlannerViewModel
     let onUpdate: () -> Void
 
     func body(content: Content) -> some View {
@@ -1305,6 +1308,16 @@ private struct WidgetUpdateModifier: ViewModifier {
             .onChange(of: appState.needsPercent) { _, _ in onUpdate() }
             .onChange(of: appState.wantsPercent) { _, _ in onUpdate() }
             .onChange(of: appState.savingsPercent) { _, _ in onUpdate() }
+    }
+}
+
+private struct WidgetDataUpdateModifier: ViewModifier {
+    let transactionsVM: TransactionsViewModel
+    let plannerVM: PlannerViewModel
+    let onUpdate: () -> Void
+
+    func body(content: Content) -> some View {
+        content
             .onChange(of: transactionsVM.transactions) { _, _ in onUpdate() }
             .onChange(of: plannerVM.workShifts) { _, _ in onUpdate() }
             .onChange(of: plannerVM.importantDates) { _, _ in onUpdate() }

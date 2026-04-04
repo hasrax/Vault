@@ -71,6 +71,8 @@ struct VaultSummaryWidgetEntryView: View {
                 endPoint: .bottomTrailing
             )
 
+            glassOverlay
+
             switch family {
             case .systemSmall:
                 smallView
@@ -78,6 +80,17 @@ struct VaultSummaryWidgetEntryView: View {
                 mediumView
             }
         }
+        .containerBackground(for: .widget) {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.043, green: 0.102, blue: 0.165),
+                    Color(red: 0.067, green: 0.169, blue: 0.275)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+        .contentMarginsDisabled()
     }
 
     private var smallView: some View {
@@ -157,6 +170,18 @@ struct VaultSummaryWidgetEntryView: View {
         }
     }
 
+    private var glassOverlay: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.06))
+            .overlay(
+                LinearGradient(
+                    colors: [Color.white.opacity(0.15), Color.clear],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+    }
+
     private func formatCurrency(_ value: Double) -> String {
         let fmt = NumberFormatter()
         fmt.numberStyle = .decimal
@@ -185,7 +210,6 @@ struct ProgressRow: View {
     }
 }
 
-@main
 struct VaultSummaryWidget: Widget {
     let kind: String = "VaultSummaryWidget"
 

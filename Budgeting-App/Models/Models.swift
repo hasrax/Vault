@@ -271,7 +271,7 @@ struct SemesterGoal: Identifiable {
     }
 }
 
-struct ImportantDate: Identifiable {
+struct ImportantDate: Identifiable, Equatable {
     let id: UUID
     var title: String
     var date: Date
