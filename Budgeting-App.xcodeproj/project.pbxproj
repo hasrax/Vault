@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0504F7B32F81035A008B72AA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0504F7B22F81035A008B72AA /* WidgetKit.framework */; };
+		0504F7B52F81035A008B72AA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0504F7B42F81035A008B72AA /* SwiftUI.framework */; };
+		0504F7C62F81035B008B72AA /* vaultExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0504F7B02F81035A008B72AA /* vaultExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		05F715EF2F7A6B4B0082B351 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715EE2F7A6B4B0082B351 /* FirebaseAnalytics */; };
 		05F715F12F7A6B4B0082B351 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715F02F7A6B4B0082B351 /* FirebaseAuth */; };
 		05F715F32F7A6B4B0082B351 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715F22F7A6B4B0082B351 /* FirebaseFirestore */; };
@@ -14,25 +17,77 @@
 		05F715F72F7A6B4B0082B351 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 05F715F62F7A6B4B0082B351 /* FirebaseStorage */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0504F7C42F81035B008B72AA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 05EA6E012F74FD600016FE08 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0504F7AF2F81035A008B72AA;
+			remoteInfo = vaultExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0504F7CB2F81035B008B72AA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				0504F7C62F81035B008B72AA /* vaultExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0504F7B02F81035A008B72AA /* vaultExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = vaultExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		0504F7B22F81035A008B72AA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		0504F7B42F81035A008B72AA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		0504F7CD2F81046D008B72AA /* vaultExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = vaultExtension.entitlements; sourceTree = "<group>"; };
 		05EA6E092F74FD600016FE08 /* Budgeting-App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Budgeting-App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0504F7CA2F81035B008B72AA /* Exceptions for "vault" folder in "vaultExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0504F7AF2F81035A008B72AA /* vaultExtension */;
+		};
+		0504F7CF2F8107D0008B72AA /* Exceptions for "Budgeting-App" folder in "vaultExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Widgets/VaultSummaryWidget.swift,
+			);
+			target = 0504F7AF2F81035A008B72AA /* vaultExtension */;
+		};
 		055959FA2F7B95A4007A5673 /* Exceptions for "Budgeting-App" folder in "Budgeting-App" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Widgets/VaultSummaryWidget.swift,
 			);
 			target = 05EA6E082F74FD600016FE08 /* Budgeting-App */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		0504F7B62F81035A008B72AA /* vault */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0504F7CA2F81035B008B72AA /* Exceptions for "vault" folder in "vaultExtension" target */,
+			);
+			path = vault;
+			sourceTree = "<group>";
+		};
 		05EA6E0B2F74FD600016FE08 /* Budgeting-App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				055959FA2F7B95A4007A5673 /* Exceptions for "Budgeting-App" folder in "Budgeting-App" target */,
+				0504F7CF2F8107D0008B72AA /* Exceptions for "Budgeting-App" folder in "vaultExtension" target */,
 			);
 			path = "Budgeting-App";
 			sourceTree = "<group>";
@@ -40,6 +95,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0504F7AD2F81035A008B72AA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0504F7B52F81035A008B72AA /* SwiftUI.framework in Frameworks */,
+				0504F7B32F81035A008B72AA /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		05EA6E062F74FD600016FE08 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -55,10 +119,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0504F7B12F81035A008B72AA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0504F7B22F81035A008B72AA /* WidgetKit.framework */,
+				0504F7B42F81035A008B72AA /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		05EA6E002F74FD600016FE08 = {
 			isa = PBXGroup;
 			children = (
+				0504F7CD2F81046D008B72AA /* vaultExtension.entitlements */,
 				05EA6E0B2F74FD600016FE08 /* Budgeting-App */,
+				0504F7B62F81035A008B72AA /* vault */,
+				0504F7B12F81035A008B72AA /* Frameworks */,
 				05EA6E0A2F74FD600016FE08 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +143,7 @@
 			isa = PBXGroup;
 			children = (
 				05EA6E092F74FD600016FE08 /* Budgeting-App.app */,
+				0504F7B02F81035A008B72AA /* vaultExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +151,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0504F7AF2F81035A008B72AA /* vaultExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0504F7C72F81035B008B72AA /* Build configuration list for PBXNativeTarget "vaultExtension" */;
+			buildPhases = (
+				0504F7AC2F81035A008B72AA /* Sources */,
+				0504F7AD2F81035A008B72AA /* Frameworks */,
+				0504F7AE2F81035A008B72AA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0504F7B62F81035A008B72AA /* vault */,
+			);
+			name = vaultExtension;
+			packageProductDependencies = (
+			);
+			productName = vaultExtension;
+			productReference = 0504F7B02F81035A008B72AA /* vaultExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		05EA6E082F74FD600016FE08 /* Budgeting-App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 05EA6E142F74FD610016FE08 /* Build configuration list for PBXNativeTarget "Budgeting-App" */;
@@ -81,10 +180,12 @@
 				05EA6E052F74FD600016FE08 /* Sources */,
 				05EA6E062F74FD600016FE08 /* Frameworks */,
 				05EA6E072F74FD600016FE08 /* Resources */,
+				0504F7CB2F81035B008B72AA /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				0504F7C52F81035B008B72AA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				05EA6E0B2F74FD600016FE08 /* Budgeting-App */,
@@ -111,6 +212,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					0504F7AF2F81035A008B72AA = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					05EA6E082F74FD600016FE08 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -134,11 +238,19 @@
 			projectRoot = "";
 			targets = (
 				05EA6E082F74FD600016FE08 /* Budgeting-App */,
+				0504F7AF2F81035A008B72AA /* vaultExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0504F7AE2F81035A008B72AA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		05EA6E072F74FD600016FE08 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -149,6 +261,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0504F7AC2F81035A008B72AA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		05EA6E052F74FD600016FE08 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -158,7 +277,77 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		0504F7C52F81035B008B72AA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0504F7AF2F81035A008B72AA /* vaultExtension */;
+			targetProxy = 0504F7C42F81035B008B72AA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		0504F7C82F81035B008B72AA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = vaultExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = vault/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = vault;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.023.Budgeting-App.vault";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0504F7C92F81035B008B72AA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = vaultExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = vault/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = vault;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.023.Budgeting-App.vault";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		05EA6E122F74FD610016FE08 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -284,8 +473,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = "Budgeting-App/Budgeting-App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Budgeting-App/Info.plist";
@@ -320,8 +511,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = "Budgeting-App/Budgeting-App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Budgeting-App/Info.plist";
@@ -353,6 +546,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0504F7C72F81035B008B72AA /* Build configuration list for PBXNativeTarget "vaultExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0504F7C82F81035B008B72AA /* Debug */,
+				0504F7C92F81035B008B72AA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		05EA6E042F74FD600016FE08 /* Build configuration list for PBXProject "Budgeting-App" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -99,7 +99,7 @@ enum IncomeSource: String, CaseIterable, Identifiable, Codable {
 
 // MARK: - Transaction
 
-struct Transaction: Identifiable, Codable {
+struct Transaction: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
     var amount: Double
@@ -180,7 +180,7 @@ struct BudgetLimit: Identifiable {
 
 // MARK: - Savings Goal
 
-struct SavingsGoal: Identifiable, Codable {
+struct SavingsGoal: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
     var icon: String
@@ -221,7 +221,7 @@ struct SavingsGoal: Identifiable, Codable {
 
 // MARK: - Work Shift
 
-struct WorkShift: Identifiable {
+struct WorkShift: Identifiable, Equatable {
     let id: UUID
     var day: String
     var date: String
@@ -318,25 +318,25 @@ struct Roommate: Identifiable {
 
 // MARK: - Split Bill
 
-enum SplitMethod: String, Codable {
+enum SplitMethod: String, Codable, Equatable {
     case equal
     case custom
 }
 
-enum SplitBillStatus: String, Codable {
+enum SplitBillStatus: String, Codable, Equatable {
     case open
     case settled
     case cancelled
 }
 
-enum SplitParticipantStatus: String, Codable {
+enum SplitParticipantStatus: String, Codable, Equatable {
     case invited
     case accepted
     case declined
     case paid
 }
 
-struct SplitParticipant: Identifiable, Codable {
+struct SplitParticipant: Identifiable, Codable, Equatable {
     var userId: String
     var name: String
     var email: String
@@ -347,7 +347,7 @@ struct SplitParticipant: Identifiable, Codable {
     var id: String { userId }
 }
 
-struct SplitBill: Identifiable, Codable {
+struct SplitBill: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String
     var totalAmount: Double
@@ -382,7 +382,7 @@ struct SplitBill: Identifiable, Codable {
 
 // MARK: - Notifications
 
-struct AppNotification: Identifiable {
+struct AppNotification: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String
     var message: String
@@ -398,7 +398,7 @@ struct AppNotification: Identifiable {
         self.time    = time
     }
 
-    enum NotiType: String {
+    enum NotiType: String, Codable, Equatable {
         case budget, meal, work, planner
 
         var chipColor: Color {

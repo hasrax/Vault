@@ -6,15 +6,13 @@
 //
 
 import SwiftUI
-import Combine
 
 // MARK: - Profile View
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var tokenStore = PushTokenStore.shared
     @State private var showDeleteAlert = false
     @State private var deleteError = ""
-    @State private var testToken = ""
-    @State private var testMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -91,17 +89,25 @@ struct ProfileView: View {
                     }.tint(Color.uniBlue)
                 }
 
-                Section("Push Test") {
-                    TextField("Paste token (any text)", text: $testToken)
-                    TextField("Message (optional)", text: $testMessage)
-                    Button("Send Test Notification") {
-                        let body = testMessage.isEmpty ? "Token: \(testToken)" : testMessage
-                        NotificationService.sendLocalNotification(
-                            title: "Push (simulated)",
-                            body: body
-                        )
+                Section("Device Tokens") {
+                    if !tokenStore.fcmToken.isEmpty {
+                        Text("FCM: \(tokenStore.fcmToken)")
+                            .font(.system(size: 12))
+                            .textSelection(.enabled)
+                        Button("Copy FCM Token") {
+                            UIPasteboard.general.string = tokenStore.fcmToken
+                        }
+                    } else {
+                        Text("FCM token not available yet.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
                     }
-                    .disabled(testToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    if !tokenStore.apnsToken.isEmpty {
+                        Text("APNs: \(tokenStore.apnsToken)")
+                            .font(.system(size: 12))
+                            .textSelection(.enabled)
+                    }
                 }
 
                 // ── Account ───────────────────────────────────────────────
@@ -109,6 +115,10 @@ struct ProfileView: View {
                     NavigationLink(destination: SearchView(showBack: true)) {
                         Label { Text("History").font(.system(size: 15, weight: .medium))
                         } icon: { iconBox(systemName: "clock", color: Color.uniPurple) }
+                    }
+                    NavigationLink(destination: ApnsSimulatorView()) {
+                        Label { Text("APNs Simulator").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "bell.badge", color: Color.uniOrange) }
                     }
                     NavigationLink(destination: SavingsView()) {
                         Label { Text("Savings Goals").font(.system(size: 15, weight: .medium))
@@ -226,6 +236,11 @@ struct ProfileView: View {
         }
         .onChange(of: appState.notificationsEnabled) { _, enabled in
             if enabled {
+                NotificationService.requestAuthorization()
+            }
+        }
+        .onAppear {
+            if appState.notificationsEnabled {
                 NotificationService.requestAuthorization()
             }
         }

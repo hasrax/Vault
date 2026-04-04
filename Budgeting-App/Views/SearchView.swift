@@ -18,8 +18,7 @@ struct SearchView: View {
     let showBack: Bool
     @State private var searchText   = ""
     @State private var activeFilter: TxFilter = .all
-    @State private var selectedExpenseCategory: ExpenseCategory? = nil
-    @State private var selectedIncomeSource: IncomeSource? = nil
+    @State private var selectedBudgetCategory: BudgetCategory? = nil
     @State private var dateFilter: DateFilter = .all
     @State private var showAdd      = false
 
@@ -51,17 +50,12 @@ struct SearchView: View {
                 || tx.name.localizedCaseInsensitiveContains(searchText)
                 || (tx.category?.rawValue ?? "").localizedCaseInsensitiveContains(searchText)
                 || (tx.incomeSource?.rawValue ?? "").localizedCaseInsensitiveContains(searchText)
+                || tx.budgetCategory.rawValue.localizedCaseInsensitiveContains(searchText)
             let matchesCategory: Bool = {
-                switch activeFilter {
-                case .expense:
-                    if let selected = selectedExpenseCategory { return tx.category == selected }
-                    return true
-                case .income:
-                    if let selected = selectedIncomeSource { return tx.incomeSource == selected }
-                    return true
-                case .all:
-                    return true
+                if let selected = selectedBudgetCategory {
+                    return tx.budgetCategory == selected
                 }
+                return true
             }()
             let matchesDate: Bool = {
                 guard let start = dateFilterStart else { return true }
@@ -144,16 +138,9 @@ struct SearchView: View {
                 // Filters row
                 HStack(spacing: 10) {
                     Menu {
-                        if activeFilter == .income {
-                            Button("All sources") { selectedIncomeSource = nil }
-                            ForEach(IncomeSource.allCases) { source in
-                                Button(source.rawValue) { selectedIncomeSource = source }
-                            }
-                        } else {
-                            Button("All categories") { selectedExpenseCategory = nil }
-                            ForEach(ExpenseCategory.allCases) { category in
-                                Button(category.rawValue) { selectedExpenseCategory = category }
-                            }
+                        Button("All categories") { selectedBudgetCategory = nil }
+                        ForEach(BudgetCategory.allCases) { category in
+                            Button(category.rawValue) { selectedBudgetCategory = category }
                         }
                     } label: {
                         HStack(spacing: 6) {
@@ -269,12 +256,11 @@ struct SearchView: View {
         .onChange(of: activeFilter) { _, newValue in
             switch newValue {
             case .income:
-                selectedExpenseCategory = nil
+                selectedBudgetCategory = nil
             case .expense:
-                selectedIncomeSource = nil
+                selectedBudgetCategory = nil
             case .all:
-                selectedExpenseCategory = nil
-                selectedIncomeSource = nil
+                selectedBudgetCategory = nil
             }
         }
     }
@@ -300,12 +286,7 @@ struct SearchView: View {
     }
 
     private var categoryLabel: String {
-        switch activeFilter {
-        case .income:
-            return selectedIncomeSource?.rawValue ?? "All sources"
-        case .expense, .all:
-            return selectedExpenseCategory?.rawValue ?? "All categories"
-        }
+        selectedBudgetCategory?.rawValue ?? "All categories"
     }
 
     private var dateFilterStart: Date? {
