@@ -514,7 +514,7 @@ struct ReceiptScannerView: View {
                     Text("Detected totals")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color.primary)
-                    ForEach(amountCandidates, id: \ .self) { value in
+                    ForEach(amountCandidates, id: \.self) { value in
                         Button {
                             selectedCandidate = value
                         } label: {
