@@ -10,13 +10,18 @@ import Combine
 import PhotosUI
 import Vision
 import VisionKit
+import CoreML
+import FirebaseFirestore
 
 // MARK: - AI Coach View
 struct AICoachView: View {
+    @EnvironmentObject var appState: AppState
     @State private var messages      = MockData.coachMessages
     @State private var inputText     = ""
     @State private var isThinking    = false
     @State private var showAffordSheet = false
+    @State private var listener: ListenerRegistration? = nil
+    @State private var hasSeededMessages = false
 
     var body: some View {
         NavigationStack {
@@ -39,6 +44,8 @@ struct AICoachView: View {
                 }
             }
             .sheet(isPresented: $showAffordSheet) { CanIAffordSheet() }
+            .onAppear { startMessageListener() }
+            .onDisappear { stopMessageListener() }
         }
     }
 
@@ -170,40 +177,256 @@ struct AICoachView: View {
     // MARK: - Send
     private func send() {
         let q = inputText
-        messages.append(CoachMessage(text: q, isFromUser: true))
+        let userMessage = CoachMessage(text: q, isFromUser: true)
+        messages.append(userMessage)
+        CoachMessageService.addMessage(userMessage)
         inputText   = ""
         isThinking  = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             isThinking = false
-            messages.append(generateResponse(for: q))
+            let reply = generateResponse(for: q)
+            messages.append(reply)
+            CoachMessageService.addMessage(reply)
         }
+    }
+
+    private func startMessageListener() {
+        guard listener == nil else { return }
+        listener = CoachMessageService.listenMessages(limit: 200) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let items):
+                    if items.isEmpty {
+                        seedStarterMessagesIfNeeded()
+                    } else {
+                        messages = items
+                    }
+                case .failure:
+                    break
+                }
+            }
+        }
+    }
+
+    private func stopMessageListener() {
+        listener?.remove()
+        listener = nil
+    }
+
+    private func seedStarterMessagesIfNeeded() {
+        guard !hasSeededMessages else { return }
+        hasSeededMessages = true
+        messages = MockData.coachMessages
+        MockData.coachMessages.forEach { CoachMessageService.addMessage($0) }
     }
 
     private func generateResponse(for query: String) -> CoachMessage {
         let q = query.lowercased()
         if q.contains("afford") || q.contains("buy") {
-            return CoachMessage(
-                text: "Your Wants budget is 39% used with Rs.6,860 remaining. Under Rs.1,000 is safe — over Rs.3,000 I'd wait until next week.",
-                isFromUser: false, riskLevel: .caution
+            return affordResponse()
+        }
+        if q.contains("save") || q.contains("saving") {
+            return savingsResponse()
+        }
+
+        let features = buildCoachFeatures()
+        if let label = predictLabel(features: features) {
+            return coachResponse(for: label, features: features)
+        }
+
+        return CoachMessage(
+            text: "I'm having trouble loading the coach model right now. Try again in a moment.",
+            isFromUser: false,
+            riskLevel: .caution
+        )
+    }
+
+    private struct CoachFeatures {
+        let needsUtil: Double
+        let wantsUtil: Double
+        let savingsUtil: Double
+        let savingsProgress: Double
+        let netBalanceRatio: Double
+        let incomeExpenseRatio: Double
+        let upcomingBillsCount: Double
+        let upcomingShiftsCount: Double
+    }
+
+    private func buildCoachFeatures() -> CoachFeatures {
+        let monthTx = currentMonthTransactions()
+        let expenses = monthTx.filter { $0.type == .expense }
+        let income = monthTx.filter { $0.type == .income }
+
+        let needsSpent = expenses.filter { $0.budgetCategory == .needs }.reduce(0) { $0 + $1.amount }
+        let wantsSpent = expenses.filter { $0.budgetCategory == .wants }.reduce(0) { $0 + $1.amount }
+        let savingsSpent = expenses.filter { $0.budgetCategory == .savings }.reduce(0) { $0 + $1.amount }
+
+        let needsLimit = budgetLimit(for: .needs)
+        let wantsLimit = budgetLimit(for: .wants)
+        let savingsLimit = budgetLimit(for: .savings)
+
+        let totalIncome = income.reduce(0) { $0 + $1.amount }
+        let totalExpense = expenses.reduce(0) { $0 + $1.amount }
+        let safeBudget = max(appState.monthlyBudget, 1)
+        let balance = appState.monthlyBudget + totalIncome - totalExpense
+
+        let savingsProgress = overallSavingsProgress()
+        let upcomingBills = upcomingBillsCount()
+        let upcomingShifts = upcomingShiftsCount()
+
+        return CoachFeatures(
+            needsUtil: needsLimit > 0 ? needsSpent / needsLimit : 0,
+            wantsUtil: wantsLimit > 0 ? wantsSpent / wantsLimit : 0,
+            savingsUtil: savingsLimit > 0 ? savingsSpent / savingsLimit : 0,
+            savingsProgress: savingsProgress,
+            netBalanceRatio: balance / safeBudget,
+            incomeExpenseRatio: totalIncome / max(totalExpense, 1),
+            upcomingBillsCount: Double(upcomingBills),
+            upcomingShiftsCount: Double(upcomingShifts)
+        )
+    }
+
+    private func predictLabel(features: CoachFeatures) -> String? {
+        do {
+            let model = try CoachModel(configuration: MLModelConfiguration())
+            let output = try model.prediction(
+                needs_util: features.needsUtil,
+                wants_util: features.wantsUtil,
+                savings_util: features.savingsUtil,
+                savings_progress: features.savingsProgress,
+                net_balance_ratio: features.netBalanceRatio,
+                income_expense_ratio: features.incomeExpenseRatio,
+                upcoming_bills_count: features.upcomingBillsCount,
+                upcoming_shifts_count: features.upcomingShiftsCount
             )
-        } else if q.contains("save") || q.contains("saving") {
+            return output.label
+        } catch {
+            return nil
+        }
+    }
+
+    private func coachResponse(for label: String, features: CoachFeatures) -> CoachMessage {
+        switch label {
+        case "needs_over":
             return CoachMessage(
-                text: "You've saved Rs.5,000 this month — 44% of your savings target. Put aside Rs.1,500 before the weekend to stay on track!",
-                isFromUser: false, riskLevel: .safe
+                text: "Needs spending is high this month. You are at \(formatPercent(features.needsUtil)) of your Needs budget.",
+                isFromUser: false,
+                riskLevel: .danger
             )
-        } else {
+        case "reduce_wants":
             return CoachMessage(
-                text: "Your Needs category is Rs.3,000 over budget, mainly from rent and groceries. Try reducing dining out this week to compensate.",
-                isFromUser: false, riskLevel: .danger
+                text: "Wants are climbing fast. You have used \(formatPercent(features.wantsUtil)) of your Wants budget.",
+                isFromUser: false,
+                riskLevel: .caution
+            )
+        case "savings_low":
+            return CoachMessage(
+                text: "Savings progress is low at \(formatPercent(features.savingsProgress)). Try setting aside a small amount this week.",
+                isFromUser: false,
+                riskLevel: .caution
+            )
+        case "upcoming_bills":
+            return CoachMessage(
+                text: "You have \(Int(features.upcomingBillsCount)) bills coming up soon. Keep extra buffer in your balance.",
+                isFromUser: false,
+                riskLevel: .caution
+            )
+        case "shift_income_tip":
+            return CoachMessage(
+                text: "Upcoming shifts can help your cash flow. You have \(Int(features.upcomingShiftsCount)) scheduled.",
+                isFromUser: false,
+                riskLevel: .safe
+            )
+        default:
+            return CoachMessage(
+                text: "Your budgets look balanced right now. Keep up the momentum!",
+                isFromUser: false,
+                riskLevel: .safe
             )
         }
+    }
+
+    private func affordResponse() -> CoachMessage {
+        let wantsLimit = budgetLimit(for: .wants)
+        let wantsSpent = currentMonthTransactions()
+            .filter { $0.type == .expense && $0.budgetCategory == .wants }
+            .reduce(0) { $0 + $1.amount }
+        let remaining = max(wantsLimit - wantsSpent, 0)
+
+        return CoachMessage(
+            text: "You have about \(formatAmount(remaining)) left in Wants this month. Under \(formatAmount(remaining * 0.3)) is safest.",
+            isFromUser: false,
+            riskLevel: remaining <= 0 ? .danger : remaining < wantsLimit * 0.2 ? .caution : .safe
+        )
+    }
+
+    private func savingsResponse() -> CoachMessage {
+        let progress = overallSavingsProgress()
+        return CoachMessage(
+            text: "Savings progress is \(formatPercent(progress)). Aim to move a little more into Savings this week.",
+            isFromUser: false,
+            riskLevel: progress < 0.3 ? .caution : .safe
+        )
+    }
+
+    private func currentMonthTransactions() -> [Transaction] {
+        let all = appState.transactions
+        let calendar = Calendar.current
+        let now = Date()
+        let monthTx = all.filter { calendar.isDate($0.date, equalTo: now, toGranularity: .month) }
+        return monthTx.isEmpty ? all : monthTx
+    }
+
+    private func budgetLimit(for category: BudgetCategory) -> Double {
+        let percent: Double
+        switch category {
+        case .needs:   percent = appState.needsPercent
+        case .wants:   percent = appState.wantsPercent
+        case .savings: percent = appState.savingsPercent
+        }
+        return appState.monthlyBudget * (percent / 100)
+    }
+
+    private func overallSavingsProgress() -> Double {
+        let goals = appState.savingsGoals
+        let totalTarget = goals.reduce(0) { $0 + $1.targetAmount }
+        let totalCurrent = goals.reduce(0) { $0 + $1.currentAmount }
+        guard totalTarget > 0 else { return 0 }
+        return min(totalCurrent / totalTarget, 1)
+    }
+
+    private func upcomingBillsCount() -> Int {
+        let calendar = Calendar.current
+        let now = Date()
+        let end = calendar.date(byAdding: .day, value: 30, to: now) ?? now
+        return appState.importantDates
+            .filter { $0.type == .bill && $0.date >= now && $0.date <= end }
+            .count
+    }
+
+    private func upcomingShiftsCount() -> Int {
+        appState.workShifts.filter { $0.status == .upcoming }.count
+    }
+
+    private func formatAmount(_ value: Double) -> String {
+        let fmt = NumberFormatter()
+        fmt.numberStyle = .decimal
+        fmt.maximumFractionDigits = 0
+        let num = fmt.string(from: NSNumber(value: value)) ?? "0"
+        return "Rs. \(num)"
+    }
+
+    private func formatPercent(_ value: Double) -> String {
+        let pct = Int((value * 100).rounded())
+        return "\(pct)%"
     }
 }
 
 // MARK: - Can I Afford Sheet
 struct CanIAffordSheet: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
     @State private var amount   = ""
     @State private var category: BudgetCategory = .wants
     @State private var result: AffordResult? = nil
@@ -272,10 +495,27 @@ struct CanIAffordSheet: View {
 
     private func checkAfford() {
         guard let value = Double(amount) else { return }
-        guard let limit = MockData.budgetLimits.first(where: { $0.category == category }) else { return }
-        if value <= limit.remaining * 0.5      { result = .yes }
-        else if value <= limit.remaining       { result = .maybe }
-        else                                   { result = .no }
+        let limit = budgetLimit(for: category)
+        let remaining = max(limit - spent(for: category), 0)
+        if value <= remaining * 0.5 { result = .yes }
+        else if value <= remaining  { result = .maybe }
+        else                        { result = .no }
+    }
+
+    private func budgetLimit(for category: BudgetCategory) -> Double {
+        let percent: Double
+        switch category {
+        case .needs:   percent = appState.needsPercent
+        case .wants:   percent = appState.wantsPercent
+        case .savings: percent = appState.savingsPercent
+        }
+        return appState.monthlyBudget * (percent / 100)
+    }
+
+    private func spent(for category: BudgetCategory) -> Double {
+        appState.transactions
+            .filter { $0.type == .expense && $0.budgetCategory == category }
+            .reduce(0) { $0 + $1.amount }
     }
 }
 

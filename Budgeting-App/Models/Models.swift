@@ -414,21 +414,24 @@ struct AppNotification: Identifiable, Codable, Equatable {
 
 // MARK: - AI Coach
 
-struct CoachMessage: Identifiable {
+struct CoachMessage: Identifiable, Codable {
     let id: UUID
     var text: String
     var isFromUser: Bool
     var riskLevel: RiskLevel?
+    var createdAt: Date
 
     init(id: UUID = UUID(), text: String,
-         isFromUser: Bool, riskLevel: RiskLevel? = nil) {
+         isFromUser: Bool, riskLevel: RiskLevel? = nil,
+         createdAt: Date = Date()) {
         self.id         = id
         self.text       = text
         self.isFromUser = isFromUser
         self.riskLevel  = riskLevel
+        self.createdAt  = createdAt
     }
 
-    enum RiskLevel {
+    enum RiskLevel: String, Codable {
         case safe, caution, danger
 
         var color: Color {

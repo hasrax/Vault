@@ -61,10 +61,30 @@ print(classification_report(y_test, model.predict(X_test)))
 
 joblib.dump(model, "coach_model.joblib")
 
-mlmodel = ct.converters.sklearn.convert(
-    model,
-    input_features=[(c, ct.models.datatypes.Double()) for c in X.columns],
-    classifier_config=ct.ClassifierConfig(list(model.classes_), predicted_feature_name="label"),
-)
+input_features = [(c, ct.models.datatypes.Double()) for c in X.columns]
+try:
+    # coremltools >= 7 supports classifier_config for sklearn conversion.
+    mlmodel = ct.converters.sklearn.convert(
+        model,
+        input_features=input_features,
+        classifier_config=ct.ClassifierConfig(
+            list(model.classes_), predicted_feature_name="label"
+        ),
+    )
+except TypeError:
+    try:
+        # Fallback for coremltools <= 6 where classifier_config is not supported.
+        mlmodel = ct.converters.sklearn.convert(
+            model,
+            input_features=input_features,
+            class_labels=list(model.classes_),
+            predicted_feature_name="label",
+        )
+    except TypeError:
+        # Old signatures only accept input_features and infer labels from model.
+        mlmodel = ct.converters.sklearn.convert(
+            model,
+            input_features=input_features,
+        )
 mlmodel.save("CoachModel.mlmodel")
 print("Saved CoachModel.mlmodel")
