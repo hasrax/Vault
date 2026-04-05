@@ -7,6 +7,7 @@
 
 import SwiftUI
 import LocalAuthentication
+import UIKit
 
 // MARK: - Login
 struct LoginView: View {
@@ -17,6 +18,7 @@ struct LoginView: View {
     @State private var showPassword = false
     @State private var errorMessage = ""
     @State private var isLoading = false
+    @State private var isGoogleLoading = false
     @State private var showSignUp = false
     @State private var savedAccounts: [String] = []
     @State private var faceIdError = ""
@@ -66,6 +68,25 @@ struct LoginView: View {
                             Label(faceIdError, systemImage: "exclamationmark.circle")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(Color.expense)
+                        }
+
+                        VStack(spacing: 12) {
+                            SocialAuthButton(
+                                title: "Continue with Google",
+                                isLoading: isGoogleLoading,
+                                isEnabled: true,
+                                action: signInWithGoogle
+                            ) {
+                                GoogleMark()
+                            }
+                            SocialAuthButton(
+                                title: "Continue with Apple",
+                                isLoading: false,
+                                isEnabled: false,
+                                action: {}
+                            ) {
+                                Image(systemName: "apple.logo")
+                            }
                         }
 
                         // Divider
@@ -222,6 +243,30 @@ struct LoginView: View {
         }
     }
 
+    private func signInWithGoogle() {
+        guard let presenter = topViewController() else {
+            errorMessage = "Unable to open Google sign-in."
+            return
+        }
+        isGoogleLoading = true
+        errorMessage = ""
+        authVM.signInWithGoogle(presenting: presenter) { result in
+            DispatchQueue.main.async {
+                isGoogleLoading = false
+                if case let .failure(error) = result {
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func topViewController() -> UIViewController? {
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        return scene?.windows.first(where: { $0.isKeyWindow })?.rootViewController
+    }
+
     private func authenticateWithBiometrics() {
         guard authVM.isFaceIDEnabled else {
             faceIdError = "Face ID is turned off in Settings."
@@ -278,6 +323,7 @@ struct SignUpView: View {
     @State private var agreedToTerms = false
     @State private var errorMessage = ""
     @State private var isLoading = false
+    @State private var isGoogleLoading = false
 
     var isValid: Bool {
         !name.isEmpty && !email.isEmpty && password.count >= 6 && password == confirmPassword && agreedToTerms
@@ -300,6 +346,38 @@ struct SignUpView: View {
                             .font(.subheadline).foregroundStyle(Color.white.opacity(0.55))
                     }
                     .padding(.horizontal, 24).padding(.top, 28)
+
+                    VStack(spacing: 12) {
+                        SocialAuthButton(
+                            title: "Continue with Google",
+                            isLoading: isGoogleLoading,
+                            isEnabled: true,
+                            action: signUpWithGoogle
+                        ) {
+                            GoogleMark()
+                        }
+                        SocialAuthButton(
+                            title: "Continue with Apple",
+                            isLoading: false,
+                            isEnabled: false,
+                            action: {}
+                        ) {
+                            Image(systemName: "apple.logo")
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+
+                    HStack {
+                        Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
+                        Text("or sign up with email")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.4))
+                            .fixedSize()
+                        Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 18)
 
                     VStack(spacing: 18) {
                         ForEach([
@@ -386,6 +464,30 @@ struct SignUpView: View {
         }
     }
 
+    private func signUpWithGoogle() {
+        guard let presenter = topViewController() else {
+            errorMessage = "Unable to open Google sign-in."
+            return
+        }
+        isGoogleLoading = true
+        errorMessage = ""
+        authVM.signInWithGoogle(presenting: presenter) { result in
+            DispatchQueue.main.async {
+                isGoogleLoading = false
+                if case let .failure(error) = result {
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func topViewController() -> UIViewController? {
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        return scene?.windows.first(where: { $0.isKeyWindow })?.rootViewController
+    }
+
     @ViewBuilder
     private func darkFormField(label: String, placeholder: String,
                                text: Binding<String>, isSecure: Bool) -> some View {
@@ -406,6 +508,65 @@ struct SignUpView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.12), lineWidth: 1))
+        }
+    }
+}
+
+private struct SocialAuthButton<Icon: View>: View {
+    let title: String
+    let isLoading: Bool
+    let isEnabled: Bool
+    let action: () -> Void
+    let icon: Icon
+
+    init(
+        title: String,
+        isLoading: Bool,
+        isEnabled: Bool,
+        action: @escaping () -> Void,
+        @ViewBuilder icon: () -> Icon
+    ) {
+        self.title = title
+        self.isLoading = isLoading
+        self.isEnabled = isEnabled
+        self.action = action
+        self.icon = icon()
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                icon
+                    .frame(width: 20, height: 20)
+                if isLoading {
+                    ProgressView().tint(.white)
+                } else {
+                    Text(title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(Color.white.opacity(isEnabled ? 0.08 : 0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(isEnabled ? 0.12 : 0.06), lineWidth: 1)
+            )
+        }
+        .disabled(!isEnabled || isLoading)
+        .opacity(isEnabled ? 1.0 : 0.6)
+    }
+}
+
+private struct GoogleMark: View {
+    var body: some View {
+        ZStack {
+            Circle().fill(Color(hex: "#EA4335")).frame(width: 20, height: 20)
+            Text("G")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.white)
         }
     }
 }

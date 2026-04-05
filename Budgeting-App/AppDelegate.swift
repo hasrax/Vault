@@ -1,6 +1,7 @@
 import UIKit
 import UserNotifications
 import FirebaseMessaging
+import GoogleSignIn
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     private var handledNotificationIds = Set<String>()
@@ -21,6 +22,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         Messaging.messaging().apnsToken = deviceToken
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         PushTokenStore.shared.updateApnsToken(tokenString)
+    }
+
+    func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    ) -> Bool {
+        GIDSignIn.sharedInstance.handle(url)
     }
 
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {

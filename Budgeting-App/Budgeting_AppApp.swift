@@ -3,6 +3,7 @@ import Combine
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
+import GoogleSignIn
 import UIKit
 
 // MARK: - Global App State
@@ -831,6 +832,9 @@ struct Budgeting_App: App {
 
     init() {
             FirebaseApp.configure()
+            if let clientID = FirebaseApp.app()?.options.clientID {
+                GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+            }
             let state = AppState()
             _appState = StateObject(wrappedValue: state)
             _authVM = StateObject(wrappedValue: AuthViewModel(appState: state))

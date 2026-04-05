@@ -8,6 +8,9 @@
 import Foundation
 import Combine
 import UIKit
+import FirebaseAuth
+import FirebaseCore
+import GoogleSignIn
 
 final class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
@@ -92,5 +95,38 @@ final class AuthViewModel: ObservableObject {
 
     func setOnboardingCompleted(_ value: Bool) {
         appState.hasCompletedOnboarding = value
+    }
+
+    func signInWithGoogle(presenting: UIViewController, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            completion(.failure(NSError(domain: "AuthViewModel", code: 500)))
+            return
+        }
+        if GIDSignIn.sharedInstance.configuration == nil {
+            GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+        }
+        GIDSignIn.sharedInstance.signIn(withPresenting: presenting) { result, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            guard let user = result?.user,
+                  let idToken = user.idToken?.tokenString else {
+                completion(.failure(NSError(domain: "AuthViewModel", code: 500)))
+                return
+            }
+            let credential = GoogleAuthProvider.credential(
+                withIDToken: idToken,
+                accessToken: user.accessToken.tokenString
+            )
+            Auth.auth().signIn(with: credential) { _, signInError in
+                if let signInError = signInError {
+                    completion(.failure(signInError))
+                    return
+                }
+                self.appState.restoreSession()
+                completion(.success(()))
+            }
+        }
     }
 }

@@ -300,7 +300,7 @@ struct AICoachView: View {
                 upcoming_bills_count: features.upcomingBillsCount,
                 upcoming_shifts_count: features.upcomingShiftsCount
             )
-            return output.label
+            return output.classLabel
         } catch {
             return nil
         }
