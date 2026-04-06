@@ -8,6 +8,7 @@
 import SwiftUI
 import LocalAuthentication
 import UIKit
+import FirebaseAuth
 
 // MARK: - Login
 struct LoginView: View {
@@ -17,12 +18,14 @@ struct LoginView: View {
     @State private var password = ""
     @State private var showPassword = false
     @State private var errorMessage = ""
+    @State private var infoMessage = ""
     @State private var isLoading = false
     @State private var isGoogleLoading = false
     @State private var showSignUp = false
     @State private var savedAccounts: [String] = []
     @State private var faceIdError = ""
     @State private var selectedAccount = ""
+    @State private var selectedProvider: String? = nil
 
     var body: some View {
         ZStack {
@@ -38,9 +41,9 @@ struct LoginView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Welcome Back")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.primary)
                         Text("Sign in to continue budgeting")
-                            .font(.subheadline).foregroundStyle(Color.white.opacity(0.55))
+                            .font(.subheadline).foregroundStyle(Color.secondary)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 28)
@@ -53,62 +56,41 @@ struct LoginView: View {
                                     .font(.system(size: 36))
                                     .foregroundStyle(Color.uniBlue)
                                 Text("Sign in with Face ID")
-                                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.primary)
                                 Text("Quick and secure access")
-                                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.5))
+                                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                             }
                             .frame(maxWidth: .infinity).padding(.vertical, 24)
-                            .background(Color.white.opacity(0.06))
+                            .background(Color.black.opacity(0.04))
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                             .overlay(RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.uniBlue.opacity(0.3), lineWidth: 1))
+                                .stroke(Color.black.opacity(0.08), lineWidth: 1))
                         }
 
                         if !faceIdError.isEmpty {
-                            Label(faceIdError, systemImage: "exclamationmark.circle")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.expense)
-                        }
-
-                        VStack(spacing: 12) {
-                            SocialAuthButton(
-                                title: "Continue with Google",
-                                isLoading: isGoogleLoading,
-                                isEnabled: true,
-                                action: signInWithGoogle
-                            ) {
-                                GoogleMark()
-                            }
-                            SocialAuthButton(
-                                title: "Continue with Apple",
-                                isLoading: false,
-                                isEnabled: false,
-                                action: {}
-                            ) {
-                                Image(systemName: "apple.logo")
-                            }
+                            StatusBanner(text: faceIdError, systemImage: "exclamationmark.circle", style: .error)
                         }
 
                         // Divider
                         HStack {
-                            Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
+                            Rectangle().fill(Color.black.opacity(0.12)).frame(height: 1)
                             Text("or sign in with email")
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.4))
+                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                                 .fixedSize()
-                            Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
+                            Rectangle().fill(Color.black.opacity(0.12)).frame(height: 1)
                         }
 
                         // Email
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Email")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.6))
+                                .foregroundStyle(Color.secondary)
                             HStack(spacing: 8) {
                                 TextField("your@university.lk", text: $email)
                                     .keyboardType(.emailAddress)
                                     .autocorrectionDisabled()
                                     .textInputAutocapitalization(.never)
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Color.primary)
                                 if !savedAccounts.isEmpty {
                                     Menu {
                                         ForEach(savedAccounts, id: \.self) { account in
@@ -119,51 +101,88 @@ struct LoginView: View {
                                         }
                                     } label: {
                                         Image(systemName: "chevron.down")
-                                            .foregroundStyle(Color.white.opacity(0.7))
+                                            .foregroundStyle(Color.secondary)
                                             .frame(width: 32, height: 32)
                                     }
                                 }
                             }
                             .padding(14)
-                            .background(Color.white.opacity(0.08))
+                            .background(Color.black.opacity(0.04))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             .overlay(RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1))
+                                .stroke(Color.black.opacity(0.08), lineWidth: 1))
                         }
 
                         // Password
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Password").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.6))
+                            Text("Password").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                             HStack {
                                 Group {
                                     if showPassword { TextField("Enter your password", text: $password) }
                                     else { SecureField("Enter your password", text: $password) }
                                 }
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Color.primary)
                                 .autocorrectionDisabled()
                                 Button {
                                     showPassword.toggle()
                                 } label: {
                                     Image(systemName: showPassword ? "eye.slash" : "eye")
-                                        .foregroundStyle(Color.white.opacity(0.4))
+                                        .foregroundStyle(Color.secondary)
                                 }
                             }
                             .padding(14)
-                            .background(Color.white.opacity(0.08))
+                            .background(Color.black.opacity(0.04))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             .overlay(RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 1))
+                                .stroke(Color.black.opacity(0.08), lineWidth: 1))
                         }
 
                         // Forgot
-                        Button("Forgot Password?") {}
-                            .font(.system(size: 13)).foregroundStyle(Color.white.opacity(0.5))
+                        Button("Forgot Password?") { resetPassword() }
+                            .font(.system(size: 13)).foregroundStyle(Color.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
+
+                        HStack(spacing: 12) {
+                            SocialIconButton(
+                                isLoading: isGoogleLoading,
+                                isEnabled: true,
+                                action: signInWithGoogle
+                            ) {
+                                GoogleMark()
+                            }
+                            SocialIconButton(
+                                isLoading: false,
+                                isEnabled: false,
+                                action: {}
+                            ) {
+                                Image(systemName: "apple.logo")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                        if selectedProvider == "google" {
+                            HStack(spacing: 8) {
+                                Image(systemName: "info.circle")
+                                Text("Signed in with Google. Set a password to use Face ID.")
+                            }
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.secondary)
+
+                            Button("Set password") { resetPassword() }
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.uniBlue)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        if !infoMessage.isEmpty {
+                            StatusBanner(text: infoMessage, systemImage: "checkmark.circle", style: .success)
+                        }
 
                         // Error
                         if !errorMessage.isEmpty {
-                            Label(errorMessage, systemImage: "exclamationmark.circle")
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.expense)
+                            StatusBanner(text: errorMessage, systemImage: "exclamationmark.circle", style: .error)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -179,7 +198,7 @@ struct LoginView: View {
                                 else { Text("Sign In").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white) }
                             }
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(LinearGradient.ctaGrad)
+                            .background(Color.ctaBlue)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 
@@ -187,7 +206,7 @@ struct LoginView: View {
                             showSignUp = true
                         } label: {
                             Text("Don't have an account? Sign Up")
-                                .font(.system(size: 15)).foregroundStyle(Color.white.opacity(0.5))
+                                .font(.system(size: 15)).foregroundStyle(Color.secondary)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -201,6 +220,9 @@ struct LoginView: View {
             savedAccounts = KeychainService.savedAccounts()
             if selectedAccount.isEmpty {
                 selectedAccount = savedAccounts.first ?? ""
+            }
+            if !selectedAccount.isEmpty {
+                selectedProvider = KeychainService.providerForAccount(selectedAccount)
             }
         }
     }
@@ -223,13 +245,15 @@ struct LoginView: View {
     }
 
     private func signIn() {
-        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let targetEmail = selectedAccount.isEmpty ? email : selectedAccount
+        let trimmedEmail = targetEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             errorMessage = "Enter your email and password."
             return
         }
         isLoading = true
         errorMessage = ""
+        infoMessage = ""
         authVM.signIn(email: trimmedEmail, password: password) { result in
             DispatchQueue.main.async {
                 isLoading = false
@@ -238,6 +262,27 @@ struct LoginView: View {
                 } else {
                     _ = KeychainService.saveCredentials(email: trimmedEmail, password: password)
                     savedAccounts = KeychainService.savedAccounts()
+                    selectedProvider = KeychainService.providerForAccount(trimmedEmail)
+                }
+            }
+        }
+    }
+
+    private func resetPassword() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmedEmail.isEmpty else {
+            errorMessage = "Enter your email to reset your password."
+            return
+        }
+        errorMessage = ""
+        infoMessage = ""
+        authVM.resetPassword(email: trimmedEmail) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    infoMessage = "Password reset link sent to your email."
+                case .failure(let error):
+                    errorMessage = error.localizedDescription
                 }
             }
         }
@@ -250,11 +295,17 @@ struct LoginView: View {
         }
         isGoogleLoading = true
         errorMessage = ""
+        infoMessage = ""
         authVM.signInWithGoogle(presenting: presenter) { result in
             DispatchQueue.main.async {
                 isGoogleLoading = false
                 if case let .failure(error) = result {
                     errorMessage = error.localizedDescription
+                } else if let email = Auth.auth().currentUser?.email {
+                    KeychainService.saveAccountEmail(email, provider: "google")
+                    savedAccounts = KeychainService.savedAccounts()
+                    selectedAccount = email
+                    selectedProvider = "google"
                 }
             }
         }
@@ -268,6 +319,10 @@ struct LoginView: View {
     }
 
     private func authenticateWithBiometrics() {
+        guard selectedProvider != "google" else {
+            faceIdError = "Google account selected. Set a password first."
+            return
+        }
         guard authVM.isFaceIDEnabled else {
             faceIdError = "Face ID is turned off in Settings."
             return
@@ -347,38 +402,6 @@ struct SignUpView: View {
                     }
                     .padding(.horizontal, 24).padding(.top, 28)
 
-                    VStack(spacing: 12) {
-                        SocialAuthButton(
-                            title: "Continue with Google",
-                            isLoading: isGoogleLoading,
-                            isEnabled: true,
-                            action: signUpWithGoogle
-                        ) {
-                            GoogleMark()
-                        }
-                        SocialAuthButton(
-                            title: "Continue with Apple",
-                            isLoading: false,
-                            isEnabled: false,
-                            action: {}
-                        ) {
-                            Image(systemName: "apple.logo")
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-
-                    HStack {
-                        Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
-                        Text("or sign up with email")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.4))
-                            .fixedSize()
-                        Rectangle().fill(Color.white.opacity(0.12)).frame(height: 1)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 18)
-
                     VStack(spacing: 18) {
                         ForEach([
                             ("Full Name",        "Enter your name",          name,            false),
@@ -389,6 +412,26 @@ struct SignUpView: View {
                             darkFormField(label: label, placeholder: ph,
                                           text: fieldBinding(label), isSecure: isSecure)
                         }
+
+                        HStack(spacing: 12) {
+                            SocialIconButton(
+                                isLoading: isGoogleLoading,
+                                isEnabled: true,
+                                action: signUpWithGoogle
+                            ) {
+                                GoogleMark()
+                            }
+                            SocialIconButton(
+                                isLoading: false,
+                                isEnabled: false,
+                                action: {}
+                            ) {
+                                Image(systemName: "apple.logo")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
 
                         HStack(spacing: 10) {
                             Button {
@@ -415,7 +458,7 @@ struct SignUpView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(LinearGradient.ctaGrad)
+                            .background(Color.ctaBlue)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 
@@ -424,9 +467,7 @@ struct SignUpView: View {
                                 .font(.system(size: 15)).foregroundStyle(Color.white.opacity(0.5))
                         }
                         if !errorMessage.isEmpty {
-                            Label(errorMessage, systemImage: "exclamationmark.circle")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.expense)
+                            StatusBanner(text: errorMessage, systemImage: "exclamationmark.circle", style: .error)
                         }
                     }
                     .padding(.horizontal, 24).padding(.top, 28).padding(.bottom, 60)
@@ -477,6 +518,9 @@ struct SignUpView: View {
                 if case let .failure(error) = result {
                     errorMessage = error.localizedDescription
                 }
+                if let email = Auth.auth().currentUser?.email {
+                    KeychainService.saveAccountEmail(email, provider: "google")
+                }
             }
         }
     }
@@ -509,6 +553,46 @@ struct SignUpView: View {
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.12), lineWidth: 1))
         }
+    }
+
+}
+
+private enum StatusBannerStyle {
+    case success, error
+
+    var background: Color {
+        switch self {
+        case .success: return Color.income.opacity(0.18)
+        case .error: return Color.expense.opacity(0.18)
+        }
+    }
+
+    var foreground: Color {
+        switch self {
+        case .success: return Color.income
+        case .error: return Color.expense
+        }
+    }
+}
+
+private struct StatusBanner: View {
+    let text: String
+    let systemImage: String
+    let style: StatusBannerStyle
+
+    var body: some View {
+        Label(text, systemImage: systemImage)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(style.foreground)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(style.background)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(style.foreground.opacity(0.4), lineWidth: 1)
+            )
     }
 }
 
@@ -560,13 +644,58 @@ private struct SocialAuthButton<Icon: View>: View {
     }
 }
 
+private struct SocialIconButton<Icon: View>: View {
+    let isLoading: Bool
+    let isEnabled: Bool
+    let action: () -> Void
+    let icon: Icon
+
+    init(
+        isLoading: Bool,
+        isEnabled: Bool,
+        action: @escaping () -> Void,
+        @ViewBuilder icon: () -> Icon
+    ) {
+        self.isLoading = isLoading
+        self.isEnabled = isEnabled
+        self.action = action
+        self.icon = icon()
+    }
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(Color.black.opacity(isEnabled ? 0.04 : 0.02))
+                Circle()
+                    .stroke(Color.black.opacity(isEnabled ? 0.10 : 0.05), lineWidth: 1)
+                if isLoading {
+                    ProgressView().tint(.white)
+                } else {
+                    icon
+                }
+            }
+            .frame(width: 44, height: 44)
+        }
+        .disabled(!isEnabled || isLoading)
+        .opacity(isEnabled ? 1.0 : 0.6)
+    }
+}
+
 private struct GoogleMark: View {
     var body: some View {
-        ZStack {
-            Circle().fill(Color(hex: "#EA4335")).frame(width: 20, height: 20)
-            Text("G")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(.white)
+        if let image = UIImage(named: "G") {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
+        } else {
+            ZStack {
+                Circle().fill(Color(hex: "#EA4335")).frame(width: 20, height: 20)
+                Text("G")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+            }
         }
     }
 }

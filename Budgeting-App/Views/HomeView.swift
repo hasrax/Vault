@@ -114,7 +114,7 @@ struct HomeView: View {
     // MARK: - Dark Header
     private var darkHeader: some View {
         ZStack(alignment: .bottom) {
-            AuthBackground()
+            HomeHeaderBackground()
                 .frame(minHeight: 380)
                 .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
 

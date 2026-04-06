@@ -269,7 +269,7 @@ struct SplitBillView: View {
                         .foregroundStyle(Color.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(amount > 0 && totalPeople > 0 ? LinearGradient.ctaGrad : LinearGradient(colors:[Color.white.opacity(0.1)], startPoint: .leading, endPoint: .trailing))
+                        .background(amount > 0 && totalPeople > 0 ? Color.ctaBlue : Color.black.opacity(0.06))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .disabled(amount == 0 || totalPeople == 0)

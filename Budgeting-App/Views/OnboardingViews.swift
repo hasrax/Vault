@@ -48,13 +48,13 @@ struct SplashView: View {
 
                 Text("Vault")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(Color.primary)
                     .padding(.top, 24)
                     .opacity(opacity)
 
                 Text("Smart budgeting for campus life")
                     .font(.subheadline)
-                    .foregroundStyle(Color.white.opacity(0.6))
+                    .foregroundStyle(Color.secondary)
                     .padding(.top, 8)
                     .opacity(opacity)
 
@@ -62,9 +62,9 @@ struct SplashView: View {
 
                 // Loading bar
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.12)).frame(width: 40, height: 4)
+                    Capsule().fill(Color.black.opacity(0.12)).frame(width: 40, height: 4)
                     Capsule()
-                        .fill(LinearGradient(colors:[Color.uniBlue, Color(hex:"#60A5FA")],
+                        .fill(LinearGradient(colors:[Color.uniBlue, Color(hex:"#3B82F6")],
                                              startPoint:.leading, endPoint:.trailing))
                         .frame(width: 20, height: 4)
                         .offset(x: barOffset)
@@ -112,13 +112,13 @@ struct WelcomeView: View {
 
                 Text("Welcome to Vault")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(Color.primary)
                     .multilineTextAlignment(.center)
                     .padding(.top, 24)
 
                 Text("The smart way to manage your student budget")
                     .font(.subheadline)
-                    .foregroundStyle(Color.white.opacity(0.6))
+                    .foregroundStyle(Color.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
                     .padding(.top, 10)
@@ -129,18 +129,18 @@ struct WelcomeView: View {
                         HStack(spacing: 14) {
                             Text(emoji).font(.system(size: 22))
                                 .frame(width: 44, height: 44)
-                                .background(Color.white.opacity(0.08))
+                                .background(Color.black.opacity(0.05))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.white)
-                                Text(desc).font(.caption1).foregroundStyle(Color.white.opacity(0.6))
+                                Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.primary)
+                                Text(desc).font(.caption1).foregroundStyle(Color.secondary)
                             }
                             Spacer()
                         }
                         .padding(14)
-                        .background(Color.appSurface2)
+                        .background(Color.white.opacity(0.9))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.appStroke, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black.opacity(0.08), lineWidth: 1))
                     }
                 }
                 .padding(.horizontal, 24)
@@ -157,7 +157,7 @@ struct WelcomeView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(LinearGradient.ctaGrad)
+                            .background(Color.ctaBlue)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
 
@@ -166,7 +166,7 @@ struct WelcomeView: View {
                     } label: {
                         Text("I already have an account")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.6))
+                            .foregroundStyle(Color.secondary)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -335,7 +335,7 @@ struct SetupBudgetView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(Color(hex: "#0B1020"))
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(LinearGradient.ctaGrad)
+                            .background(Color.ctaBlue)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .padding(.horizontal, 24)

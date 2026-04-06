@@ -11,10 +11,18 @@ import Security
 
 struct KeychainService {
     private static let accountsKey = "savedAccountEmails"
+    private static let providersKey = "savedAccountProviders"
     private static let service = "BudgetingApp.Auth"
 
     static func savedAccounts() -> [String] {
         UserDefaults.standard.stringArray(forKey: accountsKey) ?? []
+    }
+
+    static func providerForAccount(_ email: String) -> String? {
+        let account = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !account.isEmpty else { return nil }
+        let dict = UserDefaults.standard.dictionary(forKey: providersKey) as? [String: String]
+        return dict?[account]
     }
 
     static func saveCredentials(email: String, password: String) -> Bool {
@@ -47,9 +55,23 @@ struct KeychainService {
         let status = SecItemAdd(attributes as CFDictionary, nil)
         if status == errSecSuccess {
             addAccount(account)
+            saveProvider(account, provider: "password")
             return true
         }
         return false
+    }
+
+    static func saveAccountEmail(_ email: String) {
+        let account = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !account.isEmpty else { return }
+        addAccount(account)
+    }
+
+    static func saveAccountEmail(_ email: String, provider: String) {
+        let account = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !account.isEmpty else { return }
+        addAccount(account)
+        saveProvider(account, provider: provider)
     }
 
     static func loadCredentials(email: String, reason: String, completion: @escaping (Result<String, Error>) -> Void) {
@@ -93,6 +115,7 @@ struct KeychainService {
         ]
         SecItemDelete(query as CFDictionary)
         removeAccountValue(account)
+        removeProvider(account)
     }
 
     private static func addAccount(_ email: String) {
@@ -101,6 +124,18 @@ struct KeychainService {
             list.append(email)
             UserDefaults.standard.set(list, forKey: accountsKey)
         }
+    }
+
+    private static func saveProvider(_ email: String, provider: String) {
+        var dict = UserDefaults.standard.dictionary(forKey: providersKey) as? [String: String] ?? [:]
+        dict[email] = provider
+        UserDefaults.standard.set(dict, forKey: providersKey)
+    }
+
+    private static func removeProvider(_ email: String) {
+        var dict = UserDefaults.standard.dictionary(forKey: providersKey) as? [String: String] ?? [:]
+        dict.removeValue(forKey: email)
+        UserDefaults.standard.set(dict, forKey: providersKey)
     }
 
     private static func removeAccountValue(_ email: String) {

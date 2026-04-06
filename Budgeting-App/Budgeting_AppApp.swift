@@ -868,6 +868,7 @@ struct Budgeting_App: App {
                 .environmentObject(savingsVM)
                 .environmentObject(plannerVM)
                 .environmentObject(splitBillsVM)
+                .tint(Color.uniBlue)
                 .preferredColorScheme(appState.isDarkMode ? .dark : .light)
         }
     }

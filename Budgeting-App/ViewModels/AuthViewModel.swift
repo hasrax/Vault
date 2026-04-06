@@ -57,6 +57,16 @@ final class AuthViewModel: ObservableObject {
         appState.signUp(name: name, email: email, password: password, completion: completion)
     }
 
+    func resetPassword(email: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        Auth.auth().sendPasswordReset(withEmail: email) { error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
     func signOut() {
         appState.signOut()
     }
