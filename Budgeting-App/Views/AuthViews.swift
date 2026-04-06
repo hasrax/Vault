@@ -198,7 +198,7 @@ struct LoginView: View {
                                 else { Text("Sign In").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white) }
                             }
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(Color.ctaBlue)
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 
@@ -458,7 +458,7 @@ struct SignUpView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(Color.ctaBlue)
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
 

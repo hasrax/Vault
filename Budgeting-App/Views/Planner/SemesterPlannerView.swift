@@ -461,7 +461,7 @@ struct SemesterPlannerView: View {
             Button("+ Add New Goal") { showAddGoal = true }
                 .font(.system(size:15,weight:.semibold)).foregroundStyle(Color.white)
                 .frame(maxWidth:.infinity).frame(height:48)
-                .background(Color.ctaBlue)
+                .background(LinearGradient.ctaGrad)
                 .clipShape(RoundedRectangle(cornerRadius:12))
                 .padding(.top,4)
 

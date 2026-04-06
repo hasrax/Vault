@@ -157,7 +157,7 @@ struct WelcomeView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(Color.ctaBlue)
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
 
@@ -335,7 +335,7 @@ struct SetupBudgetView: View {
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(Color(hex: "#0B1020"))
                             .frame(maxWidth: .infinity).frame(height: 56)
-                            .background(Color.ctaBlue)
+                            .background(LinearGradient.ctaGrad)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .padding(.horizontal, 24)
