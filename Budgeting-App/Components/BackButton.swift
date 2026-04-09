@@ -18,7 +18,7 @@ struct BackButton: View {
         Button(action: action) {
             Image(systemName: "chevron.left")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(isDark ? .white : Color.primary)
+                .foregroundStyle(isDark ? .white : Color.uniBlue)
                 .frame(width: 40, height: 40)
         }
         .buttonStyle(BackButtonStyle(isDark: isDark))

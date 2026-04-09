@@ -34,7 +34,7 @@ struct LoginView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     // Back
-                    BackButton(isDark: true) { dismiss() }
+                    BackButton(isDark: false) { dismiss() }
                         .padding(.horizontal, 24).padding(.top, 56)
 
                     // Title
@@ -215,7 +215,9 @@ struct LoginView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $showSignUp) { SignUpView() }
+        .fullScreenCover(isPresented: $showSignUp) {
+            SignUpView(onSignInTap: { showSignUp = false })
+        }
         .onAppear {
             savedAccounts = KeychainService.savedAccounts()
             if selectedAccount.isEmpty {
@@ -371,6 +373,7 @@ struct LoginView: View {
 struct SignUpView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) var dismiss
+    var onSignInTap: (() -> Void)? = nil
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -390,15 +393,15 @@ struct SignUpView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    BackButton(isDark: true) { dismiss() }
+                    BackButton(isDark: false) { dismiss() }
                         .padding(.horizontal, 24).padding(.top, 56)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Create Account")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.primary)
                         Text("Start your smart budgeting journey")
-                            .font(.subheadline).foregroundStyle(Color.white.opacity(0.55))
+                            .font(.subheadline).foregroundStyle(Color.secondary)
                     }
                     .padding(.horizontal, 24).padding(.top, 28)
 
@@ -428,7 +431,7 @@ struct SignUpView: View {
                             ) {
                                 Image(systemName: "apple.logo")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Color.primary)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -438,11 +441,11 @@ struct SignUpView: View {
                                 agreedToTerms.toggle()
                             } label: {
                                 Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
-                                    .foregroundStyle(agreedToTerms ? Color.uniBlue : Color.white.opacity(0.3))
+                                    .foregroundStyle(agreedToTerms ? Color.uniBlue : Color.secondary)
                                     .font(.system(size: 20))
                             }
                             Text("I agree to the Terms & Privacy Policy")
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.5))
+                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                         }
                     }
                     .padding(.horizontal, 24).padding(.top, 32)
@@ -464,7 +467,7 @@ struct SignUpView: View {
 
                         Button { dismiss() } label: {
                             Text("Already have an account? Sign In")
-                                .font(.system(size: 15)).foregroundStyle(Color.white.opacity(0.5))
+                                .font(.system(size: 15)).foregroundStyle(Color.secondary)
                         }
                         if !errorMessage.isEmpty {
                             StatusBanner(text: errorMessage, systemImage: "exclamationmark.circle", style: .error)
@@ -536,7 +539,7 @@ struct SignUpView: View {
     private func darkFormField(label: String, placeholder: String,
                                text: Binding<String>, isSecure: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.6))
+            Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
             Group {
                 if isSecure { SecureField(placeholder, text: text) }
                 else {
@@ -546,12 +549,12 @@ struct SignUpView: View {
                         .textInputAutocapitalization(label == "Email" ? .never : .words)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Color.primary)
             .padding(14)
-            .background(Color.white.opacity(0.08))
+            .background(Color.black.opacity(0.04))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1))
+                .stroke(Color.black.opacity(0.08), lineWidth: 1))
         }
     }
 

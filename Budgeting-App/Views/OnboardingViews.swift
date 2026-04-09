@@ -173,7 +173,12 @@ struct WelcomeView: View {
                 .padding(.bottom, 48)
             }
         }
-        .fullScreenCover(isPresented: $showSignUp)  { SignUpView() }
+        .fullScreenCover(isPresented: $showSignUp)  {
+            SignUpView(onSignInTap: {
+                showSignUp = false
+                DispatchQueue.main.async { showLogin = true }
+            })
+        }
         .fullScreenCover(isPresented: $showLogin)   { LoginView() }
     }
 }

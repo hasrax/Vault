@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import Combine
 import PhotosUI
 import Vision
@@ -26,27 +27,51 @@ struct AICoachView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                topHeader
                 riskDashboard
                 Divider()
                 chatArea
                 inputBar
             }
             .background(Color.clear)
-            .navigationTitle("AI Coach")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showAffordSheet = true
-                    } label: {
-                        Label("Can I afford?", systemImage: "questionmark.circle")
-                    }
-                }
-            }
             .sheet(isPresented: $showAffordSheet) { CanIAffordSheet() }
             .onAppear { startMessageListener() }
             .onDisappear { stopMessageListener() }
         }
+        .statusBarStyle(.lightContent)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+
+    // MARK: - Header
+    private var topHeader: some View {
+        ZStack(alignment: .bottom) {
+            HomeHeaderBackground()
+                .frame(height: 190)
+                .clipShape(RoundedCorner(radius: 24, corners: [.bottomLeft, .bottomRight]))
+
+            HStack {
+                Text("AI Coach")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.white)
+                Spacer()
+                Button {
+                    showAffordSheet = true
+                } label: {
+                    Image(systemName: "questionmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.uniBlue)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
+                }
+                .accessibilityLabel("Can I afford?")
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
+            .padding(.top, 10)
+        }
+        .ignoresSafeArea(edges: .top)
     }
 
     // MARK: - Risk Dashboard
@@ -1184,3 +1209,40 @@ private struct ZoomableImageView: UIViewRepresentable {
 
 #Preview("AI Coach") { AICoachView().environmentObject(AppState()) }
 #Preview("Scanner")  { NavigationStack { ReceiptScannerView() }.environmentObject(AppState()) }
+
+private struct StatusBarStyleSetter: UIViewControllerRepresentable {
+    var style: UIStatusBarStyle
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        StyleController(style: style)
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard let controller = uiViewController as? StyleController else { return }
+        controller.style = style
+        controller.setNeedsStatusBarAppearanceUpdate()
+    }
+
+    private final class StyleController: UIViewController {
+        var style: UIStatusBarStyle
+
+        init(style: UIStatusBarStyle) {
+            self.style = style
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override var preferredStatusBarStyle: UIStatusBarStyle {
+            style
+        }
+    }
+}
+
+private extension View {
+    func statusBarStyle(_ style: UIStatusBarStyle) -> some View {
+        background(StatusBarStyleSetter(style: style))
+    }
+}
