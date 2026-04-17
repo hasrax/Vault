@@ -484,6 +484,102 @@ struct WeeklySpend: Identifiable {
     }
 }
 
+// MARK: - Budget History
+
+struct BudgetHistoryEntry: Identifiable, Codable, Equatable {
+    let id: UUID
+    var monthKey: String
+    var monthlyBudget: Double
+    var needsPercent: Double
+    var wantsPercent: Double
+    var savingsPercent: Double
+    var needsSpent: Double
+    var wantsSpent: Double
+    var savingsSpent: Double
+    var carryOverAdded: Double
+    var carryOverBalance: Double
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        monthKey: String,
+        monthlyBudget: Double,
+        needsPercent: Double,
+        wantsPercent: Double,
+        savingsPercent: Double,
+        needsSpent: Double,
+        wantsSpent: Double,
+        savingsSpent: Double,
+        carryOverAdded: Double,
+        carryOverBalance: Double,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.monthKey = monthKey
+        self.monthlyBudget = monthlyBudget
+        self.needsPercent = needsPercent
+        self.wantsPercent = wantsPercent
+        self.savingsPercent = savingsPercent
+        self.needsSpent = needsSpent
+        self.wantsSpent = wantsSpent
+        self.savingsSpent = savingsSpent
+        self.carryOverAdded = carryOverAdded
+        self.carryOverBalance = carryOverBalance
+        self.createdAt = createdAt
+    }
+
+    var totalSpent: Double {
+        needsSpent + wantsSpent + savingsSpent
+    }
+
+    var firestoreData: [String: Any] {
+        [
+            "id": id.uuidString,
+            "monthKey": monthKey,
+            "monthlyBudget": monthlyBudget,
+            "needsPercent": needsPercent,
+            "wantsPercent": wantsPercent,
+            "savingsPercent": savingsPercent,
+            "needsSpent": needsSpent,
+            "wantsSpent": wantsSpent,
+            "savingsSpent": savingsSpent,
+            "carryOverAdded": carryOverAdded,
+            "carryOverBalance": carryOverBalance,
+            "createdAt": createdAt.timeIntervalSince1970
+        ]
+    }
+
+    static func fromFirestore(_ dict: [String: Any]) -> BudgetHistoryEntry? {
+        let id = (dict["id"] as? String).flatMap { UUID(uuidString: $0) } ?? UUID()
+        guard let monthKey = dict["monthKey"] as? String else { return nil }
+        let monthlyBudget = dict["monthlyBudget"] as? Double ?? 0
+        let needsPercent = dict["needsPercent"] as? Double ?? 0
+        let wantsPercent = dict["wantsPercent"] as? Double ?? 0
+        let savingsPercent = dict["savingsPercent"] as? Double ?? 0
+        let needsSpent = dict["needsSpent"] as? Double ?? 0
+        let wantsSpent = dict["wantsSpent"] as? Double ?? 0
+        let savingsSpent = dict["savingsSpent"] as? Double ?? 0
+        let carryOverAdded = dict["carryOverAdded"] as? Double ?? 0
+        let carryOverBalance = dict["carryOverBalance"] as? Double ?? 0
+        let createdAtSeconds = dict["createdAt"] as? TimeInterval ?? Date().timeIntervalSince1970
+        let createdAt = Date(timeIntervalSince1970: createdAtSeconds)
+        return BudgetHistoryEntry(
+            id: id,
+            monthKey: monthKey,
+            monthlyBudget: monthlyBudget,
+            needsPercent: needsPercent,
+            wantsPercent: wantsPercent,
+            savingsPercent: savingsPercent,
+            needsSpent: needsSpent,
+            wantsSpent: wantsSpent,
+            savingsSpent: savingsSpent,
+            carryOverAdded: carryOverAdded,
+            carryOverBalance: carryOverBalance,
+            createdAt: createdAt
+        )
+    }
+}
+
 // MARK: - Planner Module
 
 struct PlannerModule: Identifiable {

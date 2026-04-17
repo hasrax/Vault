@@ -185,6 +185,44 @@ extension View {
     func appBackground() -> some View        { modifier(AppBackgroundModifier()) }
 }
 
+// MARK: - Status Bar Style
+struct StatusBarStyleSetter: UIViewControllerRepresentable {
+    var style: UIStatusBarStyle
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        StyleController(style: style)
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard let controller = uiViewController as? StyleController else { return }
+        controller.style = style
+        controller.setNeedsStatusBarAppearanceUpdate()
+    }
+
+    private final class StyleController: UIViewController {
+        var style: UIStatusBarStyle
+
+        init(style: UIStatusBarStyle) {
+            self.style = style
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override var preferredStatusBarStyle: UIStatusBarStyle {
+            style
+        }
+    }
+}
+
+extension View {
+    func statusBarStyle(_ style: UIStatusBarStyle) -> some View {
+        background(StatusBarStyleSetter(style: style))
+    }
+}
+
 // MARK: - App Background
 struct AppBackground: View {
     var body: some View {

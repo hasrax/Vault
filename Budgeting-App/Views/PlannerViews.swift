@@ -356,9 +356,3 @@ private struct StatusBarStyleSetter: UIViewControllerRepresentable {
         }
     }
 }
-
-private extension View {
-    func statusBarStyle(_ style: UIStatusBarStyle) -> some View {
-        background(StatusBarStyleSetter(style: style))
-    }
-}

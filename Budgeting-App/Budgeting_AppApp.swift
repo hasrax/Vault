@@ -18,6 +18,8 @@ class AppState: ObservableObject {
     @Published var needsPercent: Double   = 50
     @Published var wantsPercent: Double   = 25
     @Published var savingsPercent: Double = 25
+    @Published var carryOverBalance: Double = 0
+    @Published var budgetHistory: [BudgetHistoryEntry] = []
     @Published var currentUser: UserProfile?
     @Published var transactions: [Transaction] = MockData.transactions
     @Published var importantDates: [ImportantDate] = MockData.importantDates
@@ -27,6 +29,8 @@ class AppState: ObservableObject {
     @Published var sessionTimeoutSeconds: TimeInterval = 30
     @Published var splitBills: [SplitBill] = []
     @Published var plannerTheme: PlannerTheme = PlannerTheme()
+
+    private var budgetHistoryLoaded = false
 
     private var importantDatesListener: ListenerRegistration?
     private var semesterGoalsListener: ListenerRegistration?
@@ -41,6 +45,7 @@ class AppState: ObservableObject {
             loadUserProfile(uid: user.uid, fallbackEmail: user.email) {
                 self.isAuthenticated = true
             }
+            loadBudgetRolloverState(uid: user.uid)
             loadTransactions()
             startTransactionListener()
             startSavingsGoalsListener()
@@ -111,6 +116,8 @@ class AppState: ObservableObject {
             transactions = []
             splitBills = []
             savingsGoals = []
+            carryOverBalance = 0
+            budgetHistory = []
             plannerTheme = PlannerTheme()   // reset to defaults on logout
             stopTransactionListener()
             stopSavingsGoalsListener()
@@ -239,6 +246,151 @@ class AppState: ObservableObject {
                 currentUser = profile
                 CoreDataCache.shared.saveUserProfile(profile, ownerId: uid)
             }
+        }
+
+        func loadBudgetRolloverState(uid: String) {
+            Firestore.firestore().collection("users").document(uid)
+                .getDocument { [weak self] snapshot, _ in
+                    guard let self, let data = snapshot?.data() else { return }
+                    let carryOver = data["carryOverBalance"] as? Double ?? 0
+                    let historyArray = data["budgetHistory"] as? [[String: Any]] ?? []
+                    let parsed = historyArray.compactMap { BudgetHistoryEntry.fromFirestore($0) }
+                    DispatchQueue.main.async {
+                        self.carryOverBalance = carryOver
+                        self.budgetHistory = parsed.sorted { $0.monthKey > $1.monthKey }
+                        self.budgetHistoryLoaded = true
+                    }
+                }
+        }
+
+        func saveBudgetRolloverState(uid: String) {
+            let historyData = budgetHistory.map { $0.firestoreData }
+            let data: [String: Any] = [
+                "carryOverBalance": carryOverBalance,
+                "budgetHistory": historyData
+            ]
+            Firestore.firestore().collection("users").document(uid)
+                .setData(data, merge: true) { _ in }
+        }
+
+        func handleMonthlyRollover(transactions: [Transaction]) {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            let calendar = Calendar.current
+            let now = Date()
+            let currentMonthKey = monthKey(for: now)
+            let rolloverKey = "budgetRolloverMonth_\(uid)"
+            let lastMonthKey = UserDefaults.standard.string(forKey: rolloverKey)
+
+            if lastMonthKey == currentMonthKey { return }
+
+            let prevDate = calendar.date(byAdding: .month, value: -1, to: now) ?? now
+            let prevMonthKey = monthKey(for: prevDate)
+
+            if !budgetHistory.contains(where: { $0.monthKey == prevMonthKey }) {
+                let prevMonthExpenses = transactions.filter {
+                    $0.type == .expense && calendar.isDate($0.date, equalTo: prevDate, toGranularity: .month)
+                }
+
+                let needsSpent = prevMonthExpenses
+                    .filter { $0.budgetCategory == .needs }
+                    .reduce(0) { $0 + $1.amount }
+                let wantsSpent = prevMonthExpenses
+                    .filter { $0.budgetCategory == .wants }
+                    .reduce(0) { $0 + $1.amount }
+                let savingsSpent = prevMonthExpenses
+                    .filter { $0.budgetCategory == .savings }
+                    .reduce(0) { $0 + $1.amount }
+
+                let totalSpent = needsSpent + wantsSpent + savingsSpent
+                let carryOverAdded = max(0, monthlyBudget - totalSpent)
+                carryOverBalance += carryOverAdded
+
+                let entry = BudgetHistoryEntry(
+                    monthKey: prevMonthKey,
+                    monthlyBudget: monthlyBudget,
+                    needsPercent: needsPercent,
+                    wantsPercent: wantsPercent,
+                    savingsPercent: savingsPercent,
+                    needsSpent: needsSpent,
+                    wantsSpent: wantsSpent,
+                    savingsSpent: savingsSpent,
+                    carryOverAdded: carryOverAdded,
+                    carryOverBalance: carryOverBalance
+                )
+                budgetHistory.insert(entry, at: 0)
+                saveBudgetRolloverState(uid: uid)
+            }
+
+            UserDefaults.standard.set(currentMonthKey, forKey: rolloverKey)
+        }
+
+        func backfillBudgetHistoryIfNeeded(transactions: [Transaction]) {
+            guard budgetHistoryLoaded else { return }
+            guard budgetHistory.isEmpty else { return }
+            let calendar = Calendar.current
+            let now = Date()
+            let lastMonth = calendar.date(byAdding: .month, value: -1, to: now) ?? now
+            let pastExpenses = transactions.filter {
+                $0.type == .expense && $0.date < calendar.startOfDay(for: now)
+            }
+            guard let firstDate = pastExpenses.map({ $0.date }).min() else { return }
+            let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: firstDate)) ?? firstDate
+            let endMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: lastMonth)) ?? lastMonth
+            guard startMonth <= endMonth else { return }
+
+            var entries: [BudgetHistoryEntry] = []
+            var carryOverRunning: Double = 0
+            var monthCursor = startMonth
+
+            while monthCursor <= endMonth {
+                let monthKeyValue = monthKey(for: monthCursor)
+                let monthExpenses = pastExpenses.filter {
+                    calendar.isDate($0.date, equalTo: monthCursor, toGranularity: .month)
+                }
+
+                let needsSpent = monthExpenses
+                    .filter { $0.budgetCategory == .needs }
+                    .reduce(0) { $0 + $1.amount }
+                let wantsSpent = monthExpenses
+                    .filter { $0.budgetCategory == .wants }
+                    .reduce(0) { $0 + $1.amount }
+                let savingsSpent = monthExpenses
+                    .filter { $0.budgetCategory == .savings }
+                    .reduce(0) { $0 + $1.amount }
+
+                let totalSpent = needsSpent + wantsSpent + savingsSpent
+                let carryOverAdded = max(0, monthlyBudget - totalSpent)
+                carryOverRunning += carryOverAdded
+
+                let entry = BudgetHistoryEntry(
+                    monthKey: monthKeyValue,
+                    monthlyBudget: monthlyBudget,
+                    needsPercent: needsPercent,
+                    wantsPercent: wantsPercent,
+                    savingsPercent: savingsPercent,
+                    needsSpent: needsSpent,
+                    wantsSpent: wantsSpent,
+                    savingsSpent: savingsSpent,
+                    carryOverAdded: carryOverAdded,
+                    carryOverBalance: carryOverRunning
+                )
+                entries.append(entry)
+
+                guard let next = calendar.date(byAdding: .month, value: 1, to: monthCursor) else { break }
+                monthCursor = next
+            }
+
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            carryOverBalance = carryOverRunning
+            budgetHistory = entries.sorted { $0.monthKey > $1.monthKey }
+            saveBudgetRolloverState(uid: uid)
+        }
+
+        private func monthKey(for date: Date) -> String {
+            let comps = Calendar.current.dateComponents([.year, .month], from: date)
+            let year = comps.year ?? 0
+            let month = comps.month ?? 0
+            return String(format: "%04d-%02d", year, month)
         }
     
         func loadTransactions() {
@@ -936,6 +1088,14 @@ struct RootView: View {
                 )
             )
             .modifier(
+                MonthlyRolloverModifier(
+                    authVM: authVM,
+                    appState: appState,
+                    transactionsVM: transactionsVM,
+                    scenePhase: scenePhase
+                )
+            )
+            .modifier(
                 WidgetBudgetUpdateModifier(
                     appState: appState,
                     onUpdate: updateWidgetSnapshot
@@ -1274,6 +1434,32 @@ private struct RootSessionModifier: ViewModifier {
                     break
                 }
             }
+    }
+}
+
+private struct MonthlyRolloverModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let appState: AppState
+    let transactionsVM: TransactionsViewModel
+    let scenePhase: ScenePhase
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { handleRolloverIfNeeded() }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    handleRolloverIfNeeded()
+                }
+            }
+            .onChange(of: transactionsVM.transactions) { _, _ in
+                appState.backfillBudgetHistoryIfNeeded(transactions: transactionsVM.transactions)
+            }
+    }
+
+    private func handleRolloverIfNeeded() {
+        guard authVM.isAuthenticated, authVM.hasCompletedSetup else { return }
+        appState.handleMonthlyRollover(transactions: transactionsVM.transactions)
+        appState.backfillBudgetHistoryIfNeeded(transactions: transactionsVM.transactions)
     }
 }
 

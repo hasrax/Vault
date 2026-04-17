@@ -27,8 +27,19 @@ struct HomeView: View {
     @State private var showSemesterPlanner = false
     @State private var showAnalytics      = false
 
-    private var totalExpense: Double { transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
-    private var totalIncome:  Double { transactionsVM.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var currentMonthTransactions: [Transaction] {
+        let cal = Calendar.current
+        return transactionsVM.transactions.filter {
+            cal.isDate($0.date, equalTo: Date(), toGranularity: .month)
+        }
+    }
+
+    private var totalExpense: Double {
+        currentMonthTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+    }
+    private var totalIncome:  Double {
+        currentMonthTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+    }
     private var balance:      Double { appState.monthlyBudget + totalIncome - totalExpense }
 
     private var currentLimit: BudgetLimit? {
@@ -47,7 +58,7 @@ struct HomeView: View {
     }
 
     private func spent(for category: BudgetCategory) -> Double {
-        transactionsVM.transactions
+        currentMonthTransactions
             .filter { $0.type == .expense && $0.budgetCategory == category }
             .reduce(0) { $0 + $1.amount }
     }
@@ -60,6 +71,19 @@ struct HomeView: View {
         case .savings: percent = appState.savingsPercent
         }
         return appState.monthlyBudget * (percent / 100)
+    }
+
+    private var receivedText: String {
+        let cal = Calendar.current
+        let now = Date()
+        let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+        let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        let received = fmt.string(from: start)
+        let daysLeft = cal.dateComponents([.day], from: cal.startOfDay(for: now), to: end).day ?? 0
+        let leftText = "\(daysLeft) days left"
+        return "Received \(received) · \(leftText)"
     }
 
     var body: some View {
@@ -154,7 +178,7 @@ struct HomeView: View {
                     Text(balance.currencyRS)
                         .font(.system(size: 40, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.white)
-                    Text("Received Mar 1 · 27 days left")
+                    Text(receivedText)
                         .font(.system(size: 12))
                         .foregroundStyle(Color.white.opacity(0.4))
                 }

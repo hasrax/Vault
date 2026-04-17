@@ -234,6 +234,24 @@ struct SetupBudgetView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
 
+                    // ── Manual budget input ─────────────────────────────
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Type your amount")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.secondary)
+                        TextField("Enter monthly budget", text: $budgetInput)
+                            .keyboardType(.numberPad)
+                            .textInputAutocapitalization(.never)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color(UIColor.systemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(UIColor.separator), lineWidth: 1)
+                            )
+                    }
+
                     // ── Budget preset chips (horizontal scroll) ───────────
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
