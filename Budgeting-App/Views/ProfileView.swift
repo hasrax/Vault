@@ -11,12 +11,14 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var tokenStore = PushTokenStore.shared
-    @State private var showDeleteAlert = false
+    @State private var showDeleteConfirm = false
+    @State private var showSignOutConfirm = false
     @State private var deleteError = ""
 
     var body: some View {
         NavigationStack {
-            List {
+            ZStack {
+                List {
 
                 // ── Avatar ────────────────────────────────────────────────
                 Section {
@@ -195,13 +197,13 @@ struct ProfileView: View {
                 // ── Sign out ──────────────────────────────────────────────
                 Section {
                     Button(role: .destructive) {
-                        withAnimation { appState.signOut() }
+                        showSignOutConfirm = true
                     } label: {
                         Label("Sign Out",
                               systemImage: "rectangle.portrait.and.arrow.right")
                     }
                     Button(role: .destructive) {
-                        showDeleteAlert = true
+                        showDeleteConfirm = true
                     } label: {
                         Label("Delete Account", systemImage: "trash")
                     }
@@ -217,21 +219,43 @@ struct ProfileView: View {
                     }
                 }
             }
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.large)
-            .alert("Delete account?", isPresented: $showDeleteAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
-                    appState.deleteAccount { result in
-                        DispatchQueue.main.async {
-                            if case let .failure(error) = result {
-                                deleteError = error.localizedDescription
-                            }
-                        }
-                    }
                 }
-            } message: {
-                Text("This permanently deletes your account and data.")
+                .navigationTitle("Profile")
+                .navigationBarTitleDisplayMode(.large)
+
+                if showSignOutConfirm {
+                    confirmationOverlay(
+                        title: "Sign out?",
+                        message: "You will be signed out of your account.",
+                        confirmTitle: "Sign Out",
+                        isDestructive: true,
+                        onConfirm: {
+                            showSignOutConfirm = false
+                            withAnimation { appState.signOut() }
+                        },
+                        onCancel: { showSignOutConfirm = false }
+                    )
+                }
+
+                if showDeleteConfirm {
+                    confirmationOverlay(
+                        title: "Delete account?",
+                        message: "This permanently deletes your account and data.",
+                        confirmTitle: "Delete",
+                        isDestructive: true,
+                        onConfirm: {
+                            showDeleteConfirm = false
+                            appState.deleteAccount { result in
+                                DispatchQueue.main.async {
+                                    if case let .failure(error) = result {
+                                        deleteError = error.localizedDescription
+                                    }
+                                }
+                            }
+                        },
+                        onCancel: { showDeleteConfirm = false }
+                    )
+                }
             }
         }
         .onChange(of: appState.notificationsEnabled) { _, enabled in
@@ -255,6 +279,54 @@ struct ProfileView: View {
             Image(systemName: systemName)
                 .font(.system(size: 16))
                 .foregroundStyle(color)
+        }
+    }
+
+    private func confirmationOverlay(
+        title: String,
+        message: String,
+        confirmTitle: String,
+        isDestructive: Bool,
+        onConfirm: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) -> some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { onCancel() }
+
+            VStack(spacing: 12) {
+                Text(title)
+                    .font(.system(size: 18, weight: .bold))
+                Text(message)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.secondary)
+                    .multilineTextAlignment(.center)
+
+                HStack(spacing: 12) {
+                    Button("Cancel") { onCancel() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                    Button(confirmTitle) { onConfirm() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(isDestructive ? Color.expense : Color.uniBlue)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding(18)
+            .frame(maxWidth: 300)
+            .background(Color(UIColor.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
+            .padding(.horizontal, 24)
         }
     }
 

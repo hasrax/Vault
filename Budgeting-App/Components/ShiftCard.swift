@@ -11,6 +11,10 @@ struct ShiftCard: View {
     let shift: WorkShift
 
     private var isCompleted: Bool { shift.status == .completed }
+    private var badgeFill: Color { Color(UIColor.systemGray6) }
+    private var badgeStroke: Color { Color(UIColor.systemGray4) }
+    private var statusTextColor: Color { Color.secondary }
+    private var statusFill: Color { Color(UIColor.systemGray5) }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -26,14 +30,11 @@ struct ShiftCard: View {
                     .foregroundStyle(Color.primary)
             }
             .frame(width: 48, height: 52)
-            .background(isCompleted ? Color.income.opacity(0.10) : Color.uniBlue.opacity(0.10))
+            .background(badgeFill)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        isCompleted ? Color.income.opacity(0.2) : Color.uniBlue.opacity(0.2),
-                        lineWidth: 1
-                    )
+                    .stroke(badgeStroke, lineWidth: 1)
             )
 
             // Role + time
@@ -52,15 +53,15 @@ struct ShiftCard: View {
             VStack(alignment: .trailing, spacing: 4) {
                 Text(shift.pay.currencyRS)
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(isCompleted ? Color.income : Color.primary)
+                    .foregroundStyle(Color.primary)
 
                 Text(isCompleted ? "Done" : "Soon")
                     .font(.system(size: 10, weight: .semibold))
                     .textCase(.uppercase)
-                    .foregroundStyle(isCompleted ? Color.income : Color.warning)
+                    .foregroundStyle(statusTextColor)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(isCompleted ? Color.income.opacity(0.12) : Color.warning.opacity(0.12))
+                    .background(statusFill)
                     .clipShape(Capsule())
             }
         }

@@ -341,7 +341,7 @@ struct SetupBudgetView: View {
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
-                                .background(Color.uniBlue)
+                                .background(LinearGradient.ctaGrad)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                         .padding(.top, 8)
@@ -385,7 +385,9 @@ struct SetupBudgetView: View {
                 } else {
                     // Onboarding mode: back chevron (left)
                     ToolbarItem(placement: .topBarLeading) {
-                        Button { dismiss() } label: {
+                        Button {
+                            appState.signOut()
+                        } label: {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(Color.primary)

@@ -249,7 +249,7 @@ struct AnalyticsView: View {
                                 .foregroundStyle(isActive ? Color.white : Color.primary)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
-                                .background(isActive ? accent : Color.clear)
+                                .background(isActive ? Color.uniBlue : Color.clear)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                     }
@@ -268,13 +268,21 @@ struct AnalyticsView: View {
                 } else {
                     // Total spending card
                     VStack(spacing: 12) {
-                        Text("Total Spending").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text("Total Spending")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.75))
                         Text(totalSpent.currencyRS)
                             .font(.system(size:40,weight:.bold,design:.rounded))
+                            .foregroundStyle(Color.white)
                     }
                     .frame(maxWidth:.infinity)
                     .padding(24)
-                    .lightCard()
+                    .background(appState.plannerTheme.gradient(for: "analytics"))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(accent.opacity(0.45), lineWidth: 1)
+                    )
 
                     // Weekly bar chart
                     VStack(alignment:.leading, spacing:14) {
@@ -284,7 +292,7 @@ struct AnalyticsView: View {
                                 x:.value("Day", day.day),
                                 y:.value("Amount", day.amount)
                             )
-                            .foregroundStyle(LinearGradient.primaryGrad)
+                            .foregroundStyle(accent)
                             .cornerRadius(6)
                         }
                         .frame(height: 160)

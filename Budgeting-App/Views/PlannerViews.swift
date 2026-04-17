@@ -221,6 +221,7 @@ struct PlannerThemePickerView: View {
 
     // Local draft — only committed when the user taps Save
     @State private var draft: PlannerTheme = PlannerTheme()
+    @State private var originalTheme: PlannerTheme = PlannerTheme()
 
     var body: some View {
         NavigationStack {
@@ -258,7 +259,11 @@ struct PlannerThemePickerView: View {
 
                 Section {
                     Button("Reset to defaults") {
-                        withAnimation { draft = PlannerTheme() }
+                        withAnimation {
+                            let reset = PlannerTheme()
+                            draft = reset
+                            appState.plannerTheme = reset
+                        }
                     }
                     .foregroundStyle(Color.expense)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -269,7 +274,10 @@ struct PlannerThemePickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        appState.plannerTheme = originalTheme
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
@@ -281,7 +289,10 @@ struct PlannerThemePickerView: View {
                 }
             }
         }
-        .onAppear { draft = appState.plannerTheme }
+        .onAppear {
+            originalTheme = appState.plannerTheme
+            draft = appState.plannerTheme
+        }
     }
 
     // Two-way binding between ColorPicker and the draft's hex string
@@ -296,6 +307,7 @@ struct PlannerThemePickerView: View {
                 let hex = String(format: "#%02X%02X%02X",
                                  Int(r * 255), Int(g * 255), Int(b * 255))
                 draft.setHex(hex, for: moduleId)
+                appState.plannerTheme = draft
             }
         )
     }
