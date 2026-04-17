@@ -99,7 +99,7 @@ struct PlannerView: View {
                 }
             }
         }
-        .statusBarStyle(.lightContent)
+            .appStatusBarStyle(.lightContent)
         .sheet(isPresented: $showThemePicker) {
             PlannerThemePickerView()
         }
@@ -325,34 +325,3 @@ struct PlannerThemePickerView: View {
 }
 
 #Preview("Planner")   { PlannerView().environmentObject(AppState()) }
-
-private struct StatusBarStyleSetter: UIViewControllerRepresentable {
-    var style: UIStatusBarStyle
-
-    func makeUIViewController(context: Context) -> UIViewController {
-        StyleController(style: style)
-    }
-
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
-        guard let controller = uiViewController as? StyleController else { return }
-        controller.style = style
-        controller.setNeedsStatusBarAppearanceUpdate()
-    }
-
-    private final class StyleController: UIViewController {
-        var style: UIStatusBarStyle
-
-        init(style: UIStatusBarStyle) {
-            self.style = style
-            super.init(nibName: nil, bundle: nil)
-        }
-
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override var preferredStatusBarStyle: UIStatusBarStyle {
-            style
-        }
-    }
-}

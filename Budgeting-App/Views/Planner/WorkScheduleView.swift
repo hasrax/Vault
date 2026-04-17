@@ -42,6 +42,7 @@ struct WorkScheduleView: View {
     private var statValueColor:  Color { Color(white: 0.88) }
     private var statLabelColor:  Color { Color(white: 0.70) }
     private var statSubColor:    Color { Color(white: 0.62) }
+    private var accent: Color { appState.plannerTheme.color(for: "workSchedule") }
     private var grad: LinearGradient {
         let base = appState.plannerTheme.color(for: "workSchedule")
         return LinearGradient(
@@ -427,7 +428,7 @@ struct WorkScheduleView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .lightCard()
+        .plannerModuleCard(accent: accent)
         .padding(.horizontal, 16)
         .padding(.top, 12)
     }

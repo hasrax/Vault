@@ -143,7 +143,7 @@ struct BudgetView: View {
                 BudgetHistoryView()
             }
         }
-        .statusBarStyle(.lightContent)
+        .appStatusBarStyle(.lightContent)
     }
 
     // Dark glass summary at top

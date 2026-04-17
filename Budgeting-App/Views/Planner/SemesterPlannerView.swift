@@ -29,6 +29,7 @@ struct SemesterPlannerView: View {
     private let spent = 1650.0
     private let totalWeeks = 16
     private let currentWeek = 9
+    private var accent: Color { appState.plannerTheme.color(for: "semesterPlanner") }
 
     private var remaining: Double { semesterBudget - spent }
     private var weeksLeft: Int   { totalWeeks - currentWeek }
@@ -310,7 +311,7 @@ struct SemesterPlannerView: View {
                 }
             }
             .padding(.horizontal,16).padding(.vertical,20)
-            .lightCard()
+            .plannerModuleCard(accent: accent)
         }
         .padding(.horizontal,16).padding(.top,16)
     }
@@ -374,7 +375,7 @@ struct SemesterPlannerView: View {
                     }
                 }
                 .padding(16)
-                .lightCard()
+                .plannerModuleCard(accent: accent)
                 .contextMenu {
                     Button {
                         editDate = item
@@ -444,7 +445,7 @@ struct SemesterPlannerView: View {
                     .accessibilityLabel("Edit goal")
                 }
                 .padding(16)
-                .lightCard()
+                .plannerModuleCard(accent: accent)
                 .contextMenu {
                     Button {
                         if !goal.completed { editGoal = goal }

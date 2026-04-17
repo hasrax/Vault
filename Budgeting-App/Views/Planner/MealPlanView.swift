@@ -13,6 +13,7 @@ struct MealPlanView: View {
     @EnvironmentObject var appState: AppState
     @State private var activeTab = "meals"
     private var grad: LinearGradient { appState.plannerTheme.gradient(for: "mealPlan") }
+    private var accent: Color { appState.plannerTheme.color(for: "mealPlan") }
 
     var body: some View {
         ScrollView {
@@ -65,7 +66,7 @@ struct MealPlanView: View {
                 Text("58d").font(.system(size:12,weight:.bold)).foregroundStyle(Color.uniBlue)
                     .padding(.horizontal,8).padding(.vertical,4).background(Color.uniBlue.opacity(0.1)).clipShape(Capsule())
             }
-            .padding(16).lightCard()
+            .padding(16).plannerModuleCard(accent: accent)
 
             // Swipes card
             VStack(spacing:14) {
@@ -97,13 +98,13 @@ struct MealPlanView: View {
                     Text("Rs.2,655").font(.system(size:20,weight:.bold)).foregroundStyle(Color.income)
                     UniProgressBar(progress:0.47,color:Color.income,height:6)
                 }
-                .padding(16).frame(maxWidth:.infinity).lightCard()
+                .padding(16).frame(maxWidth:.infinity).plannerModuleCard(accent: accent)
                 VStack(alignment:.leading,spacing:8) {
                     Text("Flex Points").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                     Text("Rs.1,217").font(.system(size:20,weight:.bold)).foregroundStyle(Color.uniBlue)
                     UniProgressBar(progress:0.39,color:Color.uniBlue,height:6)
                 }
-                .padding(16).frame(maxWidth:.infinity).lightCard()
+                .padding(16).frame(maxWidth:.infinity).plannerModuleCard(accent: accent)
             }
 
             InsightCard(emoji:"⚠️",title:"Low Swipes Alert",

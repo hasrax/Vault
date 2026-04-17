@@ -12,6 +12,7 @@ struct SplitBillView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var splitBillsVM: SplitBillsViewModel
+    @EnvironmentObject var appState: AppState
     @State private var amountText = ""
     @State private var description = ""
     @State private var splitMethod = "equal"
@@ -34,6 +35,7 @@ struct SplitBillView: View {
     private var currentUserId: String { authVM.currentUser?.id ?? "" }
     private var currentUserName: String { authVM.currentUser?.name ?? "You" }
     private var currentUserEmail: String { authVM.currentUser?.email ?? "" }
+    private var accent: Color { appState.plannerTheme.color(for: "splitBill") }
     private var selfKey: String { currentUserId.isEmpty ? "self" : currentUserId }
     private var customTotal: Double {
         let selfShare = includeSelf ? (Double(customShares[selfKey] ?? "") ?? 0) : 0
@@ -508,7 +510,7 @@ struct SplitBillView: View {
             }
         }
         .padding(16)
-        .lightCard()
+        .plannerModuleCard(accent: accent)
     }
 
     private func statusBadge(_ status: SplitParticipantStatus) -> some View {

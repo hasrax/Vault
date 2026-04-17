@@ -179,14 +179,50 @@ struct LightCardModifier: ViewModifier {
     }
 }
 
+/// Planner module card — subtle tint + top accent line.
+struct PlannerModuleCardModifier: ViewModifier {
+    let accent: Color
+    var radius: CGFloat = 16
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    Color(UIColor.systemBackground)
+                    accent.opacity(0.05)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            )
+            .overlay(
+                VStack {
+                    Rectangle()
+                        .fill(accent.opacity(0.75))
+                        .frame(height: 3)
+                        .clipShape(Capsule())
+                        .padding(.horizontal, 12)
+                        .padding(.top, 10)
+                    Spacer()
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+    }
+}
+
 extension View {
     func glassCard() -> some View            { modifier(GlassCardModifier()) }
     func lightCard(_ r: CGFloat = 16) -> some View { modifier(LightCardModifier(radius: r)) }
+    func plannerModuleCard(accent: Color, radius: CGFloat = 16) -> some View {
+        modifier(PlannerModuleCardModifier(accent: accent, radius: radius))
+    }
     func appBackground() -> some View        { modifier(AppBackgroundModifier()) }
 }
 
 // MARK: - Status Bar Style
-struct StatusBarStyleSetter: UIViewControllerRepresentable {
+struct AppStatusBarStyleSetter: UIViewControllerRepresentable {
     var style: UIStatusBarStyle
 
     func makeUIViewController(context: Context) -> UIViewController {
@@ -218,8 +254,8 @@ struct StatusBarStyleSetter: UIViewControllerRepresentable {
 }
 
 extension View {
-    func statusBarStyle(_ style: UIStatusBarStyle) -> some View {
-        background(StatusBarStyleSetter(style: style))
+    func appStatusBarStyle(_ style: UIStatusBarStyle) -> some View {
+        background(AppStatusBarStyleSetter(style: style))
     }
 }
 
