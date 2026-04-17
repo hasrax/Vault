@@ -99,7 +99,7 @@ enum IncomeSource: String, CaseIterable, Identifiable, Codable {
 
 // MARK: - Transaction
 
-struct Transaction: Identifiable, Codable {
+struct Transaction: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
     var amount: Double
@@ -180,7 +180,7 @@ struct BudgetLimit: Identifiable {
 
 // MARK: - Savings Goal
 
-struct SavingsGoal: Identifiable, Codable {
+struct SavingsGoal: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
     var icon: String
@@ -221,7 +221,7 @@ struct SavingsGoal: Identifiable, Codable {
 
 // MARK: - Work Shift
 
-struct WorkShift: Identifiable {
+struct WorkShift: Identifiable, Equatable {
     let id: UUID
     var day: String
     var date: String
@@ -271,7 +271,7 @@ struct SemesterGoal: Identifiable {
     }
 }
 
-struct ImportantDate: Identifiable {
+struct ImportantDate: Identifiable, Equatable {
     let id: UUID
     var title: String
     var date: Date
@@ -318,25 +318,25 @@ struct Roommate: Identifiable {
 
 // MARK: - Split Bill
 
-enum SplitMethod: String, Codable {
+enum SplitMethod: String, Codable, Equatable {
     case equal
     case custom
 }
 
-enum SplitBillStatus: String, Codable {
+enum SplitBillStatus: String, Codable, Equatable {
     case open
     case settled
     case cancelled
 }
 
-enum SplitParticipantStatus: String, Codable {
+enum SplitParticipantStatus: String, Codable, Equatable {
     case invited
     case accepted
     case declined
     case paid
 }
 
-struct SplitParticipant: Identifiable, Codable {
+struct SplitParticipant: Identifiable, Codable, Equatable {
     var userId: String
     var name: String
     var email: String
@@ -347,7 +347,7 @@ struct SplitParticipant: Identifiable, Codable {
     var id: String { userId }
 }
 
-struct SplitBill: Identifiable, Codable {
+struct SplitBill: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String
     var totalAmount: Double
@@ -382,7 +382,7 @@ struct SplitBill: Identifiable, Codable {
 
 // MARK: - Notifications
 
-struct AppNotification: Identifiable {
+struct AppNotification: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String
     var message: String
@@ -398,7 +398,7 @@ struct AppNotification: Identifiable {
         self.time    = time
     }
 
-    enum NotiType: String {
+    enum NotiType: String, Codable, Equatable {
         case budget, meal, work, planner
 
         var chipColor: Color {
@@ -414,21 +414,24 @@ struct AppNotification: Identifiable {
 
 // MARK: - AI Coach
 
-struct CoachMessage: Identifiable {
+struct CoachMessage: Identifiable, Codable {
     let id: UUID
     var text: String
     var isFromUser: Bool
     var riskLevel: RiskLevel?
+    var createdAt: Date
 
     init(id: UUID = UUID(), text: String,
-         isFromUser: Bool, riskLevel: RiskLevel? = nil) {
+         isFromUser: Bool, riskLevel: RiskLevel? = nil,
+         createdAt: Date = Date()) {
         self.id         = id
         self.text       = text
         self.isFromUser = isFromUser
         self.riskLevel  = riskLevel
+        self.createdAt  = createdAt
     }
 
-    enum RiskLevel {
+    enum RiskLevel: String, Codable {
         case safe, caution, danger
 
         var color: Color {
@@ -481,6 +484,102 @@ struct WeeklySpend: Identifiable {
     }
 }
 
+// MARK: - Budget History
+
+struct BudgetHistoryEntry: Identifiable, Codable, Equatable {
+    let id: UUID
+    var monthKey: String
+    var monthlyBudget: Double
+    var needsPercent: Double
+    var wantsPercent: Double
+    var savingsPercent: Double
+    var needsSpent: Double
+    var wantsSpent: Double
+    var savingsSpent: Double
+    var carryOverAdded: Double
+    var carryOverBalance: Double
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        monthKey: String,
+        monthlyBudget: Double,
+        needsPercent: Double,
+        wantsPercent: Double,
+        savingsPercent: Double,
+        needsSpent: Double,
+        wantsSpent: Double,
+        savingsSpent: Double,
+        carryOverAdded: Double,
+        carryOverBalance: Double,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.monthKey = monthKey
+        self.monthlyBudget = monthlyBudget
+        self.needsPercent = needsPercent
+        self.wantsPercent = wantsPercent
+        self.savingsPercent = savingsPercent
+        self.needsSpent = needsSpent
+        self.wantsSpent = wantsSpent
+        self.savingsSpent = savingsSpent
+        self.carryOverAdded = carryOverAdded
+        self.carryOverBalance = carryOverBalance
+        self.createdAt = createdAt
+    }
+
+    var totalSpent: Double {
+        needsSpent + wantsSpent + savingsSpent
+    }
+
+    var firestoreData: [String: Any] {
+        [
+            "id": id.uuidString,
+            "monthKey": monthKey,
+            "monthlyBudget": monthlyBudget,
+            "needsPercent": needsPercent,
+            "wantsPercent": wantsPercent,
+            "savingsPercent": savingsPercent,
+            "needsSpent": needsSpent,
+            "wantsSpent": wantsSpent,
+            "savingsSpent": savingsSpent,
+            "carryOverAdded": carryOverAdded,
+            "carryOverBalance": carryOverBalance,
+            "createdAt": createdAt.timeIntervalSince1970
+        ]
+    }
+
+    static func fromFirestore(_ dict: [String: Any]) -> BudgetHistoryEntry? {
+        let id = (dict["id"] as? String).flatMap { UUID(uuidString: $0) } ?? UUID()
+        guard let monthKey = dict["monthKey"] as? String else { return nil }
+        let monthlyBudget = dict["monthlyBudget"] as? Double ?? 0
+        let needsPercent = dict["needsPercent"] as? Double ?? 0
+        let wantsPercent = dict["wantsPercent"] as? Double ?? 0
+        let savingsPercent = dict["savingsPercent"] as? Double ?? 0
+        let needsSpent = dict["needsSpent"] as? Double ?? 0
+        let wantsSpent = dict["wantsSpent"] as? Double ?? 0
+        let savingsSpent = dict["savingsSpent"] as? Double ?? 0
+        let carryOverAdded = dict["carryOverAdded"] as? Double ?? 0
+        let carryOverBalance = dict["carryOverBalance"] as? Double ?? 0
+        let createdAtSeconds = dict["createdAt"] as? TimeInterval ?? Date().timeIntervalSince1970
+        let createdAt = Date(timeIntervalSince1970: createdAtSeconds)
+        return BudgetHistoryEntry(
+            id: id,
+            monthKey: monthKey,
+            monthlyBudget: monthlyBudget,
+            needsPercent: needsPercent,
+            wantsPercent: wantsPercent,
+            savingsPercent: savingsPercent,
+            needsSpent: needsSpent,
+            wantsSpent: wantsSpent,
+            savingsSpent: savingsSpent,
+            carryOverAdded: carryOverAdded,
+            carryOverBalance: carryOverBalance,
+            createdAt: createdAt
+        )
+    }
+}
+
 // MARK: - Planner Module
 
 struct PlannerModule: Identifiable {
@@ -506,4 +605,115 @@ struct UserProfile: Identifiable {
     var wantsPercent: Double?
     var savingsPercent: Double?
     var hasCompletedSetup: Bool
+}
+
+// MARK: - Planner Theme
+
+/// Per-module accent colours that the student can customise.
+/// Defaults match the existing gradient start colours in DesignSystem.swift.
+struct PlannerTheme: Codable, Equatable {
+    var semesterHex:  String = "#4C1D95"
+    var workHex:      String = "#0F766E"
+    var mealHex:      String = "#F97316"
+    var savingsHex:   String = "#22C55E"
+    var splitBillHex: String = "#7C3AED"
+    var analyticsHex: String = "#14B8A6"
+
+    // Primary hex for a given module id
+    func hex(for moduleId: String) -> String {
+        switch moduleId {
+        case "semesterPlanner": return semesterHex
+        case "workSchedule":    return workHex
+        case "mealPlan":        return mealHex
+        case "savings":         return savingsHex
+        case "splitBill":       return splitBillHex
+        case "analytics":       return analyticsHex
+        default:                return "#1E3A8A"
+        }
+    }
+
+    // SwiftUI Color
+    func color(for moduleId: String) -> Color {
+        Color(hex: hex(for: moduleId))
+    }
+
+    // Vibrant card/header gradient — used in PlannerView cards & sub-screen headers
+    func gradient(for moduleId: String) -> LinearGradient {
+        let c = color(for: moduleId)
+        // Darken the colour slightly for the start stop so headers have depth
+        return LinearGradient(
+            colors: [c.opacity(0.80), c],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    // Human readable name for the picker UI
+    static func moduleName(for id: String) -> String {
+        switch id {
+        case "semesterPlanner": return "Semester Planner"
+        case "workSchedule":    return "Work Schedule"
+        case "mealPlan":        return "Meal & Study"
+        case "savings":         return "Savings Goals"
+        case "splitBill":       return "Split Bill"
+        case "analytics":       return "Analytics"
+        default:                return id
+        }
+    }
+
+    // Module icon for the picker UI
+    static func moduleIcon(for id: String) -> String {
+        switch id {
+        case "semesterPlanner": return "📅"
+        case "workSchedule":    return "💼"
+        case "mealPlan":        return "🍽️"
+        case "savings":         return "🎯"
+        case "splitBill":       return "🤝"
+        case "analytics":       return "📊"
+        default:                return "🎨"
+        }
+    }
+
+    // All module IDs in display order
+    static let allModuleIds = [
+        "semesterPlanner", "workSchedule", "mealPlan",
+        "savings", "splitBill", "analytics"
+    ]
+
+    // Mutate a single module's hex
+    mutating func setHex(_ hex: String, for moduleId: String) {
+        switch moduleId {
+        case "semesterPlanner": semesterHex  = hex
+        case "workSchedule":    workHex      = hex
+        case "mealPlan":        mealHex      = hex
+        case "savings":         savingsHex   = hex
+        case "splitBill":       splitBillHex = hex
+        case "analytics":       analyticsHex = hex
+        default: break
+        }
+    }
+
+    // Firestore dict representation
+    var firestoreData: [String: Any] {
+        [
+            "semesterHex":  semesterHex,
+            "workHex":      workHex,
+            "mealHex":      mealHex,
+            "savingsHex":   savingsHex,
+            "splitBillHex": splitBillHex,
+            "analyticsHex": analyticsHex,
+        ]
+    }
+
+    init() {}
+
+    init?(from dict: [String: Any]) {
+        guard !dict.isEmpty else { return nil }
+        semesterHex  = dict["semesterHex"]  as? String ?? "#4C1D95"
+        workHex      = dict["workHex"]      as? String ?? "#0F766E"
+        mealHex      = dict["mealHex"]      as? String ?? "#F97316"
+        savingsHex   = dict["savingsHex"]   as? String ?? "#22C55E"
+        splitBillHex = dict["splitBillHex"] as? String ?? "#7C3AED"
+        analyticsHex = dict["analyticsHex"] as? String ?? "#14B8A6"
+    }
 }

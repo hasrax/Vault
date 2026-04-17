@@ -9,57 +9,67 @@ import SwiftUI
 
 struct WeekDayStrip: View {
     let shiftDays:  Set<String>
-    var todayIndex: Int = 4
-    var startDate:  Int = 17
-
-    private let days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    private let calendar = Calendar.current
+    private static let dayFormatter: DateFormatter = {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "EEE"
+        return fmt
+    }()
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(Array(days.enumerated()), id: \.offset) { index, day in
-                    let isToday  = index == todayIndex
-                    let hasShift = shiftDays.contains(day)
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            let now = context.date
+            let weekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+            let dates = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
 
-                    VStack(spacing: 4) {
-                        Text(day)
-                            .font(.system(size: 10, weight: .semibold))
-                            .textCase(.uppercase)
-                            .foregroundStyle(isToday ? Color.white.opacity(0.7) : Color.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(dates, id: \.self) { date in
+                        let dayLabel = Self.dayFormatter.string(from: date)
+                        let dayNumber = calendar.component(.day, from: date)
+                        let isToday = calendar.isDate(date, inSameDayAs: now)
+                        let hasShift = shiftDays.contains(dayLabel)
 
-                        Text("\(startDate + index)")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(isToday ? Color.white : Color.primary)
+                        VStack(spacing: 4) {
+                            Text(dayLabel)
+                                .font(.system(size: 10, weight: .semibold))
+                                .textCase(.uppercase)
+                                .foregroundStyle(isToday ? Color.white.opacity(0.7) : Color.secondary)
 
-                        Circle()
-                            .fill(
-                                isToday  ? Color.white.opacity(0.7) :
-                                hasShift ? Color.uniBlue : Color.clear
-                            )
-                            .frame(width: 5, height: 5)
+                            Text("\(dayNumber)")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(isToday ? Color.white : Color.primary)
+
+                            Circle()
+                                .fill(
+                                    isToday  ? Color.white.opacity(0.7) :
+                                    hasShift ? Color.uniBlue : Color.clear
+                                )
+                                .frame(width: 5, height: 5)
+                        }
+                        .frame(width: 44)
+                        .padding(.vertical, 10)
+                        .background(
+                            isToday  ? LinearGradient.primaryGrad :
+                            hasShift ? LinearGradient(
+                                            colors: [Color.uniBlue.opacity(0.08)],
+                                            startPoint: .top, endPoint: .bottom) :
+                                       LinearGradient(
+                                            colors: [Color(UIColor.secondarySystemBackground)],
+                                            startPoint: .top, endPoint: .bottom)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(
+                                    hasShift && !isToday ? Color.uniBlue.opacity(0.25) : Color.clear,
+                                    lineWidth: 1
+                                )
+                        )
+                        .accessibilityLabel(
+                            "\(dayLabel) \(dayNumber)\(hasShift ? ", shift scheduled" : "")\(isToday ? ", today" : "")"
+                        )
                     }
-                    .frame(width: 44)
-                    .padding(.vertical, 10)
-                    .background(
-                        isToday  ? LinearGradient.primaryGrad :
-                        hasShift ? LinearGradient(
-                                        colors: [Color.uniBlue.opacity(0.08)],
-                                        startPoint: .top, endPoint: .bottom) :
-                                   LinearGradient(
-                                        colors: [Color(UIColor.secondarySystemBackground)],
-                                        startPoint: .top, endPoint: .bottom)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(
-                                hasShift && !isToday ? Color.uniBlue.opacity(0.25) : Color.clear,
-                                lineWidth: 1
-                            )
-                    )
-                    .accessibilityLabel(
-                        "\(day) \(startDate + index)\(hasShift ? ", shift scheduled" : "")\(isToday ? ", today" : "")"
-                    )
                 }
             }
         }

@@ -10,6 +10,7 @@ import SwiftUI
 // MARK: - Home View
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     @State private var activeCategory: BudgetCategory = .needs
     @State private var showAddTransaction = false
     @State private var showNotifications  = false
@@ -26,8 +27,19 @@ struct HomeView: View {
     @State private var showSemesterPlanner = false
     @State private var showAnalytics      = false
 
-    private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
-    private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var currentMonthTransactions: [Transaction] {
+        let cal = Calendar.current
+        return transactionsVM.transactions.filter {
+            cal.isDate($0.date, equalTo: Date(), toGranularity: .month)
+        }
+    }
+
+    private var totalExpense: Double {
+        currentMonthTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+    }
+    private var totalIncome:  Double {
+        currentMonthTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+    }
     private var balance:      Double { appState.monthlyBudget + totalIncome - totalExpense }
 
     private var currentLimit: BudgetLimit? {
@@ -46,7 +58,7 @@ struct HomeView: View {
     }
 
     private func spent(for category: BudgetCategory) -> Double {
-        appState.transactions
+        currentMonthTransactions
             .filter { $0.type == .expense && $0.budgetCategory == category }
             .reduce(0) { $0 + $1.amount }
     }
@@ -59,6 +71,19 @@ struct HomeView: View {
         case .savings: percent = appState.savingsPercent
         }
         return appState.monthlyBudget * (percent / 100)
+    }
+
+    private var receivedText: String {
+        let cal = Calendar.current
+        let now = Date()
+        let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+        let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        let received = fmt.string(from: start)
+        let daysLeft = cal.dateComponents([.day], from: cal.startOfDay(for: now), to: end).day ?? 0
+        let leftText = "\(daysLeft) days left"
+        return "Received \(received) · \(leftText)"
     }
 
     var body: some View {
@@ -113,7 +138,7 @@ struct HomeView: View {
     // MARK: - Dark Header
     private var darkHeader: some View {
         ZStack(alignment: .bottom) {
-            AuthBackground()
+            HomeHeaderBackground()
                 .frame(minHeight: 380)
                 .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
 
@@ -153,7 +178,7 @@ struct HomeView: View {
                     Text(balance.currencyRS)
                         .font(.system(size: 40, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.white)
-                    Text("Received Mar 1 · 27 days left")
+                    Text(receivedText)
                         .font(.system(size: 12))
                         .foregroundStyle(Color.white.opacity(0.4))
                 }
@@ -365,22 +390,22 @@ struct HomeView: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
                 spacing: 10
             ) {
-                QuickActionButton(emoji: "📅", label: "Semester", gradient: .purpleGrad) {
+                QuickActionButton(emoji: "📅", label: "Semester", gradient: appState.plannerTheme.gradient(for: "semesterPlanner")) {
                     showSemesterPlanner = true
                 }
-                QuickActionButton(emoji: "💼", label: "Shifts",   gradient: .greenGrad) {
+                QuickActionButton(emoji: "💼", label: "Shifts",   gradient: appState.plannerTheme.gradient(for: "workSchedule")) {
                     showWorkSchedule = true
                 }
-                QuickActionButton(emoji: "🍽️", label: "Meals",    gradient: .tealGrad) {
+                QuickActionButton(emoji: "🍽️", label: "Meals",    gradient: appState.plannerTheme.gradient(for: "mealPlan")) {
                     showMealPlan = true
                 }
-                QuickActionButton(emoji: "🎯", label: "Savings",  gradient: .pinkGrad) {
+                QuickActionButton(emoji: "🎯", label: "Savings",  gradient: appState.plannerTheme.gradient(for: "savings")) {
                     showSavings = true
                 }
-                QuickActionButton(emoji: "🤝", label: "Split",    gradient: .orangeGrad) {
+                QuickActionButton(emoji: "🤝", label: "Split",    gradient: appState.plannerTheme.gradient(for: "splitBill")) {
                     showSplitBill = true
                 }
-                QuickActionButton(emoji: "📊", label: "Analytics", gradient: .primaryGrad) {
+                QuickActionButton(emoji: "📊", label: "Analytics", gradient: appState.plannerTheme.gradient(for: "analytics")) {
                     showAnalytics = true
                 }
             }
@@ -398,32 +423,38 @@ struct HomeView: View {
             VStack(spacing: 8) {
                 PlannerHighlightCard(
                     title: "Semester Planner",
-                    detail: "Key dates and targets"
+                    detail: "Recent activity: upcoming deadlines",
+                    accent: appState.plannerTheme.color(for: "semesterPlanner")
                 ) { showSemesterPlanner = true }
 
                 PlannerHighlightCard(
                     title: "Work Schedule",
-                    detail: "Track hours and pay"
+                    detail: "Recent activity: shifts this week",
+                    accent: appState.plannerTheme.color(for: "workSchedule")
                 ) { showWorkSchedule = true }
 
                 PlannerHighlightCard(
                     title: "Meal Plan",
-                    detail: "Swipes and dining"
+                    detail: "Recent activity: dining balance",
+                    accent: appState.plannerTheme.color(for: "mealPlan")
                 ) { showMealPlan = true }
 
                 PlannerHighlightCard(
                     title: "Savings",
-                    detail: "Goals and buffers"
+                    detail: "Recent activity: goal progress",
+                    accent: appState.plannerTheme.color(for: "savings")
                 ) { showSavings = true }
 
                 PlannerHighlightCard(
                     title: "Split Bill",
-                    detail: "Settle with friends"
+                    detail: "Recent activity: open balances",
+                    accent: appState.plannerTheme.color(for: "splitBill")
                 ) { showSplitBill = true }
 
                 PlannerHighlightCard(
                     title: "Analytics",
-                    detail: "Trends and insights"
+                    detail: "Recent activity: spending trends",
+                    accent: appState.plannerTheme.color(for: "analytics")
                 ) { showAnalytics = true }
             }
         }
@@ -437,7 +468,7 @@ struct HomeView: View {
             SectionHeader(title: "Recent Transactions", actionLabel: "See all") {
                 showSearch = true
             }
-            ForEach(Array(appState.transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
+            ForEach(Array(transactionsVM.transactions.prefix(4).enumerated()), id: \.element.id) { idx, tx in
                 TransactionRow(transaction: tx)
                 if idx < 3 {
                     Divider().padding(.leading, 56)
@@ -451,4 +482,10 @@ struct HomeView: View {
 
 // RoundedCorner is defined in DesignSystem.swift
 
-#Preview { HomeView().environmentObject(AppState()) }
+#Preview {
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return HomeView()
+        .environmentObject(AppState())
+        .environmentObject(vm)
+}

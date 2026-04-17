@@ -10,7 +10,7 @@ import Combine
 
 // MARK: - Brand Colours
 extension Color {
-    static let uniBlue    = Color(hex: "#3B82F6")
+    static let uniBlue    = Color(hex: "#1E3A8A")
     static let uniPurple  = Color(hex: "#8B5CF6")
     static let uniGreen   = Color(hex: "#22C55E")
     static let uniRed     = Color(hex: "#DC2626")
@@ -36,7 +36,7 @@ extension Color {
     static let appStroke    = Color.white.opacity(0.08)
 
     // CTA
-    static let ctaBlue      = Color(hex: "#3B82F6")
+    static let ctaBlue      = Color(hex: "#1E3A8A")
 
     // Category
     static let needsBlue    = Color(hex: "#3B82F6")
@@ -70,7 +70,7 @@ extension Color {
 
 // MARK: - Gradients
 extension LinearGradient {
-    static let primaryGrad  = LinearGradient(colors:[Color(hex:"#3B82F6"),Color(hex:"#2563EB")], startPoint:.topLeading, endPoint:.bottomTrailing)
+    static let primaryGrad  = LinearGradient(colors:[Color(hex:"#1E3A8A"),Color(hex:"#1D4ED8")], startPoint:.topLeading, endPoint:.bottomTrailing)
     static let purpleGrad   = LinearGradient(colors:[Color(hex:"#8B5CF6"),Color(hex:"#7C3AED")], startPoint:.topLeading, endPoint:.bottomTrailing)
     static let greenGrad    = LinearGradient(colors:[Color(hex:"#22C55E"),Color(hex:"#16A34A")], startPoint:.topLeading, endPoint:.bottomTrailing)
     static let amberGrad    = LinearGradient(colors:[Color(hex:"#F59E0B"),Color(hex:"#D97706")], startPoint:.topLeading, endPoint:.bottomTrailing)
@@ -87,7 +87,7 @@ extension LinearGradient {
     static let appBackgroundGrad = LinearGradient(colors:[Color.appBgTop, Color.appBgBottom], startPoint:.topLeading, endPoint:.bottomTrailing)
 
     // CTA
-    static let ctaGrad = LinearGradient(colors:[Color(hex:"#3B82F6"), Color(hex:"#2563EB")], startPoint:.topLeading, endPoint:.bottomTrailing)
+    static let ctaGrad = LinearGradient(colors:[Color(hex:"#0F1B3A"), Color(hex:"#1E3A8A")], startPoint:.topLeading, endPoint:.bottomTrailing)
 }
 
 // MARK: - Budget Category
@@ -185,6 +185,44 @@ extension View {
     func appBackground() -> some View        { modifier(AppBackgroundModifier()) }
 }
 
+// MARK: - Status Bar Style
+struct StatusBarStyleSetter: UIViewControllerRepresentable {
+    var style: UIStatusBarStyle
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        StyleController(style: style)
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard let controller = uiViewController as? StyleController else { return }
+        controller.style = style
+        controller.setNeedsStatusBarAppearanceUpdate()
+    }
+
+    private final class StyleController: UIViewController {
+        var style: UIStatusBarStyle
+
+        init(style: UIStatusBarStyle) {
+            self.style = style
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override var preferredStatusBarStyle: UIStatusBarStyle {
+            style
+        }
+    }
+}
+
+extension View {
+    func statusBarStyle(_ style: UIStatusBarStyle) -> some View {
+        background(StatusBarStyleSetter(style: style))
+    }
+}
+
 // MARK: - App Background
 struct AppBackground: View {
     var body: some View {
@@ -212,21 +250,56 @@ struct AppBackground: View {
 struct AuthBackground: View {
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(hex: "#05070C"), Color(hex: "#0A0C12"), Color(hex: "#0F1117")],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: [Color(hex: "#F8FAFC"), Color(hex: "#EDF2F7"), Color(hex: "#E2E8F0")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-            LinearGradient(colors: [Color.uniBlue.opacity(0.16), Color.clear],
-                           startPoint: .topTrailing, endPoint: .bottom)
-                .ignoresSafeArea()
+            RadialGradient(
+                colors: [Color.uniBlue.opacity(0.18), Color.clear],
+                center: .topTrailing,
+                startRadius: 30,
+                endRadius: 380
+            )
+            .ignoresSafeArea()
 
-            LinearGradient(colors: [Color.clear, Color.uniBlue.opacity(0.08)],
-                           startPoint: .topLeading, endPoint: .bottom)
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: [Color.clear, Color.uniBlue.opacity(0.08)],
+                startPoint: .topLeading,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        }
+    }
+}
 
-            LinearGradient(colors: [Color.black.opacity(0.45), Color.clear],
-                           startPoint: .bottom, endPoint: .center)
-                .ignoresSafeArea()
+// MARK: - Home Header Background
+struct HomeHeaderBackground: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(hex: "#060914"), Color(hex: "#0B1426"), Color(hex: "#0F1B3A")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [Color.uniBlue.opacity(0.22), Color.clear],
+                center: .topTrailing,
+                startRadius: 30,
+                endRadius: 360
+            )
+            .ignoresSafeArea()
+
+            LinearGradient(
+                colors: [Color.clear, Color.black.opacity(0.35)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
         }
     }
 }

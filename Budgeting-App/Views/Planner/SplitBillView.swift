@@ -10,7 +10,8 @@ import SwiftUI
 // MARK: - Split Bill
 struct SplitBillView: View {
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var splitBillsVM: SplitBillsViewModel
     @State private var amountText = ""
     @State private var description = ""
     @State private var splitMethod = "equal"
@@ -30,9 +31,9 @@ struct SplitBillView: View {
     private var amount: Double { Double(amountText) ?? 0 }
     private var totalPeople: Int { selectedUsers.count + (includeSelf ? 1 : 0) }
     private var splitAmount: Double { totalPeople > 0 ? amount / Double(totalPeople) : 0 }
-    private var currentUserId: String { appState.currentUser?.id ?? "" }
-    private var currentUserName: String { appState.currentUser?.name ?? "You" }
-    private var currentUserEmail: String { appState.currentUser?.email ?? "" }
+    private var currentUserId: String { authVM.currentUser?.id ?? "" }
+    private var currentUserName: String { authVM.currentUser?.name ?? "You" }
+    private var currentUserEmail: String { authVM.currentUser?.email ?? "" }
     private var selfKey: String { currentUserId.isEmpty ? "self" : currentUserId }
     private var customTotal: Double {
         let selfShare = includeSelf ? (Double(customShares[selfKey] ?? "") ?? 0) : 0
@@ -268,18 +269,22 @@ struct SplitBillView: View {
                         .foregroundStyle(Color.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(amount > 0 && totalPeople > 0 ? LinearGradient.ctaGrad : LinearGradient(colors:[Color.white.opacity(0.1)], startPoint: .leading, endPoint: .trailing))
+                        .background(
+                            amount > 0 && totalPeople > 0
+                                ? LinearGradient.ctaGrad
+                                : LinearGradient(colors: [Color.black.opacity(0.04)], startPoint: .leading, endPoint: .trailing)
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .disabled(amount == 0 || totalPeople == 0)
 
-                if !appState.splitBills.isEmpty {
+                if !splitBillsVM.splitBills.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Requests")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(Color.primary)
 
-                        ForEach(appState.splitBills) { bill in
+                        ForEach(splitBillsVM.splitBills) { bill in
                             splitBillCard(bill)
                         }
                     }
@@ -396,7 +401,7 @@ struct SplitBillView: View {
             participants.append(p)
         }
 
-        appState.createSplitBill(
+        splitBillsVM.createSplitBill(
             title: finalTitle,
             totalAmount: amount,
             splitMethod: method,
@@ -472,7 +477,7 @@ struct SplitBillView: View {
                 } else if isCreator {
                     if allPaid {
                         Button("Settle") {
-                            appState.settleSplitBill(bill)
+                            splitBillsVM.settleSplitBill(bill)
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
@@ -483,12 +488,12 @@ struct SplitBillView: View {
                 } else if let me = me {
                     switch me.status {
                     case .invited:
-                        Button("Accept") { appState.acceptSplitBill(bill) }
+                        Button("Accept") { splitBillsVM.acceptSplitBill(bill) }
                             .buttonStyle(.borderedProminent)
-                        Button("Decline") { appState.declineSplitBill(bill) }
+                        Button("Decline") { splitBillsVM.declineSplitBill(bill) }
                             .buttonStyle(.bordered)
                     case .accepted:
-                        Button("Mark Paid") { appState.markSplitBillPaid(bill) }
+                        Button("Mark Paid") { splitBillsVM.markSplitBillPaid(bill) }
                             .buttonStyle(.borderedProminent)
                     case .paid:
                         Text("Paid")
@@ -541,7 +546,7 @@ struct SplitBillView: View {
         searchError = ""
 
         if trimmed.contains("@") {
-            appState.findUserByEmail(trimmed) { emailResult in
+            splitBillsVM.findUserByEmail(trimmed) { emailResult in
                 DispatchQueue.main.async {
                     switch emailResult {
                     case .success(let user):
@@ -562,7 +567,7 @@ struct SplitBillView: View {
     }
 
     private func performNameSearch(query: String) {
-        appState.searchUsers(query: query) { result in
+        splitBillsVM.searchUsers(query: query) { result in
             DispatchQueue.main.async {
                 isSearching = false
                 switch result {
@@ -581,4 +586,12 @@ struct SplitBillView: View {
     }
 }
 
-#Preview("Split") { NavigationStack { SplitBillView().environmentObject(AppState()) } }
+#Preview("Split") {
+    let state = AppState()
+    let authVM = AuthViewModel(appState: state)
+    let splitVM = SplitBillsViewModel(userIdProvider: { nil }, currentUserProvider: { nil }, transactionsVM: TransactionsViewModel())
+    return NavigationStack { SplitBillView()
+        .environmentObject(authVM)
+        .environmentObject(splitVM)
+    }
+}

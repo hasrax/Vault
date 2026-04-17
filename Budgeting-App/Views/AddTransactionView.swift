@@ -11,7 +11,7 @@ import SwiftUI
 // Bottom sheet / full-screen modal for logging a new income or expense.
 // Used from: HomeView, SearchView, ReceiptScannerView.
 struct AddTransactionView: View {
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     @Environment(\.dismiss) var dismiss
 
     // Form state
@@ -280,12 +280,14 @@ struct AddTransactionView: View {
             receiptImageUrl: receiptImageUrl,
             receiptImageBase64: receiptImageBase64
         )
-        appState.addTransaction(newTx)
+        transactionsVM.addTransaction(newTx)
         dismiss()
     }
 }
 
 #Preview {
-    AddTransactionView()
-        .environmentObject(AppState())
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return AddTransactionView()
+        .environmentObject(vm)
 }

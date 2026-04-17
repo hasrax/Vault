@@ -11,6 +11,7 @@ import SwiftUI
 struct FilterChip: View {
     let label: String
     let isSelected: Bool
+    var accentColor: Color = .uniBlue
     let action: () -> Void
 
     var body: some View {
@@ -20,7 +21,7 @@ struct FilterChip: View {
                 .foregroundStyle(isSelected ? .white : Color.primary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.uniBlue : Color(UIColor.secondarySystemBackground))
+                .background(isSelected ? accentColor : Color(UIColor.secondarySystemBackground))
                 .clipShape(Capsule())
                 .animation(.spring(duration: 0.25), value: isSelected)
         }

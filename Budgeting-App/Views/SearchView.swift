@@ -14,11 +14,11 @@ import SwiftUI
 struct SearchView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     let showBack: Bool
     @State private var searchText   = ""
     @State private var activeFilter: TxFilter = .all
-    @State private var selectedExpenseCategory: ExpenseCategory? = nil
-    @State private var selectedIncomeSource: IncomeSource? = nil
+    @State private var selectedBudgetCategory: BudgetCategory? = nil
     @State private var dateFilter: DateFilter = .all
     @State private var showAdd      = false
 
@@ -38,7 +38,7 @@ struct SearchView: View {
 
     // MARK: - Computed
     private var filtered: [Transaction] {
-        appState.transactions.filter { tx in
+        transactionsVM.transactions.filter { tx in
             let matchesFilter: Bool = {
                 switch activeFilter {
                 case .all:     return true
@@ -50,17 +50,12 @@ struct SearchView: View {
                 || tx.name.localizedCaseInsensitiveContains(searchText)
                 || (tx.category?.rawValue ?? "").localizedCaseInsensitiveContains(searchText)
                 || (tx.incomeSource?.rawValue ?? "").localizedCaseInsensitiveContains(searchText)
+                || tx.budgetCategory.rawValue.localizedCaseInsensitiveContains(searchText)
             let matchesCategory: Bool = {
-                switch activeFilter {
-                case .expense:
-                    if let selected = selectedExpenseCategory { return tx.category == selected }
-                    return true
-                case .income:
-                    if let selected = selectedIncomeSource { return tx.incomeSource == selected }
-                    return true
-                case .all:
-                    return true
+                if let selected = selectedBudgetCategory {
+                    return tx.budgetCategory == selected
                 }
+                return true
             }()
             let matchesDate: Bool = {
                 guard let start = dateFilterStart else { return true }
@@ -82,8 +77,8 @@ struct SearchView: View {
             .map { (fmt.string(from: $0.key), $0.value) }
     }
 
-    private var totalIncome:  Double { appState.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
-    private var totalExpense: Double { appState.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private var totalIncome:  Double { transactionsVM.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
+    private var totalExpense: Double { transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
 
     // MARK: - Body
     var body: some View {
@@ -143,16 +138,9 @@ struct SearchView: View {
                 // Filters row
                 HStack(spacing: 10) {
                     Menu {
-                        if activeFilter == .income {
-                            Button("All sources") { selectedIncomeSource = nil }
-                            ForEach(IncomeSource.allCases) { source in
-                                Button(source.rawValue) { selectedIncomeSource = source }
-                            }
-                        } else {
-                            Button("All categories") { selectedExpenseCategory = nil }
-                            ForEach(ExpenseCategory.allCases) { category in
-                                Button(category.rawValue) { selectedExpenseCategory = category }
-                            }
+                        Button("All categories") { selectedBudgetCategory = nil }
+                        ForEach(BudgetCategory.allCases) { category in
+                            Button(category.rawValue) { selectedBudgetCategory = category }
                         }
                     } label: {
                         HStack(spacing: 6) {
@@ -268,12 +256,11 @@ struct SearchView: View {
         .onChange(of: activeFilter) { _, newValue in
             switch newValue {
             case .income:
-                selectedExpenseCategory = nil
+                selectedBudgetCategory = nil
             case .expense:
-                selectedIncomeSource = nil
+                selectedBudgetCategory = nil
             case .all:
-                selectedExpenseCategory = nil
-                selectedIncomeSource = nil
+                selectedBudgetCategory = nil
             }
         }
     }
@@ -299,12 +286,7 @@ struct SearchView: View {
     }
 
     private var categoryLabel: String {
-        switch activeFilter {
-        case .income:
-            return selectedIncomeSource?.rawValue ?? "All sources"
-        case .expense, .all:
-            return selectedExpenseCategory?.rawValue ?? "All categories"
-        }
+        selectedBudgetCategory?.rawValue ?? "All categories"
     }
 
     private var dateFilterStart: Date? {
@@ -326,7 +308,11 @@ struct SearchView: View {
 }
 
 #Preview {
-    NavigationStack {
-        SearchView(showBack: true).environmentObject(AppState())
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return NavigationStack {
+        SearchView(showBack: true)
+            .environmentObject(AppState())
+            .environmentObject(vm)
     }
 }

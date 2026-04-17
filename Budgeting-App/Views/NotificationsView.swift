@@ -9,14 +9,21 @@ import SwiftUI
 
 struct NotificationsView: View {
     @Environment(\.dismiss) var dismiss
-    private let notifications = MockData.notifications
+    @ObservedObject private var store = NotificationStore.shared
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-                    ForEach(notifications) { n in
-                        NotificationCard(notification: n)
+                    if store.items.isEmpty {
+                        Text("No notifications yet")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 24)
+                    } else {
+                        ForEach(store.items) { n in
+                            NotificationCard(notification: n)
+                        }
                     }
                 }
                 .padding(.horizontal, 16)

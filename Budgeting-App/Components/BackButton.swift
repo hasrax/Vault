@@ -8,54 +8,38 @@
 import SwiftUI
 
 /// Back / close button used on all sub-screens.
-/// isDark = true  → white icon on transparent dark bg  (used inside dark headers)
-/// isDark = false → primary colour on system secondary bg (used on light screens)
+/// isDark = true  → white icon on translucent dark circle  (dark headers)
+/// isDark = false → uniBlue icon on white/system circle    (light screens)
 struct BackButton: View {
     let action: () -> Void
     var isDark: Bool = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "chevron.left")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(isDark ? .white : Color.primary)
-                .frame(width: 40, height: 40)
+            ZStack {
+                Circle()
+                    .fill(isDark
+                          ? Color.white.opacity(0.15)
+                          : Color(UIColor.systemBackground))
+                    .frame(width: 40, height: 40)
+                    .shadow(color: .black.opacity(isDark ? 0.0 : 0.08),
+                            radius: 6, x: 0, y: 2)
+
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(isDark ? Color.white : Color.uniBlue)
+            }
         }
-        .buttonStyle(BackButtonStyle(isDark: isDark))
+        .buttonStyle(CircleButtonStyle())
         .accessibilityLabel("Go back")
     }
 }
 
-private struct BackButtonStyle: ButtonStyle {
-    let isDark: Bool
-
+private struct CircleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(
-                Group {
-                    if isDark {
-                        Color.white.opacity(configuration.isPressed ? 0.20 : 0.12)
-                    } else {
-                        Color(UIColor.secondarySystemBackground)
-                    }
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(
-                        isDark ? Color.white.opacity(0.18) : Color.black.opacity(0.06),
-                        lineWidth: 1
-                    )
-            )
-            .shadow(
-                color: isDark ? Color.black.opacity(0.25) : Color.black.opacity(0.10),
-                radius: configuration.isPressed ? 2 : 6,
-                x: 0,
-                y: configuration.isPressed ? 1 : 3
-            )
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.spring(duration: 0.2), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.93 : 1.0)
+            .animation(.spring(duration: 0.18), value: configuration.isPressed)
     }
 }
 

@@ -35,7 +35,9 @@ struct UserService {
             "wantsPercent": wantsPercent,
             "savingsPercent": savingsPercent,
             "hasCompletedSetup": hasCompletedSetup,
-            "photoURL": NSNull()
+            "photoURL": NSNull(),
+            "carryOverBalance": 0,
+            "budgetHistory": []
         ]
         usersCollection.document(uid).setData(data, merge: true) { error in
             if let error = error {

@@ -6,40 +6,79 @@
 //
 
 import SwiftUI
+import UIKit
 import Combine
 import PhotosUI
 import Vision
 import VisionKit
+import CoreML
+import FirebaseFirestore
 
 // MARK: - AI Coach View
 struct AICoachView: View {
+    @EnvironmentObject var appState: AppState
     @State private var messages      = MockData.coachMessages
     @State private var inputText     = ""
     @State private var isThinking    = false
     @State private var showAffordSheet = false
+    @State private var listener: ListenerRegistration? = nil
+    @State private var hasSeededMessages = false
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                topHeader
                 riskDashboard
                 Divider()
                 chatArea
                 inputBar
             }
             .background(Color.clear)
-            .navigationTitle("AI Coach")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showAffordSheet = true
-                    } label: {
-                        Label("Can I afford?", systemImage: "questionmark.circle")
+            // Hide the NavigationStack bar so it doesn't add invisible
+            // height that pushes the custom header content out of place
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showAffordSheet) { CanIAffordSheet() }
+            .onAppear { startMessageListener() }
+            .onDisappear { stopMessageListener() }
+        }
+        .statusBarStyle(.lightContent)
+    }
+
+    // MARK: - Header
+    private var topHeader: some View {
+        let topInset: CGFloat = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 47
+
+        return ZStack(alignment: .bottom) {
+            HomeHeaderBackground()
+                .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
+
+            // Single HStack: title LEFT, button RIGHT — pinned to bottom
+            HStack(alignment: .center) {
+                Text("AI Coach")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.white)
+                Spacer()
+                Button {
+                    showAffordSheet = true
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 42, height: 42)
+                        Image(systemName: "questionmark")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(Color.uniBlue)
                     }
                 }
+                .accessibilityLabel("Can I afford?")
             }
-            .sheet(isPresented: $showAffordSheet) { CanIAffordSheet() }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 24)
         }
+        .frame(height: topInset + 140)
+        .ignoresSafeArea(edges: .top)
     }
 
     // MARK: - Risk Dashboard
@@ -68,9 +107,11 @@ struct AICoachView: View {
                 ).frame(width: 180)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
         }
         .background(Color(UIColor.systemBackground))
+        .padding(.top, -40)
+        .padding(.bottom, 10)
     }
 
     // MARK: - Chat
@@ -170,40 +211,256 @@ struct AICoachView: View {
     // MARK: - Send
     private func send() {
         let q = inputText
-        messages.append(CoachMessage(text: q, isFromUser: true))
+        let userMessage = CoachMessage(text: q, isFromUser: true)
+        messages.append(userMessage)
+        CoachMessageService.addMessage(userMessage)
         inputText   = ""
         isThinking  = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
             isThinking = false
-            messages.append(generateResponse(for: q))
+            let reply = generateResponse(for: q)
+            messages.append(reply)
+            CoachMessageService.addMessage(reply)
         }
+    }
+
+    private func startMessageListener() {
+        guard listener == nil else { return }
+        listener = CoachMessageService.listenMessages(limit: 200) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let items):
+                    if items.isEmpty {
+                        seedStarterMessagesIfNeeded()
+                    } else {
+                        messages = items
+                    }
+                case .failure:
+                    break
+                }
+            }
+        }
+    }
+
+    private func stopMessageListener() {
+        listener?.remove()
+        listener = nil
+    }
+
+    private func seedStarterMessagesIfNeeded() {
+        guard !hasSeededMessages else { return }
+        hasSeededMessages = true
+        messages = MockData.coachMessages
+        MockData.coachMessages.forEach { CoachMessageService.addMessage($0) }
     }
 
     private func generateResponse(for query: String) -> CoachMessage {
         let q = query.lowercased()
         if q.contains("afford") || q.contains("buy") {
-            return CoachMessage(
-                text: "Your Wants budget is 39% used with Rs.6,860 remaining. Under Rs.1,000 is safe — over Rs.3,000 I'd wait until next week.",
-                isFromUser: false, riskLevel: .caution
+            return affordResponse()
+        }
+        if q.contains("save") || q.contains("saving") {
+            return savingsResponse()
+        }
+
+        let features = buildCoachFeatures()
+        if let label = predictLabel(features: features) {
+            return coachResponse(for: label, features: features)
+        }
+
+        return CoachMessage(
+            text: "I'm having trouble loading the coach model right now. Try again in a moment.",
+            isFromUser: false,
+            riskLevel: .caution
+        )
+    }
+
+    private struct CoachFeatures {
+        let needsUtil: Double
+        let wantsUtil: Double
+        let savingsUtil: Double
+        let savingsProgress: Double
+        let netBalanceRatio: Double
+        let incomeExpenseRatio: Double
+        let upcomingBillsCount: Double
+        let upcomingShiftsCount: Double
+    }
+
+    private func buildCoachFeatures() -> CoachFeatures {
+        let monthTx = currentMonthTransactions()
+        let expenses = monthTx.filter { $0.type == .expense }
+        let income = monthTx.filter { $0.type == .income }
+
+        let needsSpent = expenses.filter { $0.budgetCategory == .needs }.reduce(0) { $0 + $1.amount }
+        let wantsSpent = expenses.filter { $0.budgetCategory == .wants }.reduce(0) { $0 + $1.amount }
+        let savingsSpent = expenses.filter { $0.budgetCategory == .savings }.reduce(0) { $0 + $1.amount }
+
+        let needsLimit = budgetLimit(for: .needs)
+        let wantsLimit = budgetLimit(for: .wants)
+        let savingsLimit = budgetLimit(for: .savings)
+
+        let totalIncome = income.reduce(0) { $0 + $1.amount }
+        let totalExpense = expenses.reduce(0) { $0 + $1.amount }
+        let safeBudget = max(appState.monthlyBudget, 1)
+        let balance = appState.monthlyBudget + totalIncome - totalExpense
+
+        let savingsProgress = overallSavingsProgress()
+        let upcomingBills = upcomingBillsCount()
+        let upcomingShifts = upcomingShiftsCount()
+
+        return CoachFeatures(
+            needsUtil: needsLimit > 0 ? needsSpent / needsLimit : 0,
+            wantsUtil: wantsLimit > 0 ? wantsSpent / wantsLimit : 0,
+            savingsUtil: savingsLimit > 0 ? savingsSpent / savingsLimit : 0,
+            savingsProgress: savingsProgress,
+            netBalanceRatio: balance / safeBudget,
+            incomeExpenseRatio: totalIncome / max(totalExpense, 1),
+            upcomingBillsCount: Double(upcomingBills),
+            upcomingShiftsCount: Double(upcomingShifts)
+        )
+    }
+
+    private func predictLabel(features: CoachFeatures) -> String? {
+        do {
+            let model = try CoachModel(configuration: MLModelConfiguration())
+            let output = try model.prediction(
+                needs_util: features.needsUtil,
+                wants_util: features.wantsUtil,
+                savings_util: features.savingsUtil,
+                savings_progress: features.savingsProgress,
+                net_balance_ratio: features.netBalanceRatio,
+                income_expense_ratio: features.incomeExpenseRatio,
+                upcoming_bills_count: features.upcomingBillsCount,
+                upcoming_shifts_count: features.upcomingShiftsCount
             )
-        } else if q.contains("save") || q.contains("saving") {
+            return output.classLabel
+        } catch {
+            return nil
+        }
+    }
+
+    private func coachResponse(for label: String, features: CoachFeatures) -> CoachMessage {
+        switch label {
+        case "needs_over":
             return CoachMessage(
-                text: "You've saved Rs.5,000 this month — 44% of your savings target. Put aside Rs.1,500 before the weekend to stay on track!",
-                isFromUser: false, riskLevel: .safe
+                text: "Needs spending is high this month. You are at \(formatPercent(features.needsUtil)) of your Needs budget.",
+                isFromUser: false,
+                riskLevel: .danger
             )
-        } else {
+        case "reduce_wants":
             return CoachMessage(
-                text: "Your Needs category is Rs.3,000 over budget, mainly from rent and groceries. Try reducing dining out this week to compensate.",
-                isFromUser: false, riskLevel: .danger
+                text: "Wants are climbing fast. You have used \(formatPercent(features.wantsUtil)) of your Wants budget.",
+                isFromUser: false,
+                riskLevel: .caution
+            )
+        case "savings_low":
+            return CoachMessage(
+                text: "Savings progress is low at \(formatPercent(features.savingsProgress)). Try setting aside a small amount this week.",
+                isFromUser: false,
+                riskLevel: .caution
+            )
+        case "upcoming_bills":
+            return CoachMessage(
+                text: "You have \(Int(features.upcomingBillsCount)) bills coming up soon. Keep extra buffer in your balance.",
+                isFromUser: false,
+                riskLevel: .caution
+            )
+        case "shift_income_tip":
+            return CoachMessage(
+                text: "Upcoming shifts can help your cash flow. You have \(Int(features.upcomingShiftsCount)) scheduled.",
+                isFromUser: false,
+                riskLevel: .safe
+            )
+        default:
+            return CoachMessage(
+                text: "Your budgets look balanced right now. Keep up the momentum!",
+                isFromUser: false,
+                riskLevel: .safe
             )
         }
+    }
+
+    private func affordResponse() -> CoachMessage {
+        let wantsLimit = budgetLimit(for: .wants)
+        let wantsSpent = currentMonthTransactions()
+            .filter { $0.type == .expense && $0.budgetCategory == .wants }
+            .reduce(0) { $0 + $1.amount }
+        let remaining = max(wantsLimit - wantsSpent, 0)
+
+        return CoachMessage(
+            text: "You have about \(formatAmount(remaining)) left in Wants this month. Under \(formatAmount(remaining * 0.3)) is safest.",
+            isFromUser: false,
+            riskLevel: remaining <= 0 ? .danger : remaining < wantsLimit * 0.2 ? .caution : .safe
+        )
+    }
+
+    private func savingsResponse() -> CoachMessage {
+        let progress = overallSavingsProgress()
+        return CoachMessage(
+            text: "Savings progress is \(formatPercent(progress)). Aim to move a little more into Savings this week.",
+            isFromUser: false,
+            riskLevel: progress < 0.3 ? .caution : .safe
+        )
+    }
+
+    private func currentMonthTransactions() -> [Transaction] {
+        let all = appState.transactions
+        let calendar = Calendar.current
+        let now = Date()
+        let monthTx = all.filter { calendar.isDate($0.date, equalTo: now, toGranularity: .month) }
+        return monthTx.isEmpty ? all : monthTx
+    }
+
+    private func budgetLimit(for category: BudgetCategory) -> Double {
+        let percent: Double
+        switch category {
+        case .needs:   percent = appState.needsPercent
+        case .wants:   percent = appState.wantsPercent
+        case .savings: percent = appState.savingsPercent
+        }
+        return appState.monthlyBudget * (percent / 100)
+    }
+
+    private func overallSavingsProgress() -> Double {
+        let goals = appState.savingsGoals
+        let totalTarget = goals.reduce(0) { $0 + $1.targetAmount }
+        let totalCurrent = goals.reduce(0) { $0 + $1.currentAmount }
+        guard totalTarget > 0 else { return 0 }
+        return min(totalCurrent / totalTarget, 1)
+    }
+
+    private func upcomingBillsCount() -> Int {
+        let calendar = Calendar.current
+        let now = Date()
+        let end = calendar.date(byAdding: .day, value: 30, to: now) ?? now
+        return appState.importantDates
+            .filter { $0.type == .bill && $0.date >= now && $0.date <= end }
+            .count
+    }
+
+    private func upcomingShiftsCount() -> Int {
+        appState.workShifts.filter { $0.status == .upcoming }.count
+    }
+
+    private func formatAmount(_ value: Double) -> String {
+        let fmt = NumberFormatter()
+        fmt.numberStyle = .decimal
+        fmt.maximumFractionDigits = 0
+        let num = fmt.string(from: NSNumber(value: value)) ?? "0"
+        return "Rs. \(num)"
+    }
+
+    private func formatPercent(_ value: Double) -> String {
+        let pct = Int((value * 100).rounded())
+        return "\(pct)%"
     }
 }
 
 // MARK: - Can I Afford Sheet
 struct CanIAffordSheet: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
     @State private var amount   = ""
     @State private var category: BudgetCategory = .wants
     @State private var result: AffordResult? = nil
@@ -272,10 +529,27 @@ struct CanIAffordSheet: View {
 
     private func checkAfford() {
         guard let value = Double(amount) else { return }
-        guard let limit = MockData.budgetLimits.first(where: { $0.category == category }) else { return }
-        if value <= limit.remaining * 0.5      { result = .yes }
-        else if value <= limit.remaining       { result = .maybe }
-        else                                   { result = .no }
+        let limit = budgetLimit(for: category)
+        let remaining = max(limit - spent(for: category), 0)
+        if value <= remaining * 0.5 { result = .yes }
+        else if value <= remaining  { result = .maybe }
+        else                        { result = .no }
+    }
+
+    private func budgetLimit(for category: BudgetCategory) -> Double {
+        let percent: Double
+        switch category {
+        case .needs:   percent = appState.needsPercent
+        case .wants:   percent = appState.wantsPercent
+        case .savings: percent = appState.savingsPercent
+        }
+        return appState.monthlyBudget * (percent / 100)
+    }
+
+    private func spent(for category: BudgetCategory) -> Double {
+        appState.transactions
+            .filter { $0.type == .expense && $0.budgetCategory == category }
+            .reduce(0) { $0 + $1.amount }
     }
 }
 
@@ -284,6 +558,8 @@ struct ReceiptScannerView: View {
     @Environment(\.dismiss) var dismiss
     @State private var isScanning      = false
     @State private var scannedAmount: Double? = nil
+    @State private var amountCandidates: [Double] = []
+    @State private var selectedCandidate: Double? = nil
     @State private var showAdd         = false
     @State private var selectedItem: PhotosPickerItem?
     @State private var receiptImage: UIImage?
@@ -376,13 +652,21 @@ struct ReceiptScannerView: View {
                 .frame(height: 300)
 
             if let img = receiptImage {
-                Image(uiImage: img)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: 300)
-                    .clipped()
-                    .overlay(Color.black.opacity(0.35))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                Button {
+                    showImagePreview = true
+                } label: {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 300)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
             }
 
             if useLiveScanner {
@@ -499,6 +783,47 @@ struct ReceiptScannerView: View {
                 }
             }
 
+            if scannedAmount == nil, !amountCandidates.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Detected totals")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                    ForEach(amountCandidates, id: \.self) { value in
+                        Button {
+                            selectedCandidate = value
+                        } label: {
+                            HStack {
+                                Text(value.currencyRS)
+                                    .font(.system(size: 14, weight: .semibold))
+                                Spacer()
+                                if selectedCandidate == value {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(Color.uniBlue)
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Button("Confirm Amount") {
+                        if let selectedCandidate {
+                            scannedAmount = selectedCandidate
+                        }
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(LinearGradient.primaryGrad)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .disabled(selectedCandidate == nil)
+                }
+            }
+
             if useLiveScanner {
                 Button { scanLiveText() } label: {
                     Label("Scan from Live View", systemImage: "text.viewfinder")
@@ -541,6 +866,8 @@ struct ReceiptScannerView: View {
     private func loadPhoto(item: PhotosPickerItem) {
         isScanning = true
         scannedAmount = nil
+        amountCandidates = []
+        selectedCandidate = nil
         uploadError = ""
         receiptImageUrl = nil
         receiptImageBase64 = nil
@@ -580,8 +907,10 @@ struct ReceiptScannerView: View {
                 }
                 let strings = (request.results as? [VNRecognizedTextObservation])?
                     .compactMap { $0.topCandidates(1).first?.string } ?? []
-                self.scannedAmount = extractAmount(from: strings)
-                if self.scannedAmount == nil {
+                let amounts = extractAmounts(from: strings)
+                self.amountCandidates = amounts
+                self.selectedCandidate = amounts.first
+                if amounts.isEmpty {
                     self.uploadError = "Could not find a total amount."
                 }
             }
@@ -595,28 +924,57 @@ struct ReceiptScannerView: View {
         }
     }
 
-    private func extractAmount(from lines: [String]) -> Double? {
+    private func extractAmounts(from lines: [String]) -> [Double] {
         let lower = lines.map { $0.lowercased() }
-        let keywords = ["total", "amount", "subtotal", "balance", "due"]
+        let keywords = ["total", "amount", "subtotal", "balance", "due", "payable", "grand", "net"]
         let prioritized = lower.filter { line in
             keywords.contains { line.contains($0) }
         }
 
-        let candidates = (prioritized.isEmpty ? lower : prioritized)
-            .flatMap { extractNumbers(from: $0) }
+        let sourceLines = prioritized.isEmpty ? lower : prioritized
+        let candidates = sourceLines.flatMap { extractNumbers(from: $0) }
+        if !candidates.isEmpty {
+            return normalizeCandidates(candidates)
+        }
 
-        return candidates.max()
+        let fallbackCandidates = lower.flatMap { extractNumbers(from: $0) }
+        return normalizeCandidates(fallbackCandidates)
     }
 
     private func extractNumbers(from text: String) -> [Double] {
-        let pattern = "([0-9]+(?:[\\.,][0-9]{2})?)"
+        let pattern = "([0-9]{1,3}(?:[\\.,][0-9]{3})*(?:[\\.,][0-9]{2})?|[0-9]+(?:[\\.,][0-9]{2})?)"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
         let range = NSRange(text.startIndex..., in: text)
         return regex.matches(in: text, options: [], range: range).compactMap { match in
             guard let r = Range(match.range(at: 1), in: text) else { return nil }
-            let raw = text[r].replacingOccurrences(of: ",", with: ".")
-            return Double(raw)
+            let raw = String(text[r])
+            let normalized = normalizeNumberString(raw)
+            return Double(normalized)
         }
+    }
+
+    private func normalizeNumberString(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.contains(",") && trimmed.contains(".") {
+            return trimmed.replacingOccurrences(of: ",", with: "")
+        }
+
+        if trimmed.contains(",") {
+            let parts = trimmed.split(separator: ",")
+            if let last = parts.last, last.count == 2 {
+                let intPart = parts.dropLast().joined()
+                return intPart + "." + last
+            }
+            return trimmed.replacingOccurrences(of: ",", with: "")
+        }
+
+        return trimmed
+    }
+
+    private func normalizeCandidates(_ values: [Double]) -> [Double] {
+        let unique = Array(Set(values))
+        let sorted = unique.sorted(by: >)
+        return Array(sorted.prefix(5))
     }
 
     private func prepareToAddTransaction() {
@@ -637,8 +995,10 @@ struct ReceiptScannerView: View {
         let lines = liveScanText
             .split(separator: "\n")
             .map { String($0) }
-        scannedAmount = extractAmount(from: lines)
-        if scannedAmount == nil {
+        let amounts = extractAmounts(from: lines)
+        amountCandidates = amounts
+        selectedCandidate = amounts.first
+        if amounts.isEmpty {
             uploadError = "Could not find a total amount."
         }
     }
@@ -858,3 +1218,40 @@ private struct ZoomableImageView: UIViewRepresentable {
 
 #Preview("AI Coach") { AICoachView().environmentObject(AppState()) }
 #Preview("Scanner")  { NavigationStack { ReceiptScannerView() }.environmentObject(AppState()) }
+
+private struct StatusBarStyleSetter: UIViewControllerRepresentable {
+    var style: UIStatusBarStyle
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        StyleController(style: style)
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard let controller = uiViewController as? StyleController else { return }
+        controller.style = style
+        controller.setNeedsStatusBarAppearanceUpdate()
+    }
+
+    private final class StyleController: UIViewController {
+        var style: UIStatusBarStyle
+
+        init(style: UIStatusBarStyle) {
+            self.style = style
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override var preferredStatusBarStyle: UIStatusBarStyle {
+            style
+        }
+    }
+}
+
+private extension View {
+    func statusBarStyle(_ style: UIStatusBarStyle) -> some View {
+        background(StatusBarStyleSetter(style: style))
+    }
+}

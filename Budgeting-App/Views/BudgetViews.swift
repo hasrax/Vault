@@ -12,28 +12,37 @@ import Charts
 struct BudgetView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     @State private var activeFilter: BudgetFilter = .all
     @State private var showAnalytics = false
     @State private var showEditBudget = false
+    @State private var showHistory = false
 
     enum BudgetFilter: String, CaseIterable { case all="All"; case needs="Needs"; case wants="Wants"; case savings="Savings" }
 
     private var totalBudget: Double { budgetLimits.reduce(0){$0+$1.limit} }
     private var totalSpent:  Double { budgetLimits.reduce(0){$0+$1.spent} }
 
+    private var currentMonthExpenses: [Transaction] {
+        let cal = Calendar.current
+        return transactionsVM.transactions.filter {
+            $0.type == .expense && cal.isDate($0.date, equalTo: Date(), toGranularity: .month)
+        }
+    }
+
     private var budgetLimits: [BudgetLimit] {
         let needsLimit = appState.monthlyBudget * appState.needsPercent / 100
         let wantsLimit = appState.monthlyBudget * appState.wantsPercent / 100
-        let savingsLimit = appState.monthlyBudget * appState.savingsPercent / 100
+        let savingsLimit = (appState.monthlyBudget * appState.savingsPercent / 100) + appState.carryOverBalance
 
-        let needsSpent = appState.transactions
-            .filter { $0.budgetCategory == .needs && $0.type == .expense }
+        let needsSpent = currentMonthExpenses
+            .filter { $0.budgetCategory == .needs }
             .reduce(0) { $0 + $1.amount }
-        let wantsSpent = appState.transactions
-            .filter { $0.budgetCategory == .wants && $0.type == .expense }
+        let wantsSpent = currentMonthExpenses
+            .filter { $0.budgetCategory == .wants }
             .reduce(0) { $0 + $1.amount }
-        let savingsSpent = appState.transactions
-            .filter { $0.budgetCategory == .savings && $0.type == .expense }
+        let savingsSpent = currentMonthExpenses
+            .filter { $0.budgetCategory == .savings }
             .reduce(0) { $0 + $1.amount }
 
         return [
@@ -68,6 +77,51 @@ struct BudgetView: View {
                         .padding(.vertical, 12)
                     }
 
+                    // History summary
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text("Monthly history")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.primary)
+                            Spacer()
+                            Button("See all") { showHistory = true }
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.uniBlue)
+                        }
+
+                        if let latest = appState.budgetHistory.first {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(formatMonth(latest.monthKey))
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Color.primary)
+                                    Text("Spent \(latest.totalSpent.currencyRS)")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.secondary)
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text("Carry-over")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(Color.secondary)
+                                    Text(latest.carryOverAdded.currencyRS)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Color.primary)
+                                }
+                            }
+                            .padding(12)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            Text("No history yet")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+
                     // Cards
                     VStack(spacing: 14) {
                         ForEach(filtered) { limit in
@@ -78,68 +132,158 @@ struct BudgetView: View {
                     .padding(.bottom, 100)
                 }
             }
+            .ignoresSafeArea(edges: .top)
             .background(Color.clear)
-            .navigationTitle("Budget")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    BackButton { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 12) {
-                        Button {
-                            showEditBudget = true
-                        } label: {
-                            Image(systemName: "slider.horizontal.3")
-                        }
-                        Button {
-                            showAnalytics = true
-                        } label: {
-                            Image(systemName: "chart.bar.xaxis")
-                        }
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showAnalytics) { AnalyticsView() }
             .sheet(isPresented: $showEditBudget) {
                 SetupBudgetView(isEditing: true)
             }
+            .sheet(isPresented: $showHistory) {
+                BudgetHistoryView()
+            }
         }
+        .statusBarStyle(.lightContent)
     }
 
     // Dark glass summary at top
     private var glassSummaryHeader: some View {
-        ZStack {
-            LinearGradient.headerGrad
-                .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
+        let topInset: CGFloat = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 47
 
+        return ZStack(alignment: .bottom) {
+            HomeHeaderBackground()
+                .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
+                .ignoresSafeArea(edges: .top)
+
+            let safeTotal = max(totalBudget, 1)
             VStack(spacing: 12) {
                 HStack {
+                    BackButton(action: { dismiss() }, isDark: true)
+                    Spacer()
+                    Button {
+                        showEditBudget = true
+                    } label: {
+                        Text("Edit")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(headerText)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(headerButtonBg)
+                            .clipShape(Capsule())
+                    }
+                    .accessibilityLabel("Edit Budget")
+                }
+
+                HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Total Budget").font(.system(size: 12)).foregroundStyle(Color.white.opacity(0.5))
+                        Text("Total Budget")
+                            .font(.system(size: 12))
+                            .foregroundStyle(headerSubText)
                         Text(totalBudget.currencyRS)
                             .font(.system(size: 26, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.white)
+                            .foregroundStyle(headerText)
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("Spent").font(.system(size: 12)).foregroundStyle(Color.white.opacity(0.5))
+                        Text("Spent")
+                            .font(.system(size: 12))
+                            .foregroundStyle(headerSubText)
                         Text(totalSpent.currencyRS)
                             .font(.system(size: 26, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.white)
+                            .foregroundStyle(headerText)
                     }
                 }
-                UniProgressBar(progress: min(totalSpent / totalBudget, 1),
+                UniProgressBar(progress: min(totalSpent / safeTotal, 1),
                                color: totalSpent > totalBudget ? Color.expense : Color.uniBlue,
                                height: 8)
-                Text("\((totalBudget - totalSpent).currencyRS) remaining (\(Int(max(0,(totalBudget-totalSpent)/totalBudget*100)))%)")
-                    .font(.system(size: 12)).foregroundStyle(Color.white.opacity(0.5))
+                Text("\((totalBudget - totalSpent).currencyRS) remaining (\(Int(max(0,(totalBudget-totalSpent)/safeTotal*100)))%)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(headerSubText)
+                if appState.carryOverBalance > 0 {
+                    Text("Savings pool: \(appState.carryOverBalance.currencyRS)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(headerSubText)
+                }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 24)
+            .padding(.top, topInset + 10)
+            .padding(.bottom, 24)
         }
+        .frame(height: topInset + 180)
         .padding(.bottom, 4)
+    }
+
+    private var headerText: Color { Color.white }
+    private var headerSubText: Color { Color.white.opacity(0.5) }
+    private var headerButtonBg: Color { Color.white.opacity(0.18) }
+
+    private func formatMonth(_ monthKey: String) -> String {
+        let parse = DateFormatter()
+        parse.dateFormat = "yyyy-MM"
+        let display = DateFormatter()
+        display.dateFormat = "MMM yyyy"
+        if let date = parse.date(from: monthKey) {
+            return display.string(from: date)
+        }
+        return monthKey
+    }
+}
+
+// MARK: - Budget History View
+struct BudgetHistoryView: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(appState.budgetHistory.sorted { $0.monthKey > $1.monthKey }) { entry in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(formatMonth(entry.monthKey))
+                                .font(.system(size: 16, weight: .semibold))
+                            Spacer()
+                            Text(entry.monthlyBudget.currencyRS)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Color.secondary)
+                        }
+                        Text("Spent \(entry.totalSpent.currencyRS)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.secondary)
+                        Text("Needs \(entry.needsSpent.currencyRS) · Wants \(entry.wantsSpent.currencyRS) · Savings \(entry.savingsSpent.currencyRS)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.secondary)
+                        Text("Carry-over added: \(entry.carryOverAdded.currencyRS)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.secondary)
+                        Text("Savings pool: \(entry.carryOverBalance.currencyRS)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.secondary)
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+            .navigationTitle("Budget History")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func formatMonth(_ monthKey: String) -> String {
+        let parse = DateFormatter()
+        parse.dateFormat = "yyyy-MM"
+        let display = DateFormatter()
+        display.dateFormat = "MMM yyyy"
+        if let date = parse.date(from: monthKey) {
+            return display.string(from: date)
+        }
+        return monthKey
     }
 }
 
@@ -147,11 +291,12 @@ struct BudgetView: View {
 struct AnalyticsView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
     @State private var timeFilter = "Month"
     private let timeFilters = ["Week", "Month", "Year"]
 
     private var filteredExpenses: [Transaction] {
-        let expenses = appState.transactions.filter { $0.type == .expense }
+        let expenses = transactionsVM.transactions.filter { $0.type == .expense }
         guard let start = startDate else { return expenses }
         return expenses.filter { $0.date >= start }
     }
@@ -174,6 +319,8 @@ struct AnalyticsView: View {
     private var totalSpent: Double {
         filteredExpenses.reduce(0) { $0 + $1.amount }
     }
+
+    private var accent: Color { appState.plannerTheme.color(for: "analytics") }
 
     private var topCategories: [(BudgetCategory, Double, Double)] {
         let totals = BudgetCategory.allCases.map { cat in
@@ -264,13 +411,21 @@ struct AnalyticsView: View {
                 } else {
                     // Total spending card
                     VStack(spacing: 12) {
-                        Text("Total Spending").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text("Total Spending")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.75))
                         Text(totalSpent.currencyRS)
                             .font(.system(size:40,weight:.bold,design:.rounded))
+                            .foregroundStyle(Color.white)
                     }
                     .frame(maxWidth:.infinity)
                     .padding(24)
-                    .lightCard()
+                    .background(appState.plannerTheme.gradient(for: "analytics"))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(accent.opacity(0.45), lineWidth: 1)
+                    )
 
                     // Weekly bar chart
                     VStack(alignment:.leading, spacing:14) {
@@ -280,7 +435,7 @@ struct AnalyticsView: View {
                                 x:.value("Day", day.day),
                                 y:.value("Amount", day.amount)
                             )
-                            .foregroundStyle(LinearGradient.primaryGrad)
+                            .foregroundStyle(accent)
                             .cornerRadius(6)
                         }
                         .frame(height: 160)
@@ -347,5 +502,18 @@ struct AnalyticsView: View {
     }
 }
 
-#Preview("Budget")    { BudgetView().environmentObject(AppState()) }
-#Preview("Analytics") { NavigationStack { AnalyticsView() } }
+#Preview("Budget") {
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return BudgetView()
+        .environmentObject(AppState())
+        .environmentObject(vm)
+}
+#Preview("Analytics") {
+    let vm = TransactionsViewModel()
+    vm.transactions = MockData.transactions
+    return NavigationStack { AnalyticsView()
+        .environmentObject(AppState())
+        .environmentObject(vm)
+    }
+}

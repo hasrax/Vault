@@ -14,12 +14,14 @@ struct GlassStatCard: View {
     let value:      String
     let sub:        String?
     let valueColor: Color
+    var labelColor: Color = .white.opacity(0.75)
+    var subColor:   Color = .white.opacity(0.65)
 
     var body: some View {
         VStack(spacing: 4) {
             Text(label)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(labelColor)
                 .textCase(.uppercase)
                 .tracking(0.5)
 
@@ -30,7 +32,7 @@ struct GlassStatCard: View {
             if let s = sub {
                 Text(s)
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(subColor)
             }
         }
         .frame(maxWidth: .infinity)

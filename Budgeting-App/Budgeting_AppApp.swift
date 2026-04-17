@@ -3,6 +3,7 @@ import Combine
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
+import GoogleSignIn
 import UIKit
 
 // MARK: - Global App State
@@ -17,6 +18,8 @@ class AppState: ObservableObject {
     @Published var needsPercent: Double   = 50
     @Published var wantsPercent: Double   = 25
     @Published var savingsPercent: Double = 25
+    @Published var carryOverBalance: Double = 0
+    @Published var budgetHistory: [BudgetHistoryEntry] = []
     @Published var currentUser: UserProfile?
     @Published var transactions: [Transaction] = MockData.transactions
     @Published var importantDates: [ImportantDate] = MockData.importantDates
@@ -25,6 +28,9 @@ class AppState: ObservableObject {
     @Published var savingsGoals: [SavingsGoal] = []
     @Published var sessionTimeoutSeconds: TimeInterval = 30
     @Published var splitBills: [SplitBill] = []
+    @Published var plannerTheme: PlannerTheme = PlannerTheme()
+
+    private var budgetHistoryLoaded = false
 
     private var importantDatesListener: ListenerRegistration?
     private var semesterGoalsListener: ListenerRegistration?
@@ -39,12 +45,31 @@ class AppState: ObservableObject {
             loadUserProfile(uid: user.uid, fallbackEmail: user.email) {
                 self.isAuthenticated = true
             }
+            loadBudgetRolloverState(uid: user.uid)
             loadTransactions()
-            startPlannerListeners()
-            startSplitBillListeners()
             startTransactionListener()
             startSavingsGoalsListener()
+            loadPlannerTheme()                  // ← restore per-user theme
             flushPendingWrites(uid: user.uid)
+        }
+
+        // MARK: - Planner Theme persistence
+        func savePlannerTheme() {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            let data: [String: Any] = ["plannerTheme": plannerTheme.firestoreData]
+            Firestore.firestore().collection("users").document(uid)
+                .setData(data, merge: true) { _ in }
+        }
+
+        func loadPlannerTheme() {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            Firestore.firestore().collection("users").document(uid)
+                .getDocument { [weak self] snapshot, _ in
+                    guard let self,
+                          let dict = snapshot?.data()?["plannerTheme"] as? [String: Any],
+                          let theme = PlannerTheme(from: dict) else { return }
+                    DispatchQueue.main.async { self.plannerTheme = theme }
+                }
         }
     
         func signIn(email: String, password: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -91,9 +116,10 @@ class AppState: ObservableObject {
             transactions = []
             splitBills = []
             savingsGoals = []
+            carryOverBalance = 0
+            budgetHistory = []
+            plannerTheme = PlannerTheme()   // reset to defaults on logout
             stopTransactionListener()
-            stopPlannerListeners()
-            stopSplitBillListeners()
             stopSavingsGoalsListener()
         }
 
@@ -117,6 +143,9 @@ class AppState: ObservableObject {
                 return
             }
             let uid = user.uid
+            let email = (currentUser?.email ?? user.email ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
             TransactionService.deleteAllTransactions { txError in
                 if let txError = txError {
                     completion(.failure(txError))
@@ -133,6 +162,9 @@ class AppState: ObservableObject {
                             return
                         }
                         DispatchQueue.main.async {
+                            if !email.isEmpty {
+                                KeychainService.removeAccount(email: email)
+                            }
                             self.signOut()
                             completion(.success(()))
                         }
@@ -214,6 +246,151 @@ class AppState: ObservableObject {
                 currentUser = profile
                 CoreDataCache.shared.saveUserProfile(profile, ownerId: uid)
             }
+        }
+
+        func loadBudgetRolloverState(uid: String) {
+            Firestore.firestore().collection("users").document(uid)
+                .getDocument { [weak self] snapshot, _ in
+                    guard let self, let data = snapshot?.data() else { return }
+                    let carryOver = data["carryOverBalance"] as? Double ?? 0
+                    let historyArray = data["budgetHistory"] as? [[String: Any]] ?? []
+                    let parsed = historyArray.compactMap { BudgetHistoryEntry.fromFirestore($0) }
+                    DispatchQueue.main.async {
+                        self.carryOverBalance = carryOver
+                        self.budgetHistory = parsed.sorted { $0.monthKey > $1.monthKey }
+                        self.budgetHistoryLoaded = true
+                    }
+                }
+        }
+
+        func saveBudgetRolloverState(uid: String) {
+            let historyData = budgetHistory.map { $0.firestoreData }
+            let data: [String: Any] = [
+                "carryOverBalance": carryOverBalance,
+                "budgetHistory": historyData
+            ]
+            Firestore.firestore().collection("users").document(uid)
+                .setData(data, merge: true) { _ in }
+        }
+
+        func handleMonthlyRollover(transactions: [Transaction]) {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            let calendar = Calendar.current
+            let now = Date()
+            let currentMonthKey = monthKey(for: now)
+            let rolloverKey = "budgetRolloverMonth_\(uid)"
+            let lastMonthKey = UserDefaults.standard.string(forKey: rolloverKey)
+
+            if lastMonthKey == currentMonthKey { return }
+
+            let prevDate = calendar.date(byAdding: .month, value: -1, to: now) ?? now
+            let prevMonthKey = monthKey(for: prevDate)
+
+            if !budgetHistory.contains(where: { $0.monthKey == prevMonthKey }) {
+                let prevMonthExpenses = transactions.filter {
+                    $0.type == .expense && calendar.isDate($0.date, equalTo: prevDate, toGranularity: .month)
+                }
+
+                let needsSpent = prevMonthExpenses
+                    .filter { $0.budgetCategory == .needs }
+                    .reduce(0) { $0 + $1.amount }
+                let wantsSpent = prevMonthExpenses
+                    .filter { $0.budgetCategory == .wants }
+                    .reduce(0) { $0 + $1.amount }
+                let savingsSpent = prevMonthExpenses
+                    .filter { $0.budgetCategory == .savings }
+                    .reduce(0) { $0 + $1.amount }
+
+                let totalSpent = needsSpent + wantsSpent + savingsSpent
+                let carryOverAdded = max(0, monthlyBudget - totalSpent)
+                carryOverBalance += carryOverAdded
+
+                let entry = BudgetHistoryEntry(
+                    monthKey: prevMonthKey,
+                    monthlyBudget: monthlyBudget,
+                    needsPercent: needsPercent,
+                    wantsPercent: wantsPercent,
+                    savingsPercent: savingsPercent,
+                    needsSpent: needsSpent,
+                    wantsSpent: wantsSpent,
+                    savingsSpent: savingsSpent,
+                    carryOverAdded: carryOverAdded,
+                    carryOverBalance: carryOverBalance
+                )
+                budgetHistory.insert(entry, at: 0)
+                saveBudgetRolloverState(uid: uid)
+            }
+
+            UserDefaults.standard.set(currentMonthKey, forKey: rolloverKey)
+        }
+
+        func backfillBudgetHistoryIfNeeded(transactions: [Transaction]) {
+            guard budgetHistoryLoaded else { return }
+            guard budgetHistory.isEmpty else { return }
+            let calendar = Calendar.current
+            let now = Date()
+            let lastMonth = calendar.date(byAdding: .month, value: -1, to: now) ?? now
+            let pastExpenses = transactions.filter {
+                $0.type == .expense && $0.date < calendar.startOfDay(for: now)
+            }
+            guard let firstDate = pastExpenses.map({ $0.date }).min() else { return }
+            let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: firstDate)) ?? firstDate
+            let endMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: lastMonth)) ?? lastMonth
+            guard startMonth <= endMonth else { return }
+
+            var entries: [BudgetHistoryEntry] = []
+            var carryOverRunning: Double = 0
+            var monthCursor = startMonth
+
+            while monthCursor <= endMonth {
+                let monthKeyValue = monthKey(for: monthCursor)
+                let monthExpenses = pastExpenses.filter {
+                    calendar.isDate($0.date, equalTo: monthCursor, toGranularity: .month)
+                }
+
+                let needsSpent = monthExpenses
+                    .filter { $0.budgetCategory == .needs }
+                    .reduce(0) { $0 + $1.amount }
+                let wantsSpent = monthExpenses
+                    .filter { $0.budgetCategory == .wants }
+                    .reduce(0) { $0 + $1.amount }
+                let savingsSpent = monthExpenses
+                    .filter { $0.budgetCategory == .savings }
+                    .reduce(0) { $0 + $1.amount }
+
+                let totalSpent = needsSpent + wantsSpent + savingsSpent
+                let carryOverAdded = max(0, monthlyBudget - totalSpent)
+                carryOverRunning += carryOverAdded
+
+                let entry = BudgetHistoryEntry(
+                    monthKey: monthKeyValue,
+                    monthlyBudget: monthlyBudget,
+                    needsPercent: needsPercent,
+                    wantsPercent: wantsPercent,
+                    savingsPercent: savingsPercent,
+                    needsSpent: needsSpent,
+                    wantsSpent: wantsSpent,
+                    savingsSpent: savingsSpent,
+                    carryOverAdded: carryOverAdded,
+                    carryOverBalance: carryOverRunning
+                )
+                entries.append(entry)
+
+                guard let next = calendar.date(byAdding: .month, value: 1, to: monthCursor) else { break }
+                monthCursor = next
+            }
+
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            carryOverBalance = carryOverRunning
+            budgetHistory = entries.sorted { $0.monthKey > $1.monthKey }
+            saveBudgetRolloverState(uid: uid)
+        }
+
+        private func monthKey(for date: Date) -> String {
+            let comps = Calendar.current.dateComponents([.year, .month], from: date)
+            let year = comps.year ?? 0
+            let month = comps.month ?? 0
+            return String(format: "%04d-%02d", year, month)
         }
     
         func loadTransactions() {
@@ -825,16 +1002,53 @@ class AppState: ObservableObject {
 // MARK: - App Entry Point
 @main
 struct Budgeting_App: App {
-    @StateObject private var appState = AppState()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @StateObject private var appState: AppState
+    @StateObject private var authVM: AuthViewModel
+    @StateObject private var transactionsVM: TransactionsViewModel
+    @StateObject private var savingsVM: SavingsGoalsViewModel
+    @StateObject private var plannerVM: PlannerViewModel
+    @StateObject private var splitBillsVM: SplitBillsViewModel
 
     init() {
             FirebaseApp.configure()
+            if let clientID = FirebaseApp.app()?.options.clientID {
+                GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+            }
+            let state = AppState()
+            _appState = StateObject(wrappedValue: state)
+            _authVM = StateObject(wrappedValue: AuthViewModel(appState: state))
+
+            let txVM = TransactionsViewModel(userIdProvider: { Auth.auth().currentUser?.uid })
+            _transactionsVM = StateObject(wrappedValue: txVM)
+            _savingsVM = StateObject(
+                wrappedValue: SavingsGoalsViewModel(
+                    userIdProvider: { Auth.auth().currentUser?.uid },
+                    addTransaction: { tx in
+                        txVM.addTransaction(tx)
+                    }
+                )
+            )
+            _plannerVM = StateObject(wrappedValue: PlannerViewModel(transactionsVM: txVM))
+            _splitBillsVM = StateObject(
+                wrappedValue: SplitBillsViewModel(
+                    userIdProvider: { Auth.auth().currentUser?.uid },
+                    currentUserProvider: { state.currentUser },
+                    transactionsVM: txVM
+                )
+            )
         }
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(authVM)
+                .environmentObject(transactionsVM)
+                .environmentObject(savingsVM)
+                .environmentObject(plannerVM)
+                .environmentObject(splitBillsVM)
+                .tint(Color.uniBlue)
                 .preferredColorScheme(appState.isDarkMode ? .dark : .light)
         }
     }
@@ -845,57 +1059,589 @@ struct Budgeting_App: App {
 // Splash → Setup → Welcome/Login → Main app
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var transactionsVM: TransactionsViewModel
+    @EnvironmentObject var savingsVM: SavingsGoalsViewModel
+    @EnvironmentObject var plannerVM: PlannerViewModel
+    @EnvironmentObject var splitBillsVM: SplitBillsViewModel
     @Environment(\.scenePhase) var scenePhase
     @State private var lastBackgroundAt: Date?
     private let lastBackgroundKey = "lastBackgroundAt"
 
     var body: some View {
-            ZStack {
-                AppBackground()
-                Group {
-                    if !appState.hasCompletedOnboarding {
-                        SplashView()
-                    } else if !appState.isAuthenticated {
-                        WelcomeView()
-                    } else if !appState.hasCompletedSetup {
-                        SetupBudgetView()
-                    } else {
-                        MainTabView()
-                            .id(appState.isAuthenticated)
-                    }
-                }
+        rootBase
+            .modifier(
+                RootLifecycleModifier(
+                    authVM: authVM,
+                    transactionsVM: transactionsVM,
+                    savingsVM: savingsVM,
+                    plannerVM: plannerVM,
+                    splitBillsVM: splitBillsVM,
+                    scenePhase: scenePhase,
+                    lastBackgroundKey: lastBackgroundKey,
+                    lastBackgroundAt: $lastBackgroundAt,
+                    onAuthChange: handleAuthChange,
+                    onBudgetChange: sendBudgetNotifications,
+                    onShiftChange: sendShiftNotifications,
+                    onSplitBillChange: sendSplitBillNotifications,
+                    onSavingsChange: sendSavingsNotifications
+                )
+            )
+            .modifier(
+                MonthlyRolloverModifier(
+                    authVM: authVM,
+                    appState: appState,
+                    transactionsVM: transactionsVM,
+                    scenePhase: scenePhase
+                )
+            )
+            .modifier(
+                WidgetBudgetUpdateModifier(
+                    appState: appState,
+                    onUpdate: updateWidgetSnapshot
+                )
+            )
+            .modifier(
+                WidgetDataUpdateModifier(
+                    transactionsVM: transactionsVM,
+                    plannerVM: plannerVM,
+                    onUpdate: updateWidgetSnapshot
+                )
+            )
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        if !authVM.hasCompletedOnboarding {
+            SplashView()
+        } else if !authVM.isAuthenticated {
+            WelcomeView()
+        } else if !authVM.hasCompletedSetup {
+            SetupBudgetView()
+        } else {
+            MainTabView()
+                .id(authVM.isAuthenticated)
+        }
+    }
+
+    private var rootBase: some View {
+        ZStack {
+            AppBackground()
+            rootContent
+        }
+    }
+
+    private func handleAuthChange(_ isAuthed: Bool) {
+        if isAuthed, let uid = Auth.auth().currentUser?.uid {
+            transactionsVM.loadCached(uid: uid)
+            transactionsVM.loadRemote(uid: uid)
+            transactionsVM.startListener(uid: uid)
+            savingsVM.loadCached(uid: uid)
+            savingsVM.loadRemote(uid: uid)
+            savingsVM.startListener(uid: uid)
+            plannerVM.loadRemote()
+            plannerVM.startListeners()
+            splitBillsVM.startListener()
+        } else {
+            transactionsVM.stopListener()
+            transactionsVM.transactions = []
+            savingsVM.stopListener()
+            savingsVM.goals = []
+            plannerVM.stopListeners()
+            plannerVM.importantDates = []
+            plannerVM.semesterGoals = []
+            plannerVM.workShifts = []
+            splitBillsVM.stopListener()
+            splitBillsVM.splitBills = []
+        }
+    }
+
+    private func sendBudgetNotifications() {
+        guard authVM.notificationsEnabled else { return }
+        let budget = authVM.monthlyBudget
+        guard budget > 0 else { return }
+
+        for cat in BudgetCategory.allCases {
+            let percent: Double
+            switch cat {
+            case .needs:   percent = authVM.needsPercent
+            case .wants:   percent = authVM.wantsPercent
+            case .savings: percent = authVM.savingsPercent
             }
-        .animation(.easeInOut(duration: 0.35), value: appState.isAuthenticated)
-        .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedOnboarding)
-        .animation(.easeInOut(duration: 0.35), value: appState.hasCompletedSetup)
-        .onAppear {
-            if appState.hasCompletedOnboarding {
-                appState.signOut()
+            let limit = budget * (percent / 100)
+            if limit <= 0 { continue }
+
+            let spent = transactionsVM.transactions
+                .filter { $0.type == .expense && $0.budgetCategory == cat }
+                .reduce(0) { $0 + $1.amount }
+
+            if spent >= limit {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "budget_exceeded_\(cat.rawValue)",
+                    title: "Budget exceeded",
+                    body: "Your \(cat.rawValue) budget is over the limit.",
+                    type: .budget
+                )
+            } else if spent >= limit * 0.75 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "budget_near_\(cat.rawValue)",
+                    title: "Budget nearly used",
+                    body: "You have used most of your \(cat.rawValue) budget.",
+                    type: .budget
+                )
             }
-            if let ts = UserDefaults.standard.object(forKey: lastBackgroundKey) as? TimeInterval {
-                let last = Date(timeIntervalSince1970: ts)
-                let elapsed = Date().timeIntervalSince(last)
-                if elapsed >= appState.sessionTimeoutSeconds {
-                    appState.signOut()
+        }
+    }
+
+    private func sendShiftNotifications() {
+        guard authVM.notificationsEnabled else { return }
+        let now = Date()
+        for shift in plannerVM.workShifts where shift.status == .upcoming {
+            guard let shiftDate = parseShiftDate(shift.date) else { continue }
+            let interval = shiftDate.timeIntervalSince(now)
+            if interval > 0 && interval <= 24 * 3600 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "shift_upcoming_\(shift.id)",
+                    title: "Upcoming shift",
+                    body: "\(shift.role) on \(shift.date)",
+                    type: .work
+                )
+            }
+        }
+    }
+
+    private func sendSplitBillNotifications() {
+        guard authVM.notificationsEnabled else { return }
+        guard let uid = authVM.currentUser?.id else { return }
+
+        for bill in splitBillsVM.splitBills {
+            if let me = bill.participants.first(where: { $0.userId == uid }), me.status == .invited {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "split_invited_\(bill.id)",
+                    title: "Split bill request",
+                    body: "You were invited to split \(bill.title).",
+                    type: .planner
+                )
+            }
+
+            if bill.createdBy == uid {
+                let anyPaid = bill.participants.contains { !$0.isCreator && $0.status == .paid }
+                if anyPaid {
+                    NotificationService.sendLocalNotificationIfNeeded(
+                        key: "split_paid_\(bill.id)",
+                        title: "Split bill paid",
+                        body: "Someone paid their share for \(bill.title).",
+                        type: .planner
+                    )
                 }
             }
         }
-        .onChange(of: scenePhase) { _, newPhase in
-            switch newPhase {
-            case .background:
-                lastBackgroundAt = Date()
-                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastBackgroundKey)
-            case .active:
-                if appState.isAuthenticated, let last = lastBackgroundAt {
+    }
+
+    private func sendSavingsNotifications() {
+        guard authVM.notificationsEnabled else { return }
+        for goal in savingsVM.goals {
+            let progress = goal.targetAmount > 0 ? goal.currentAmount / goal.targetAmount : 0
+            if progress >= 1.0 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "goal_complete_\(goal.id)",
+                    title: "Goal completed",
+                    body: "You reached \(goal.name).",
+                    type: .budget
+                )
+            } else if progress >= 0.75 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "goal_near_\(goal.id)",
+                    title: "Goal almost there",
+                    body: "You are close to \(goal.name).",
+                    type: .budget
+                )
+            }
+        }
+    }
+
+    private func parseShiftDate(_ dateString: String) -> Date? {
+        let cal = Calendar.current
+        let fmt1 = DateFormatter()
+        fmt1.dateFormat = "MMM d"
+        if let d = fmt1.date(from: dateString) {
+            let comps = cal.dateComponents([.month, .day], from: d)
+            let year = cal.component(.year, from: Date())
+            return cal.date(from: DateComponents(year: year, month: comps.month, day: comps.day))
+        }
+        let fmt2 = DateFormatter()
+        fmt2.dateFormat = "MMM yyyy"
+        return fmt2.date(from: dateString)
+    }
+
+    private func updateWidgetSnapshot() {
+        let income = transactionsVM.transactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+        let expense = transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+        let balance = appState.monthlyBudget + income - expense
+
+        let needsLimit = appState.monthlyBudget * (appState.needsPercent / 100)
+        let wantsLimit = appState.monthlyBudget * (appState.wantsPercent / 100)
+        let savingsLimit = appState.monthlyBudget * (appState.savingsPercent / 100)
+
+        let needsSpent = transactionsVM.transactions
+            .filter { $0.type == .expense && $0.budgetCategory == .needs }
+            .reduce(0) { $0 + $1.amount }
+        let wantsSpent = transactionsVM.transactions
+            .filter { $0.type == .expense && $0.budgetCategory == .wants }
+            .reduce(0) { $0 + $1.amount }
+        let savingsSpent = transactionsVM.transactions
+            .filter { $0.type == .expense && $0.budgetCategory == .savings }
+            .reduce(0) { $0 + $1.amount }
+
+        let needsProgress = needsLimit > 0 ? min(needsSpent / needsLimit, 1.0) : 0
+        let wantsProgress = wantsLimit > 0 ? min(wantsSpent / wantsLimit, 1.0) : 0
+        let savingsProgress = savingsLimit > 0 ? min(savingsSpent / savingsLimit, 1.0) : 0
+
+        let nextItem = upcomingItem()
+
+        let summary = WidgetSummary(
+            monthlyBudget: appState.monthlyBudget,
+            balance: balance,
+            needsProgress: needsProgress,
+            wantsProgress: wantsProgress,
+            savingsProgress: savingsProgress,
+            nextTitle: nextItem.title,
+            nextDateText: nextItem.subtitle,
+            updatedAt: Date()
+        )
+        WidgetDataStore.save(summary)
+    }
+
+    private func upcomingItem() -> (title: String, subtitle: String) {
+        let upcomingShift = plannerVM.workShifts
+            .filter { $0.status == .upcoming }
+            .compactMap { shift -> (date: Date, text: String, role: String)? in
+                guard let d = parseShiftDate(shift.date) else { return nil }
+                let text = "\(shift.date) · \(shift.role)"
+                return (d, text, shift.role)
+            }
+            .sorted { $0.date < $1.date }
+            .first
+
+        if let shift = upcomingShift {
+            return ("Upcoming shift", shift.text)
+        }
+
+        let upcomingDate = plannerVM.importantDates
+            .filter { $0.date >= Date() }
+            .sorted { $0.date < $1.date }
+            .first
+
+        if let item = upcomingDate {
+            let fmt = DateFormatter()
+            fmt.dateFormat = "MMM d"
+            let dateText = fmt.string(from: item.date)
+            return ("Important date", "\(dateText) · \(item.title)")
+        }
+
+        return ("No upcoming", "Check planner")
+    }
+}
+
+private struct RootLifecycleModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let transactionsVM: TransactionsViewModel
+    let savingsVM: SavingsGoalsViewModel
+    let plannerVM: PlannerViewModel
+    let splitBillsVM: SplitBillsViewModel
+    let scenePhase: ScenePhase
+    let lastBackgroundKey: String
+    @Binding var lastBackgroundAt: Date?
+    let onAuthChange: (Bool) -> Void
+    let onBudgetChange: () -> Void
+    let onShiftChange: () -> Void
+    let onSplitBillChange: () -> Void
+    let onSavingsChange: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .modifier(RootAnimationModifier(authVM: authVM))
+            .modifier(
+                RootSessionModifier(
+                    authVM: authVM,
+                    scenePhase: scenePhase,
+                    lastBackgroundKey: lastBackgroundKey,
+                    lastBackgroundAt: $lastBackgroundAt
+                )
+            )
+            .modifier(
+                RootNotificationTriggersModifier(
+                    authVM: authVM,
+                    transactionsVM: transactionsVM,
+                    savingsVM: savingsVM,
+                    plannerVM: plannerVM,
+                    splitBillsVM: splitBillsVM,
+                    onAuthChange: onAuthChange,
+                    onBudgetChange: onBudgetChange,
+                    onShiftChange: onShiftChange,
+                    onSplitBillChange: onSplitBillChange,
+                    onSavingsChange: onSavingsChange
+                )
+            )
+    }
+}
+
+private struct RootAnimationModifier: ViewModifier {
+    let authVM: AuthViewModel
+
+    func body(content: Content) -> some View {
+        content
+            .animation(.easeInOut(duration: 0.35), value: authVM.isAuthenticated)
+            .animation(.easeInOut(duration: 0.35), value: authVM.hasCompletedOnboarding)
+            .animation(.easeInOut(duration: 0.35), value: authVM.hasCompletedSetup)
+    }
+}
+
+private struct RootSessionModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let scenePhase: ScenePhase
+    let lastBackgroundKey: String
+    @Binding var lastBackgroundAt: Date?
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                if authVM.hasCompletedOnboarding {
+                    authVM.signOut()
+                }
+                if let ts = UserDefaults.standard.object(forKey: lastBackgroundKey) as? TimeInterval {
+                    let last = Date(timeIntervalSince1970: ts)
                     let elapsed = Date().timeIntervalSince(last)
-                    if elapsed >= appState.sessionTimeoutSeconds {
-                        appState.signOut()
+                    if elapsed >= authVM.sessionTimeoutSeconds {
+                        authVM.signOut()
                     }
                 }
-                lastBackgroundAt = nil
-            default:
-                break
             }
-        }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .background:
+                    lastBackgroundAt = Date()
+                    UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastBackgroundKey)
+                case .active:
+                    if authVM.isAuthenticated, let last = lastBackgroundAt {
+                        let elapsed = Date().timeIntervalSince(last)
+                        if elapsed >= authVM.sessionTimeoutSeconds {
+                            authVM.signOut()
+                        }
+                    }
+                    lastBackgroundAt = nil
+                default:
+                    break
+                }
+            }
+    }
+}
+
+private struct MonthlyRolloverModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let appState: AppState
+    let transactionsVM: TransactionsViewModel
+    let scenePhase: ScenePhase
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { handleRolloverIfNeeded() }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    handleRolloverIfNeeded()
+                }
+            }
+            .onChange(of: transactionsVM.transactions) { _, _ in
+                appState.backfillBudgetHistoryIfNeeded(transactions: transactionsVM.transactions)
+            }
+    }
+
+    private func handleRolloverIfNeeded() {
+        guard authVM.isAuthenticated, authVM.hasCompletedSetup else { return }
+        appState.handleMonthlyRollover(transactions: transactionsVM.transactions)
+        appState.backfillBudgetHistoryIfNeeded(transactions: transactionsVM.transactions)
+    }
+}
+
+private struct RootNotificationTriggersModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let transactionsVM: TransactionsViewModel
+    let savingsVM: SavingsGoalsViewModel
+    let plannerVM: PlannerViewModel
+    let splitBillsVM: SplitBillsViewModel
+    let onAuthChange: (Bool) -> Void
+    let onBudgetChange: () -> Void
+    let onShiftChange: () -> Void
+    let onSplitBillChange: () -> Void
+    let onSavingsChange: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .modifier(
+                AuthChangeModifier(
+                    authVM: authVM,
+                    onAuthChange: onAuthChange
+                )
+            )
+            .modifier(
+                BudgetChangeModifier(
+                    authVM: authVM,
+                    transactionsVM: transactionsVM,
+                    onBudgetChange: onBudgetChange
+                )
+            )
+            .modifier(
+                PlannerChangeModifier(
+                    authVM: authVM,
+                    plannerVM: plannerVM,
+                    onShiftChange: onShiftChange
+                )
+            )
+            .modifier(
+                SplitBillChangeModifier(
+                    authVM: authVM,
+                    splitBillsVM: splitBillsVM,
+                    onSplitBillChange: onSplitBillChange
+                )
+            )
+            .modifier(
+                SavingsChangeModifier(
+                    authVM: authVM,
+                    savingsVM: savingsVM,
+                    onSavingsChange: onSavingsChange
+                )
+            )
+    }
+}
+
+private struct WidgetBudgetUpdateModifier: ViewModifier {
+    let appState: AppState
+    let onUpdate: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                onUpdate()
+            }
+            .onChange(of: appState.monthlyBudget) { _, _ in onUpdate() }
+            .onChange(of: appState.needsPercent) { _, _ in onUpdate() }
+            .onChange(of: appState.wantsPercent) { _, _ in onUpdate() }
+            .onChange(of: appState.savingsPercent) { _, _ in onUpdate() }
+    }
+}
+
+private struct WidgetDataUpdateModifier: ViewModifier {
+    let transactionsVM: TransactionsViewModel
+    let plannerVM: PlannerViewModel
+    let onUpdate: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: transactionsVM.transactions) { _, _ in onUpdate() }
+            .onChange(of: plannerVM.workShifts) { _, _ in onUpdate() }
+            .onChange(of: plannerVM.importantDates) { _, _ in onUpdate() }
+    }
+}
+
+private struct AuthChangeModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let onAuthChange: (Bool) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: authVM.isAuthenticated) { _, isAuthed in
+                onAuthChange(isAuthed)
+            }
+            .onChange(of: authVM.notificationsEnabled) { _, enabled in
+                if enabled {
+                    NotificationService.requestAuthorization()
+                }
+            }
+    }
+}
+
+private struct BudgetChangeModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let transactionsVM: TransactionsViewModel
+    let onBudgetChange: () -> Void
+    @State private var didHandle = false
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: authVM.isAuthenticated) { _, _ in
+                didHandle = false
+            }
+            .onChange(of: transactionsVM.transactions) { _, _ in
+                if !didHandle {
+                    didHandle = true
+                    return
+                }
+                if authVM.notificationsEnabled {
+                    onBudgetChange()
+                }
+            }
+    }
+}
+
+private struct PlannerChangeModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let plannerVM: PlannerViewModel
+    let onShiftChange: () -> Void
+    @State private var didHandle = false
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: authVM.isAuthenticated) { _, _ in
+                didHandle = false
+            }
+            .onChange(of: plannerVM.workShifts) { _, _ in
+                if !didHandle {
+                    didHandle = true
+                    return
+                }
+                onShiftChange()
+            }
+    }
+}
+
+private struct SplitBillChangeModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let splitBillsVM: SplitBillsViewModel
+    let onSplitBillChange: () -> Void
+    @State private var didHandle = false
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: authVM.isAuthenticated) { _, _ in
+                didHandle = false
+            }
+            .onChange(of: splitBillsVM.splitBills) { _, _ in
+                if !didHandle {
+                    didHandle = true
+                    return
+                }
+                onSplitBillChange()
+            }
+    }
+}
+
+private struct SavingsChangeModifier: ViewModifier {
+    let authVM: AuthViewModel
+    let savingsVM: SavingsGoalsViewModel
+    let onSavingsChange: () -> Void
+    @State private var didHandle = false
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: authVM.isAuthenticated) { _, _ in
+                didHandle = false
+            }
+            .onChange(of: savingsVM.goals) { _, _ in
+                if !didHandle {
+                    didHandle = true
+                    return
+                }
+                onSavingsChange()
+            }
     }
 }

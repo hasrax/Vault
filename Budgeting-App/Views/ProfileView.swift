@@ -6,19 +6,19 @@
 //
 
 import SwiftUI
-import Combine
 
 // MARK: - Profile View
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showDeleteAlert = false
+    @ObservedObject private var tokenStore = PushTokenStore.shared
+    @State private var showDeleteConfirm = false
+    @State private var showSignOutConfirm = false
     @State private var deleteError = ""
-    @State private var testToken = ""
-    @State private var testMessage = ""
 
     var body: some View {
         NavigationStack {
-            List {
+            ZStack {
+                List {
 
                 // ── Avatar ────────────────────────────────────────────────
                 Section {
@@ -91,17 +91,25 @@ struct ProfileView: View {
                     }.tint(Color.uniBlue)
                 }
 
-                Section("Push Test") {
-                    TextField("Paste token (any text)", text: $testToken)
-                    TextField("Message (optional)", text: $testMessage)
-                    Button("Send Test Notification") {
-                        let body = testMessage.isEmpty ? "Token: \(testToken)" : testMessage
-                        NotificationService.sendLocalNotification(
-                            title: "Push (simulated)",
-                            body: body
-                        )
+                Section("Device Tokens") {
+                    if !tokenStore.fcmToken.isEmpty {
+                        Text("FCM: \(tokenStore.fcmToken)")
+                            .font(.system(size: 12))
+                            .textSelection(.enabled)
+                        Button("Copy FCM Token") {
+                            UIPasteboard.general.string = tokenStore.fcmToken
+                        }
+                    } else {
+                        Text("FCM token not available yet.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
                     }
-                    .disabled(testToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    if !tokenStore.apnsToken.isEmpty {
+                        Text("APNs: \(tokenStore.apnsToken)")
+                            .font(.system(size: 12))
+                            .textSelection(.enabled)
+                    }
                 }
 
                 // ── Account ───────────────────────────────────────────────
@@ -109,6 +117,10 @@ struct ProfileView: View {
                     NavigationLink(destination: SearchView(showBack: true)) {
                         Label { Text("History").font(.system(size: 15, weight: .medium))
                         } icon: { iconBox(systemName: "clock", color: Color.uniPurple) }
+                    }
+                    NavigationLink(destination: ApnsSimulatorView()) {
+                        Label { Text("APNs Simulator").font(.system(size: 15, weight: .medium))
+                        } icon: { iconBox(systemName: "bell.badge", color: Color.uniOrange) }
                     }
                     NavigationLink(destination: SavingsView()) {
                         Label { Text("Savings Goals").font(.system(size: 15, weight: .medium))
@@ -185,13 +197,13 @@ struct ProfileView: View {
                 // ── Sign out ──────────────────────────────────────────────
                 Section {
                     Button(role: .destructive) {
-                        withAnimation { appState.signOut() }
+                        showSignOutConfirm = true
                     } label: {
                         Label("Sign Out",
                               systemImage: "rectangle.portrait.and.arrow.right")
                     }
                     Button(role: .destructive) {
-                        showDeleteAlert = true
+                        showDeleteConfirm = true
                     } label: {
                         Label("Delete Account", systemImage: "trash")
                     }
@@ -209,23 +221,50 @@ struct ProfileView: View {
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
-            .alert("Delete account?", isPresented: $showDeleteAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
-                    appState.deleteAccount { result in
-                        DispatchQueue.main.async {
-                            if case let .failure(error) = result {
-                                deleteError = error.localizedDescription
-                            }
-                        }
-                    }
+
+                if showSignOutConfirm {
+                    let displayName = appState.currentUser?.name ?? MockData.userName
+                    signOutOverlay(
+                        accountName: displayName,
+                        onConfirm: {
+                            showSignOutConfirm = false
+                            withAnimation { appState.signOut() }
+                        },
+                        onCancel: { showSignOutConfirm = false }
+                    )
                 }
-            } message: {
-                Text("This permanently deletes your account and data.")
+
+                if showDeleteConfirm {
+                    confirmationOverlay(
+                        title: "Delete account?",
+                        message: "This permanently deletes your account and data.",
+                        confirmTitle: "Delete",
+                        isDestructive: true,
+                        onConfirm: {
+                            showDeleteConfirm = false
+                            let targetEmail = (appState.currentUser?.email ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                            appState.deleteAccount { result in
+                                DispatchQueue.main.async {
+                                    if case let .failure(error) = result {
+                                        deleteError = error.localizedDescription
+                                    } else if !targetEmail.isEmpty {
+                                        KeychainService.removeAccount(email: targetEmail)
+                                    }
+                                }
+                            }
+                        },
+                        onCancel: { showDeleteConfirm = false }
+                    )
+                }
             }
         }
         .onChange(of: appState.notificationsEnabled) { _, enabled in
             if enabled {
+                NotificationService.requestAuthorization()
+            }
+        }
+        .onAppear {
+            if appState.notificationsEnabled {
                 NotificationService.requestAuthorization()
             }
         }
@@ -240,6 +279,54 @@ struct ProfileView: View {
             Image(systemName: systemName)
                 .font(.system(size: 16))
                 .foregroundStyle(color)
+        }
+    }
+
+    private func confirmationOverlay(
+        title: String,
+        message: String,
+        confirmTitle: String,
+        isDestructive: Bool,
+        onConfirm: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) -> some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { onCancel() }
+
+            VStack(spacing: 12) {
+                Text(title)
+                    .font(.system(size: 18, weight: .bold))
+                Text(message)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.secondary)
+                    .multilineTextAlignment(.center)
+
+                HStack(spacing: 12) {
+                    Button("Cancel") { onCancel() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                    Button(confirmTitle) { onConfirm() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(isDestructive ? Color.expense : Color.uniBlue)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding(18)
+            .frame(maxWidth: 300)
+            .background(Color(UIColor.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
+            .padding(.horizontal, 24)
         }
     }
 
@@ -261,6 +348,61 @@ struct ProfileView: View {
             }
         }
         .clipShape(Circle())
+    }
+
+    private func signOutOverlay(
+        accountName: String,
+        onConfirm: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) -> some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { onCancel() }
+
+            VStack(spacing: 12) {
+                Text("Logout")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.uniBlue)
+
+                VStack(spacing: 4) {
+                    Text("Are you sure you want to logout of")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.primary)
+                    Text("\(accountName)'s account ?")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.secondary)
+                }
+                .multilineTextAlignment(.center)
+
+                HStack(spacing: 14) {
+                    Button("Logout") { onConfirm() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.uniBlue)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.uniBlue, lineWidth: 1)
+                        )
+
+                    Button("Cancel") { onCancel() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(LinearGradient.ctaGrad)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding(18)
+            .frame(maxWidth: 320)
+            .background(Color(UIColor.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
+            .padding(.horizontal, 24)
+        }
     }
 }
 
