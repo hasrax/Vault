@@ -510,3 +510,114 @@ struct UserProfile: Identifiable {
     var savingsPercent: Double?
     var hasCompletedSetup: Bool
 }
+
+// MARK: - Planner Theme
+
+/// Per-module accent colours that the student can customise.
+/// Defaults match the existing gradient start colours in DesignSystem.swift.
+struct PlannerTheme: Codable, Equatable {
+    var semesterHex:  String = "#4C1D95"
+    var workHex:      String = "#0F766E"
+    var mealHex:      String = "#F97316"
+    var savingsHex:   String = "#22C55E"
+    var splitBillHex: String = "#7C3AED"
+    var analyticsHex: String = "#14B8A6"
+
+    // Primary hex for a given module id
+    func hex(for moduleId: String) -> String {
+        switch moduleId {
+        case "semesterPlanner": return semesterHex
+        case "workSchedule":    return workHex
+        case "mealPlan":        return mealHex
+        case "savings":         return savingsHex
+        case "splitBill":       return splitBillHex
+        case "analytics":       return analyticsHex
+        default:                return "#1E3A8A"
+        }
+    }
+
+    // SwiftUI Color
+    func color(for moduleId: String) -> Color {
+        Color(hex: hex(for: moduleId))
+    }
+
+    // Vibrant card/header gradient — used in PlannerView cards & sub-screen headers
+    func gradient(for moduleId: String) -> LinearGradient {
+        let c = color(for: moduleId)
+        // Darken the colour slightly for the start stop so headers have depth
+        return LinearGradient(
+            colors: [c.opacity(0.80), c],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    // Human readable name for the picker UI
+    static func moduleName(for id: String) -> String {
+        switch id {
+        case "semesterPlanner": return "Semester Planner"
+        case "workSchedule":    return "Work Schedule"
+        case "mealPlan":        return "Meal & Study"
+        case "savings":         return "Savings Goals"
+        case "splitBill":       return "Split Bill"
+        case "analytics":       return "Analytics"
+        default:                return id
+        }
+    }
+
+    // Module icon for the picker UI
+    static func moduleIcon(for id: String) -> String {
+        switch id {
+        case "semesterPlanner": return "📅"
+        case "workSchedule":    return "💼"
+        case "mealPlan":        return "🍽️"
+        case "savings":         return "🎯"
+        case "splitBill":       return "🤝"
+        case "analytics":       return "📊"
+        default:                return "🎨"
+        }
+    }
+
+    // All module IDs in display order
+    static let allModuleIds = [
+        "semesterPlanner", "workSchedule", "mealPlan",
+        "savings", "splitBill", "analytics"
+    ]
+
+    // Mutate a single module's hex
+    mutating func setHex(_ hex: String, for moduleId: String) {
+        switch moduleId {
+        case "semesterPlanner": semesterHex  = hex
+        case "workSchedule":    workHex      = hex
+        case "mealPlan":        mealHex      = hex
+        case "savings":         savingsHex   = hex
+        case "splitBill":       splitBillHex = hex
+        case "analytics":       analyticsHex = hex
+        default: break
+        }
+    }
+
+    // Firestore dict representation
+    var firestoreData: [String: Any] {
+        [
+            "semesterHex":  semesterHex,
+            "workHex":      workHex,
+            "mealHex":      mealHex,
+            "savingsHex":   savingsHex,
+            "splitBillHex": splitBillHex,
+            "analyticsHex": analyticsHex,
+        ]
+    }
+
+    init() {}
+
+    init?(from dict: [String: Any]) {
+        guard !dict.isEmpty else { return nil }
+        semesterHex  = dict["semesterHex"]  as? String ?? "#4C1D95"
+        workHex      = dict["workHex"]      as? String ?? "#0F766E"
+        mealHex      = dict["mealHex"]      as? String ?? "#F97316"
+        savingsHex   = dict["savingsHex"]   as? String ?? "#22C55E"
+        splitBillHex = dict["splitBillHex"] as? String ?? "#7C3AED"
+        analyticsHex = dict["analyticsHex"] as? String ?? "#14B8A6"
+    }
+}

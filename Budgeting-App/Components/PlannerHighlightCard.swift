@@ -12,6 +12,7 @@ import SwiftUI
 struct PlannerHighlightCard: View {
     let title:  String
     let detail: String
+    let accent: Color
     let action: () -> Void
 
     var body: some View {
@@ -28,11 +29,15 @@ struct PlannerHighlightCard: View {
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(accent)
             }
             .padding(14)
             .background(Color(UIColor.secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(accent.opacity(0.25), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(title). \(detail)")
@@ -42,9 +47,9 @@ struct PlannerHighlightCard: View {
 
 #Preview {
     VStack(spacing: 8) {
-        PlannerHighlightCard(title: "Semester Planner", detail: "9 weeks remaining",              action: {})
-        PlannerHighlightCard(title: "Work Schedule",    detail: "2 shifts this week",             action: {})
-        PlannerHighlightCard(title: "Split Bill",       detail: "Settle dinner with Hasini & co.", action: {})
+        PlannerHighlightCard(title: "Semester Planner", detail: "9 weeks remaining", accent: .purple, action: {})
+        PlannerHighlightCard(title: "Work Schedule",    detail: "2 shifts this week", accent: .green,  action: {})
+        PlannerHighlightCard(title: "Split Bill",       detail: "Settle dinner with Hasini & co.", accent: .orange, action: {})
     }
     .padding()
 }

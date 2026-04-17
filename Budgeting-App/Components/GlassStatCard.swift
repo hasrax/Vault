@@ -19,7 +19,7 @@ struct GlassStatCard: View {
         VStack(spacing: 4) {
             Text(label)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(.white.opacity(0.75))
                 .textCase(.uppercase)
                 .tracking(0.5)
 
@@ -30,7 +30,7 @@ struct GlassStatCard: View {
             if let s = sub {
                 Text(s)
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(.white.opacity(0.65))
             }
         }
         .frame(maxWidth: .infinity)

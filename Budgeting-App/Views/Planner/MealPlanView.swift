@@ -10,7 +10,9 @@ import SwiftUI
 // MARK: - Meal Plan
 struct MealPlanView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
     @State private var activeTab = "meals"
+    private var grad: LinearGradient { appState.plannerTheme.gradient(for: "mealPlan") }
 
     var body: some View {
         ScrollView {
@@ -85,7 +87,7 @@ struct MealPlanView: View {
                     .multilineTextAlignment(.center)
             }
             .padding(20)
-            .background(LinearGradient.amberGrad)
+            .background(grad)
             .clipShape(RoundedRectangle(cornerRadius:18))
 
             // Dining dollars + flex
@@ -118,7 +120,7 @@ struct MealPlanView: View {
                 Text("5 transactions").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.8))
             }
             .frame(maxWidth:.infinity).padding(24)
-            .background(LinearGradient.purpleGrad)
+            .background(grad)
             .clipShape(RoundedRectangle(cornerRadius:18))
 
             LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:4),spacing:10) {
@@ -140,4 +142,4 @@ struct MealPlanView: View {
     }
 }
 
-#Preview("Meal Plan") { NavigationStack { MealPlanView() } }
+#Preview("Meal Plan") { NavigationStack { MealPlanView().environmentObject(AppState()) } }

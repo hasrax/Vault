@@ -10,6 +10,7 @@ import SwiftUI
 // MARK: - Savings
 struct SavingsView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
     @EnvironmentObject var savingsVM: SavingsGoalsViewModel
     @State private var showAddGoal = false
     @State private var addMoneyGoal: SavingsGoal? = nil
@@ -17,6 +18,8 @@ struct SavingsView: View {
     private var totalSaved:  Double { goals.reduce(0){$0+$1.currentAmount} }
     private var totalTarget: Double { goals.reduce(0){$0+$1.targetAmount} }
     private var totalProgress: Double { totalTarget > 0 ? totalSaved / totalTarget : 0 }
+    private var accent: Color { appState.plannerTheme.color(for: "savings") }
+    private var grad: LinearGradient { appState.plannerTheme.gradient(for: "savings") }
 
     var body: some View {
         ScrollView {
@@ -30,7 +33,7 @@ struct SavingsView: View {
                     UniProgressBar(progress: totalProgress, color: .white, height: 10)
                 }
                 .padding(24)
-                .background(LinearGradient.savingsGoldGrad)
+                .background(grad)
                 .clipShape(RoundedRectangle(cornerRadius:20))
 
                 // Goals
@@ -50,15 +53,16 @@ struct SavingsView: View {
                     }
                 }
                 .padding(16)
-                .background(Color.uniBlue.opacity(0.08))
+                .background(accent.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius:14))
-                .overlay(RoundedRectangle(cornerRadius:14).stroke(Color.uniBlue.opacity(0.15),lineWidth:1))
+                .overlay(RoundedRectangle(cornerRadius:14).stroke(accent.opacity(0.15),lineWidth:1))
             }
             .padding(.horizontal,16).padding(.top,16).padding(.bottom,40)
         }
         .background(Color(UIColor.systemGroupedBackground))
         .navigationTitle("Savings Goals")
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 BackButton { dismiss() }
@@ -214,5 +218,5 @@ private struct AddMoneyView: View {
 #Preview("Savings") {
     let vm = SavingsGoalsViewModel()
     vm.goals = MockData.savingsGoals
-    return NavigationStack { SavingsView().environmentObject(vm) }
+    return NavigationStack { SavingsView().environmentObject(vm).environmentObject(AppState()) }
 }

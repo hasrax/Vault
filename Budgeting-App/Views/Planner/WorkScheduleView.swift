@@ -11,6 +11,7 @@ import SwiftUI
 struct WorkScheduleView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var plannerVM: PlannerViewModel
+    @EnvironmentObject var appState: AppState
     @State private var activeTab = "week"
     @State private var viewMode = "hours"
     @State private var showAddShift = false
@@ -36,6 +37,15 @@ struct WorkScheduleView: View {
     private var totalEarned:     Double { completed.reduce(0){$0+$1.pay} }
     private var projectedEarnings: Double { shifts.reduce(0){$0+$1.pay} }
     private var totalHours:      Int { completed.reduce(0){$0+$1.hours} }
+    private var statValueColor:  Color { Color.white.opacity(0.85) }
+    private var grad: LinearGradient {
+        let base = appState.plannerTheme.color(for: "workSchedule")
+        return LinearGradient(
+            colors: [base.opacity(0.75), base.opacity(0.95)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 
     private var displayedShifts: [WorkShift] {
         switch activeTab {
@@ -58,21 +68,8 @@ struct WorkScheduleView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Dark header
-                ZStack(alignment: .bottom) {
-                    LinearGradient.headerGrad
-                        .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft,.bottomRight]))
-                    VStack(spacing: 20) {
-                        HStack(spacing:12) {
-                            GlassStatCard(label:"Earned",    value:totalEarned.shortCurrency,       sub:"\(totalHours)h worked", valueColor:Color.income)
-                            GlassStatCard(label:"Projected", value:projectedEarnings.shortCurrency, sub:"this month",            valueColor:Color.uniBlue)
-                            GlassStatCard(label:"Upcoming",  value:"\(upcoming.count)",             sub:"shifts left",           valueColor:Color.warning)
-                        }
-                        WeekDayStrip(shiftDays: shiftDays)
-                    }
-                    .padding(.horizontal,16)
-                    .padding(.vertical,24)
-                }
+                // Top summary card
+                topSummaryCard
 
                 // View mode toggle
                 HStack(spacing:10) {
@@ -125,7 +122,7 @@ struct WorkScheduleView: View {
 
                 VStack(spacing:10) {
                     ForEach(sortedShifts) { shift in
-                        ZStack(alignment: .topTrailing) {
+                        ZStack(alignment: .centerTrailing) {
                             ShiftCard(shift:shift)
                             Button {
                                 if shift.status != .completed { editShift = shift }
@@ -133,7 +130,7 @@ struct WorkScheduleView: View {
                                 Image(systemName: "pencil.circle.fill")
                                     .foregroundStyle(Color.secondary)
                             }
-                            .padding(12)
+                            .padding(.trailing, 12)
                             .buttonStyle(.plain)
                             .disabled(shift.status == .completed)
                             .accessibilityLabel("Edit shift")
@@ -388,17 +385,65 @@ struct WorkScheduleView: View {
             shiftDate = dateString(newDate)
         }
         .onChange(of: shiftHours) { _, newValue in
-            guard let hours = Int(newValue) else { return }
-            let fmt = DateFormatter()
-            fmt.dateFormat = "HH:mm"
-            guard let start = fmt.date(from: shiftStart) else { return }
-            if let end = Calendar.current.date(byAdding: .hour, value: hours, to: start) {
-                shiftEnd = fmt.string(from: end)
-            }
+            updateEndFromHours()
+        }
+        .onChange(of: shiftStart) { _, _ in
+            updateEndFromHours()
+            updateHoursFromTimes()
+        }
+        .onChange(of: shiftEnd) { _, _ in
+            updateHoursFromTimes()
         }
         .onChange(of: viewMode) { _, _ in
             repeatMonthly = false
             repeatWeekly = false
+        }
+    }
+
+    private var topSummaryCard: some View {
+        VStack(spacing: 20) {
+            HStack(spacing: 12) {
+                GlassStatCard(label: "Earned",    value: totalEarned.shortCurrency,       sub: "\(totalHours)h worked", valueColor: statValueColor)
+                GlassStatCard(label: "Projected", value: projectedEarnings.shortCurrency, sub: "this month",            valueColor: statValueColor)
+                GlassStatCard(label: "Upcoming",  value: "\(upcoming.count)",             sub: "shifts left",           valueColor: statValueColor)
+            }
+            WeekDayStrip(shiftDays: shiftDays)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 22)
+        .frame(maxWidth: .infinity)
+        .background(grad)
+        .overlay(Color.black.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+    }
+
+    private func updateEndFromHours() {
+        guard let hours = Int(shiftHours), hours > 0 else { return }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "HH:mm"
+        guard let start = fmt.date(from: shiftStart) else { return }
+        if let end = Calendar.current.date(byAdding: .hour, value: hours, to: start) {
+            let endText = fmt.string(from: end)
+            if endText != shiftEnd {
+                shiftEnd = endText
+            }
+        }
+    }
+
+    private func updateHoursFromTimes() {
+        guard !shiftStart.isEmpty, !shiftEnd.isEmpty else { return }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "HH:mm"
+        guard let start = fmt.date(from: shiftStart), let end = fmt.date(from: shiftEnd) else { return }
+        var diff = end.timeIntervalSince(start)
+        if diff < 0 { diff += 24 * 60 * 60 }
+        let hours = Int(round(diff / 3600))
+        guard hours > 0 else { return }
+        let text = String(hours)
+        if text != shiftHours {
+            shiftHours = text
         }
     }
 
@@ -455,5 +500,5 @@ struct WorkScheduleView: View {
 #Preview("Work") {
     let vm = PlannerViewModel(transactionsVM: TransactionsViewModel())
     vm.workShifts = MockData.shifts
-    return NavigationStack { WorkScheduleView().environmentObject(vm) }
+    return NavigationStack { WorkScheduleView().environmentObject(vm).environmentObject(AppState()) }
 }

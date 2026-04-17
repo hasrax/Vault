@@ -366,22 +366,22 @@ struct HomeView: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
                 spacing: 10
             ) {
-                QuickActionButton(emoji: "📅", label: "Semester", gradient: .purpleGrad) {
+                QuickActionButton(emoji: "📅", label: "Semester", gradient: appState.plannerTheme.gradient(for: "semesterPlanner")) {
                     showSemesterPlanner = true
                 }
-                QuickActionButton(emoji: "💼", label: "Shifts",   gradient: .greenGrad) {
+                QuickActionButton(emoji: "💼", label: "Shifts",   gradient: appState.plannerTheme.gradient(for: "workSchedule")) {
                     showWorkSchedule = true
                 }
-                QuickActionButton(emoji: "🍽️", label: "Meals",    gradient: .tealGrad) {
+                QuickActionButton(emoji: "🍽️", label: "Meals",    gradient: appState.plannerTheme.gradient(for: "mealPlan")) {
                     showMealPlan = true
                 }
-                QuickActionButton(emoji: "🎯", label: "Savings",  gradient: .pinkGrad) {
+                QuickActionButton(emoji: "🎯", label: "Savings",  gradient: appState.plannerTheme.gradient(for: "savings")) {
                     showSavings = true
                 }
-                QuickActionButton(emoji: "🤝", label: "Split",    gradient: .orangeGrad) {
+                QuickActionButton(emoji: "🤝", label: "Split",    gradient: appState.plannerTheme.gradient(for: "splitBill")) {
                     showSplitBill = true
                 }
-                QuickActionButton(emoji: "📊", label: "Analytics", gradient: .primaryGrad) {
+                QuickActionButton(emoji: "📊", label: "Analytics", gradient: appState.plannerTheme.gradient(for: "analytics")) {
                     showAnalytics = true
                 }
             }
@@ -399,32 +399,38 @@ struct HomeView: View {
             VStack(spacing: 8) {
                 PlannerHighlightCard(
                     title: "Semester Planner",
-                    detail: "Key dates and targets"
+                    detail: "Recent activity: upcoming deadlines",
+                    accent: appState.plannerTheme.color(for: "semesterPlanner")
                 ) { showSemesterPlanner = true }
 
                 PlannerHighlightCard(
                     title: "Work Schedule",
-                    detail: "Track hours and pay"
+                    detail: "Recent activity: shifts this week",
+                    accent: appState.plannerTheme.color(for: "workSchedule")
                 ) { showWorkSchedule = true }
 
                 PlannerHighlightCard(
                     title: "Meal Plan",
-                    detail: "Swipes and dining"
+                    detail: "Recent activity: dining balance",
+                    accent: appState.plannerTheme.color(for: "mealPlan")
                 ) { showMealPlan = true }
 
                 PlannerHighlightCard(
                     title: "Savings",
-                    detail: "Goals and buffers"
+                    detail: "Recent activity: goal progress",
+                    accent: appState.plannerTheme.color(for: "savings")
                 ) { showSavings = true }
 
                 PlannerHighlightCard(
                     title: "Split Bill",
-                    detail: "Settle with friends"
+                    detail: "Recent activity: open balances",
+                    accent: appState.plannerTheme.color(for: "splitBill")
                 ) { showSplitBill = true }
 
                 PlannerHighlightCard(
                     title: "Analytics",
-                    detail: "Trends and insights"
+                    detail: "Recent activity: spending trends",
+                    accent: appState.plannerTheme.color(for: "analytics")
                 ) { showAnalytics = true }
             }
         }

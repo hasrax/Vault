@@ -11,6 +11,7 @@ import SwiftUI
 struct SemesterPlannerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var plannerVM: PlannerViewModel
+    @EnvironmentObject var appState: AppState
     @State private var activeTab = "overview"
     @State private var showAddGoal = false
     @State private var newGoalTitle = ""
@@ -273,7 +274,7 @@ struct SemesterPlannerView: View {
                 }
             }
             .padding(24)
-            .background(LinearGradient.primaryGrad)
+            .background(appState.plannerTheme.gradient(for: "semesterPlanner"))
             .clipShape(RoundedRectangle(cornerRadius:20))
 
             // Weekly budget suggestion

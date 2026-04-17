@@ -88,18 +88,18 @@ struct BudgetView: View {
                     BackButton { dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 12) {
-                        Button {
-                            showEditBudget = true
-                        } label: {
-                            Image(systemName: "slider.horizontal.3")
-                        }
-                        Button {
-                            showAnalytics = true
-                        } label: {
-                            Image(systemName: "chart.bar.xaxis")
-                        }
+                    Button {
+                        showEditBudget = true
+                    } label: {
+                        Text("Edit")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.uniBlue)
+                            .clipShape(Capsule())
                     }
+                    .accessibilityLabel("Edit Budget")
                 }
             }
             .navigationDestination(isPresented: $showAnalytics) { AnalyticsView() }
@@ -177,6 +177,8 @@ struct AnalyticsView: View {
         filteredExpenses.reduce(0) { $0 + $1.amount }
     }
 
+    private var accent: Color { appState.plannerTheme.color(for: "analytics") }
+
     private var topCategories: [(BudgetCategory, Double, Double)] {
         let totals = BudgetCategory.allCases.map { cat in
             (cat, filteredExpenses.filter { $0.budgetCategory == cat }.reduce(0) { $0 + $1.amount })
@@ -247,7 +249,7 @@ struct AnalyticsView: View {
                                 .foregroundStyle(isActive ? Color.white : Color.primary)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
-                                .background(isActive ? Color.uniBlue : Color.clear)
+                                .background(isActive ? accent : Color.clear)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                     }

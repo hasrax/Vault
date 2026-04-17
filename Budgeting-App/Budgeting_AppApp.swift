@@ -26,6 +26,7 @@ class AppState: ObservableObject {
     @Published var savingsGoals: [SavingsGoal] = []
     @Published var sessionTimeoutSeconds: TimeInterval = 30
     @Published var splitBills: [SplitBill] = []
+    @Published var plannerTheme: PlannerTheme = PlannerTheme()
 
     private var importantDatesListener: ListenerRegistration?
     private var semesterGoalsListener: ListenerRegistration?
@@ -43,7 +44,27 @@ class AppState: ObservableObject {
             loadTransactions()
             startTransactionListener()
             startSavingsGoalsListener()
+            loadPlannerTheme()                  // ← restore per-user theme
             flushPendingWrites(uid: user.uid)
+        }
+
+        // MARK: - Planner Theme persistence
+        func savePlannerTheme() {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            let data: [String: Any] = ["plannerTheme": plannerTheme.firestoreData]
+            Firestore.firestore().collection("users").document(uid)
+                .setData(data, merge: true) { _ in }
+        }
+
+        func loadPlannerTheme() {
+            guard let uid = Auth.auth().currentUser?.uid else { return }
+            Firestore.firestore().collection("users").document(uid)
+                .getDocument { [weak self] snapshot, _ in
+                    guard let self,
+                          let dict = snapshot?.data()?["plannerTheme"] as? [String: Any],
+                          let theme = PlannerTheme(from: dict) else { return }
+                    DispatchQueue.main.async { self.plannerTheme = theme }
+                }
         }
     
         func signIn(email: String, password: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -90,6 +111,7 @@ class AppState: ObservableObject {
             transactions = []
             splitBills = []
             savingsGoals = []
+            plannerTheme = PlannerTheme()   // reset to defaults on logout
             stopTransactionListener()
             stopSavingsGoalsListener()
         }

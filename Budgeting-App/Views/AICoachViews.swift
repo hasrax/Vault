@@ -34,43 +34,50 @@ struct AICoachView: View {
                 inputBar
             }
             .background(Color.clear)
+            // Hide the NavigationStack bar so it doesn't add invisible
+            // height that pushes the custom header content out of place
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showAffordSheet) { CanIAffordSheet() }
             .onAppear { startMessageListener() }
             .onDisappear { stopMessageListener() }
         }
         .statusBarStyle(.lightContent)
-        .toolbarColorScheme(.dark, for: .navigationBar)
     }
 
     // MARK: - Header
     private var topHeader: some View {
-        ZStack(alignment: .bottom) {
-            HomeHeaderBackground()
-                .frame(height: 190)
-                .clipShape(RoundedCorner(radius: 24, corners: [.bottomLeft, .bottomRight]))
+        let topInset: CGFloat = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 47
 
-            HStack {
+        return ZStack(alignment: .bottom) {
+            HomeHeaderBackground()
+                .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
+
+            // Single HStack: title LEFT, button RIGHT — pinned to bottom
+            HStack(alignment: .center) {
                 Text("AI Coach")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.white)
                 Spacer()
                 Button {
                     showAffordSheet = true
                 } label: {
-                    Image(systemName: "questionmark")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(Color.uniBlue)
-                        .frame(width: 32, height: 32)
-                        .background(Color.white)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
+                    ZStack {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 42, height: 42)
+                        Image(systemName: "questionmark")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(Color.uniBlue)
+                    }
                 }
                 .accessibilityLabel("Can I afford?")
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 12)
-            .padding(.top, 10)
+            .padding(.bottom, 24)
         }
+        .frame(height: topInset + 140)
         .ignoresSafeArea(edges: .top)
     }
 
@@ -100,9 +107,11 @@ struct AICoachView: View {
                 ).frame(width: 180)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
         }
         .background(Color(UIColor.systemBackground))
+        .padding(.top, -40)
+        .padding(.bottom, 10)
     }
 
     // MARK: - Chat
