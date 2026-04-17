@@ -218,14 +218,68 @@ struct LoginView: View {
         .fullScreenCover(isPresented: $showSignUp) {
             SignUpView(onSignInTap: { showSignUp = false })
         }
+        .onChange(of: email) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if trimmed.isEmpty {
+                selectedAccount = ""
+                selectedProvider = nil
+            } else {
+                selectedAccount = trimmed
+                selectedProvider = KeychainService.providerForAccount(trimmed)
+            }
+        }
         .onAppear {
-            savedAccounts = KeychainService.savedAccounts()
-            if selectedAccount.isEmpty {
-                selectedAccount = savedAccounts.first ?? ""
+            refreshSavedAccounts()
+        }
+    }
+
+    private func refreshSavedAccounts() {
+        let cached = KeychainService.savedAccounts()
+        savedAccounts = cached
+        if selectedAccount.isEmpty {
+            selectedAccount = cached.first ?? ""
+        }
+        if !selectedAccount.isEmpty {
+            selectedProvider = KeychainService.providerForAccount(selectedAccount)
+        }
+
+        guard !cached.isEmpty else { return }
+
+        let group = DispatchGroup()
+        var valid: [String] = []
+        var hadValidationError = false
+
+        for email in cached {
+            group.enter()
+            Auth.auth().fetchSignInMethods(forEmail: email) { methods, error in
+                if let error {
+                    _ = error
+                    hadValidationError = true
+                    valid.append(email)
+                } else if let methods, !methods.isEmpty {
+                    valid.append(email)
+                }
+                group.leave()
             }
-            if !selectedAccount.isEmpty {
-                selectedProvider = KeychainService.providerForAccount(selectedAccount)
+        }
+
+        group.notify(queue: .main) {
+            let validSet = Set(valid)
+            let shouldPrune = !validSet.isEmpty && !hadValidationError
+            if shouldPrune {
+                for email in cached where !validSet.contains(email) {
+                    KeychainService.removeAccount(email: email)
+                }
             }
+
+            let cleaned = KeychainService.savedAccounts()
+            savedAccounts = cleaned
+            if selectedAccount.isEmpty || !cleaned.contains(selectedAccount) {
+                selectedAccount = cleaned.first ?? ""
+            }
+            selectedProvider = selectedAccount.isEmpty
+                ? nil
+                : KeychainService.providerForAccount(selectedAccount)
         }
     }
 
@@ -247,7 +301,8 @@ struct LoginView: View {
     }
 
     private func signIn() {
-        let targetEmail = selectedAccount.isEmpty ? email : selectedAccount
+        let typedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let targetEmail = typedEmail.isEmpty ? selectedAccount : typedEmail
         let trimmedEmail = targetEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             errorMessage = "Enter your email and password."
@@ -261,6 +316,16 @@ struct LoginView: View {
                 isLoading = false
                 if case let .failure(error) = result {
                     errorMessage = error.localizedDescription
+                    let nsError = error as NSError
+                    if nsError.domain == AuthErrorDomain,
+                       let code = AuthErrorCode(rawValue: nsError.code),
+                       code == .userNotFound {
+                        KeychainService.removeAccount(email: trimmedEmail)
+                        savedAccounts = KeychainService.savedAccounts()
+                        if selectedAccount == trimmedEmail {
+                            selectedAccount = ""
+                        }
+                    }
                 } else {
                     _ = KeychainService.saveCredentials(email: trimmedEmail, password: password)
                     savedAccounts = KeychainService.savedAccounts()
@@ -335,7 +400,9 @@ struct LoginView: View {
             faceIdError = "Face ID not available. Simulator: Features > Face ID > Enrolled."
             return
         }
-        guard !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        let typedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let targetEmail = typedEmail.isEmpty ? selectedAccount : typedEmail
+        guard !targetEmail.isEmpty else {
             faceIdError = "Enter or select an email first."
             return
         }
@@ -344,7 +411,6 @@ struct LoginView: View {
                            localizedReason: "Sign in to Vault") { success, _ in
             DispatchQueue.main.async {
                 if success {
-                    let targetEmail = selectedAccount.isEmpty ? email : selectedAccount
                     KeychainService.loadCredentials(email: targetEmail, reason: "Sign in to Vault") { result in
                         DispatchQueue.main.async {
                             switch result {

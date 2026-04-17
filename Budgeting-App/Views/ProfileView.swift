@@ -219,16 +219,13 @@ struct ProfileView: View {
                     }
                 }
             }
-                }
-                .navigationTitle("Profile")
-                .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("Profile")
+            .navigationBarTitleDisplayMode(.large)
 
                 if showSignOutConfirm {
-                    confirmationOverlay(
-                        title: "Sign out?",
-                        message: "You will be signed out of your account.",
-                        confirmTitle: "Sign Out",
-                        isDestructive: true,
+                    let displayName = appState.currentUser?.name ?? MockData.userName
+                    signOutOverlay(
+                        accountName: displayName,
                         onConfirm: {
                             showSignOutConfirm = false
                             withAnimation { appState.signOut() }
@@ -245,10 +242,13 @@ struct ProfileView: View {
                         isDestructive: true,
                         onConfirm: {
                             showDeleteConfirm = false
+                            let targetEmail = (appState.currentUser?.email ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                             appState.deleteAccount { result in
                                 DispatchQueue.main.async {
                                     if case let .failure(error) = result {
                                         deleteError = error.localizedDescription
+                                    } else if !targetEmail.isEmpty {
+                                        KeychainService.removeAccount(email: targetEmail)
                                     }
                                 }
                             }
@@ -348,6 +348,61 @@ struct ProfileView: View {
             }
         }
         .clipShape(Circle())
+    }
+
+    private func signOutOverlay(
+        accountName: String,
+        onConfirm: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) -> some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { onCancel() }
+
+            VStack(spacing: 12) {
+                Text("Logout")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.uniBlue)
+
+                VStack(spacing: 4) {
+                    Text("Are you sure you want to logout of")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.primary)
+                    Text("\(accountName)'s account ?")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.secondary)
+                }
+                .multilineTextAlignment(.center)
+
+                HStack(spacing: 14) {
+                    Button("Logout") { onConfirm() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.uniBlue)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.uniBlue, lineWidth: 1)
+                        )
+
+                    Button("Cancel") { onCancel() }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .background(LinearGradient.ctaGrad)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+            .padding(18)
+            .frame(maxWidth: 320)
+            .background(Color(UIColor.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.2), radius: 12, y: 6)
+            .padding(.horizontal, 24)
+        }
     }
 }
 

@@ -136,6 +136,9 @@ class AppState: ObservableObject {
                 return
             }
             let uid = user.uid
+            let email = (currentUser?.email ?? user.email ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
             TransactionService.deleteAllTransactions { txError in
                 if let txError = txError {
                     completion(.failure(txError))
@@ -152,6 +155,9 @@ class AppState: ObservableObject {
                             return
                         }
                         DispatchQueue.main.async {
+                            if !email.isEmpty {
+                                KeychainService.removeAccount(email: email)
+                            }
                             self.signOut()
                             completion(.success(()))
                         }
