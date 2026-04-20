@@ -12,6 +12,8 @@ class AppState: ObservableObject {
     @Published var hasCompletedOnboarding = false
     @Published var hasCompletedSetup      = false
     @Published var isDarkMode             = false
+    @Published var appFontScale: AppFontScale = .default
+    @Published var highContrastEnabled    = false
     @Published var isFaceIDEnabled        = true
     @Published var notificationsEnabled   = true
     @Published var monthlyBudget: Double  = 45000
@@ -1050,6 +1052,8 @@ struct Budgeting_App: App {
                 .environmentObject(splitBillsVM)
                 .tint(Color.uniBlue)
                 .preferredColorScheme(appState.isDarkMode ? .dark : .light)
+                .environment(\.dynamicTypeSize, appState.appFontScale.dynamicTypeSize)
+                .environment(\.appHighContrast, appState.highContrastEnabled)
         }
     }
 }
