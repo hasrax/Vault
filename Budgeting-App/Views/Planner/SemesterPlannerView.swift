@@ -42,7 +42,7 @@ struct SemesterPlannerView: View {
             VStack(spacing: 0) {
                 // Tab switcher
                 HStack(spacing: 4) {
-                    ForEach([("overview","📊 Overview"),("calendar","📅 Dates"),("goals","🎯 Goals")], id:\.0) { id, label in
+                    ForEach([("overview","Overview"),("calendar","Dates"),("goals","Goals")], id:\.0) { id, label in
                         Button {
                             withAnimation(.spring(duration: 0.3)) { activeTab = id }
                         } label: {
@@ -380,6 +380,18 @@ struct SemesterPlannerView: View {
                 }
                 .padding(16)
                 .plannerModuleCard(accent: accent)
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        editDate = item
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) {
+                        plannerVM.deleteImportantDate(item)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
                 .contextMenu {
                     Button {
                         editDate = item
@@ -450,6 +462,19 @@ struct SemesterPlannerView: View {
                 }
                 .padding(16)
                 .plannerModuleCard(accent: accent)
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        if !goal.completed { editGoal = goal }
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .disabled(goal.completed)
+                    Button(role: .destructive) {
+                        plannerVM.deleteSemesterGoal(goal)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
                 .contextMenu {
                     Button {
                         if !goal.completed { editGoal = goal }

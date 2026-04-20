@@ -17,6 +17,24 @@ final class NotificationStore: ObservableObject {
         save()
     }
 
+    func markRead(_ id: UUID) {
+        guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
+        if items[idx].isRead { return }
+        items[idx].isRead = true
+        save()
+    }
+
+    func markAllRead() {
+        var changed = false
+        for idx in items.indices {
+            if !items[idx].isRead {
+                items[idx].isRead = true
+                changed = true
+            }
+        }
+        if changed { save() }
+    }
+
     func clear() {
         items.removeAll()
         save()
@@ -45,5 +63,12 @@ final class NotificationStore: ObservableObject {
         if hours < 24 { return "\(hours)h ago" }
         let days = hours / 24
         return "\(days)d ago"
+    }
+
+    static func absoluteTimeString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }

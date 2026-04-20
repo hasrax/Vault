@@ -477,6 +477,19 @@ struct WorkScheduleView: View {
                     .disabled(shift.status == .completed)
                     .accessibilityLabel("Edit shift")
                 }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        if shift.status != .completed { editShift = shift }
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .disabled(shift.status == .completed)
+                    Button(role: .destructive) {
+                        plannerVM.deleteWorkShift(shift)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
                 .contextMenu {
                     Button {
                         if shift.status != .completed { editShift = shift }

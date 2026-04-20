@@ -13,10 +13,14 @@ final class PlannerViewModel: ObservableObject {
     @Published var importantDates: [ImportantDate] = []
     @Published var semesterGoals: [SemesterGoal] = []
     @Published var workShifts: [WorkShift] = []
+    @Published var mealEntries: [MealEntry] = []
+    @Published var studyExpenses: [StudyExpense] = []
 
     private var importantDatesListener: ListenerRegistration?
     private var semesterGoalsListener: ListenerRegistration?
     private var workShiftsListener: ListenerRegistration?
+    private var mealEntriesListener: ListenerRegistration?
+    private var studyExpensesListener: ListenerRegistration?
     private let transactionsVM: TransactionsViewModel
 
     init(transactionsVM: TransactionsViewModel) {
@@ -45,6 +49,20 @@ final class PlannerViewModel: ObservableObject {
                 }
             }
         }
+        PlannerService.fetchMealEntries { result in
+            DispatchQueue.main.async {
+                if case let .success(items) = result {
+                    self.mealEntries = items
+                }
+            }
+        }
+        PlannerService.fetchStudyExpenses { result in
+            DispatchQueue.main.async {
+                if case let .success(items) = result {
+                    self.studyExpenses = items
+                }
+            }
+        }
     }
 
     func startListeners() {
@@ -64,15 +82,29 @@ final class PlannerViewModel: ObservableObject {
                 if case let .success(items) = result { self.workShifts = items }
             }
         }
+        mealEntriesListener = PlannerService.listenMealEntries { result in
+            DispatchQueue.main.async {
+                if case let .success(items) = result { self.mealEntries = items }
+            }
+        }
+        studyExpensesListener = PlannerService.listenStudyExpenses { result in
+            DispatchQueue.main.async {
+                if case let .success(items) = result { self.studyExpenses = items }
+            }
+        }
     }
 
     func stopListeners() {
         importantDatesListener?.remove()
         semesterGoalsListener?.remove()
         workShiftsListener?.remove()
+        mealEntriesListener?.remove()
+        studyExpensesListener?.remove()
         importantDatesListener = nil
         semesterGoalsListener = nil
         workShiftsListener = nil
+        mealEntriesListener = nil
+        studyExpensesListener = nil
     }
 
     // MARK: - Semester Goals
@@ -225,5 +257,85 @@ final class PlannerViewModel: ObservableObject {
         let fmt2 = DateFormatter()
         fmt2.dateFormat = "MMM yyyy"
         return fmt1.date(from: dateString) ?? fmt2.date(from: dateString)
+    }
+
+    // MARK: - Meal Entries
+    func addMealEntry(title: String, date: Date, type: MealType, amount: Double, location: String?, notes: String?) {
+        let entry = MealEntry(title: title, date: date, type: type, amount: amount, location: location, notes: notes)
+        mealEntries.insert(entry, at: 0)
+        PlannerService.addMealEntry(entry)
+        if amount > 0 {
+            let tx = Transaction(
+                name: "Meal: \(entry.title)",
+                amount: amount,
+                type: .expense,
+                category: .dining,
+                incomeSource: nil,
+                budgetCategory: .wants,
+                date: entry.date,
+                note: "Meal entry",
+                linkedMealEntryId: entry.id.uuidString
+            )
+            transactionsVM.addTransaction(tx)
+        }
+    }
+
+    func updateMealEntry(_ entry: MealEntry) {
+        if let idx = mealEntries.firstIndex(where: { $0.id == entry.id }) {
+            mealEntries[idx] = entry
+        }
+        PlannerService.updateMealEntry(entry)
+        transactionsVM.updateLinkedMealEntryTransaction(entry)
+    }
+
+    func deleteMealEntry(_ entry: MealEntry) {
+        mealEntries.removeAll { $0.id == entry.id }
+        PlannerService.deleteMealEntry(entry.id)
+        transactionsVM.deleteLinkedMealEntryTransaction(entryId: entry.id.uuidString)
+    }
+
+    // MARK: - Study Expenses
+    func addStudyExpense(title: String, amount: Double, date: Date, category: String, notes: String?) {
+        let expense = StudyExpense(title: title, amount: amount, date: date, category: category, notes: notes)
+        studyExpenses.insert(expense, at: 0)
+        PlannerService.addStudyExpense(expense)
+
+        let tx = Transaction(
+            name: "Study: \(expense.title)",
+            amount: amount,
+            type: .expense,
+            category: studyExpenseCategory(category),
+            incomeSource: nil,
+            budgetCategory: .needs,
+            date: date,
+            note: "Study expense",
+            linkedStudyExpenseId: expense.id.uuidString
+        )
+        transactionsVM.addTransaction(tx)
+    }
+
+    func updateStudyExpense(_ expense: StudyExpense) {
+        if let idx = studyExpenses.firstIndex(where: { $0.id == expense.id }) {
+            studyExpenses[idx] = expense
+        }
+        PlannerService.updateStudyExpense(expense)
+        transactionsVM.updateLinkedStudyExpenseTransaction(expense)
+    }
+
+    func deleteStudyExpense(_ expense: StudyExpense) {
+        studyExpenses.removeAll { $0.id == expense.id }
+        PlannerService.deleteStudyExpense(expense.id)
+        transactionsVM.deleteLinkedStudyExpenseTransaction(expenseId: expense.id.uuidString)
+    }
+
+    private func studyExpenseCategory(_ category: String) -> ExpenseCategory? {
+        switch category.lowercased() {
+        case "books", "tutoring":
+            return .education
+        case "printing", "supplies":
+            return .other
+        default:
+            return nil
+        }
     }
 }

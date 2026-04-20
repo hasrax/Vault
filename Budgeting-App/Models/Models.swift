@@ -111,6 +111,8 @@ struct Transaction: Identifiable, Codable, Equatable {
     var note: String
     var linkedShiftId: String?
     var linkedSplitBillId: String?
+    var linkedStudyExpenseId: String?
+    var linkedMealEntryId: String?
     var receiptImageUrl: String?
     var receiptImageBase64: String?
 
@@ -126,6 +128,8 @@ struct Transaction: Identifiable, Codable, Equatable {
         note: String = "",
         linkedShiftId: String? = nil,
         linkedSplitBillId: String? = nil,
+        linkedStudyExpenseId: String? = nil,
+        linkedMealEntryId: String? = nil,
         receiptImageUrl: String? = nil,
         receiptImageBase64: String? = nil
     ) {
@@ -140,6 +144,8 @@ struct Transaction: Identifiable, Codable, Equatable {
         self.note           = note
         self.linkedShiftId  = linkedShiftId
         self.linkedSplitBillId = linkedSplitBillId
+        self.linkedStudyExpenseId = linkedStudyExpenseId
+        self.linkedMealEntryId = linkedMealEntryId
         self.receiptImageUrl = receiptImageUrl
         self.receiptImageBase64 = receiptImageBase64
     }
@@ -387,15 +393,42 @@ struct AppNotification: Identifiable, Codable, Equatable {
     var title: String
     var message: String
     var type: NotiType
-    var time: String
+    var createdAt: Date
+    var isRead: Bool
 
     init(id: UUID = UUID(), title: String, message: String,
-         type: NotiType, time: String) {
+         type: NotiType, createdAt: Date = Date(), isRead: Bool = false) {
         self.id      = id
         self.title   = title
         self.message = message
         self.type    = type
-        self.time    = time
+        self.createdAt = createdAt
+        self.isRead = isRead
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, message, type, createdAt, isRead, time
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        message = try container.decodeIfPresent(String.self, forKey: .message) ?? ""
+        type = try container.decodeIfPresent(NotiType.self, forKey: .type) ?? .planner
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        isRead = try container.decodeIfPresent(Bool.self, forKey: .isRead) ?? false
+        _ = try container.decodeIfPresent(String.self, forKey: .time)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(message, forKey: .message)
+        try container.encode(type, forKey: .type)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(isRead, forKey: .isRead)
     }
 
     enum NotiType: String, Codable, Equatable {
@@ -590,6 +623,88 @@ struct PlannerModule: Identifiable {
     var icon: String
     var gradient: LinearGradient
     var destination: String
+}
+
+// MARK: - Meal Plan
+
+enum MealType: String, CaseIterable, Identifiable, Codable {
+    case breakfast
+    case lunch
+    case dinner
+    case snack
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .breakfast: return "Breakfast"
+        case .lunch:     return "Lunch"
+        case .dinner:    return "Dinner"
+        case .snack:     return "Snack"
+        }
+    }
+
+    var emoji: String {
+        switch self {
+        case .breakfast: return "🥣"
+        case .lunch:     return "🥗"
+        case .dinner:    return "🍲"
+        case .snack:     return "🍎"
+        }
+    }
+}
+
+struct MealEntry: Identifiable, Codable, Equatable {
+    let id: UUID
+    var title: String
+    var date: Date
+    var type: MealType
+    var amount: Double
+    var location: String?
+    var notes: String?
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        date: Date,
+        type: MealType,
+        amount: Double = 0,
+        location: String? = nil,
+        notes: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.date = date
+        self.type = type
+        self.amount = amount
+        self.location = location
+        self.notes = notes
+    }
+}
+
+struct StudyExpense: Identifiable, Codable, Equatable {
+    let id: UUID
+    var title: String
+    var amount: Double
+    var date: Date
+    var category: String
+    var notes: String?
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        amount: Double,
+        date: Date,
+        category: String,
+        notes: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.amount = amount
+        self.date = date
+        self.category = category
+        self.notes = notes
+    }
 }
 
 // MARK: - User Profile

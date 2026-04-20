@@ -34,6 +34,10 @@ struct MainTabView: View {
                 .tag(4)
         }
         .tint(Color.uniBlue)
+        .id(appState.currentUser?.id ?? "guest")
+        .onChange(of: appState.isAuthenticated) { _, isAuthed in
+            if isAuthed { selectedTab = 0 }
+        }
     }
 }
 

@@ -109,11 +109,11 @@ struct MockData {
 
     // MARK: - Notifications
     static var notifications: [AppNotification] = [
-        AppNotification(title: "Needs budget exceeded!",   message: "You've spent Rs.25,500 — Rs.3,000 over your Rs.22,500 Needs limit.",       type: .budget,  time: "2m ago"),
-        AppNotification(title: "Shift reminder",           message: "Library Assistant shift starts in 1 hour. Don't forget to clock in!",       type: .work,    time: "1h ago"),
-        AppNotification(title: "Meal swipes running low",  message: "Only 63 swipes left for the semester — use ~1.8/day to last.",              type: .meal,    time: "3h ago"),
-        AppNotification(title: "Tuition due in 5 days",    message: "Rs.2,500 tuition payment is due on Mar 25. Make sure funds are ready.",     type: .planner, time: "Yesterday"),
-        AppNotification(title: "Savings on track!",        message: "You've saved Rs.5,000 toward your emergency fund — 10% complete!",          type: .budget,  time: "2 days ago"),
+        AppNotification(title: "Needs budget exceeded!",   message: "You've spent Rs.25,500 — Rs.3,000 over your Rs.22,500 Needs limit.",       type: .budget,  createdAt: Date()),
+        AppNotification(title: "Shift reminder",           message: "Library Assistant shift starts in 1 hour. Don't forget to clock in!",       type: .work,    createdAt: daysAgo(0)),
+        AppNotification(title: "Meal swipes running low",  message: "Only 63 swipes left for the semester — use ~1.8/day to last.",              type: .meal,    createdAt: daysAgo(0)),
+        AppNotification(title: "Tuition due in 5 days",    message: "Rs.2,500 tuition payment is due on Mar 25. Make sure funds are ready.",     type: .planner, createdAt: daysAgo(1)),
+        AppNotification(title: "Savings on track!",        message: "You've saved Rs.5,000 toward your emergency fund — 10% complete!",          type: .budget,  createdAt: daysAgo(2)),
     ]
 
     // MARK: - AI Coach starter messages

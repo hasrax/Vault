@@ -1146,6 +1146,9 @@ struct RootView: View {
             plannerVM.loadRemote()
             plannerVM.startListeners()
             splitBillsVM.startListener()
+            if authVM.notificationsEnabled {
+                NotificationService.scheduleDailySummary(hour: 20, minute: 0)
+            }
         } else {
             transactionsVM.stopListener()
             transactionsVM.transactions = []
@@ -1202,13 +1205,15 @@ struct RootView: View {
         let now = Date()
         for shift in plannerVM.workShifts where shift.status == .upcoming {
             guard let shiftDate = parseShiftDate(shift.date) else { continue }
-            let interval = shiftDate.timeIntervalSince(now)
-            if interval > 0 && interval <= 24 * 3600 {
-                NotificationService.sendLocalNotificationIfNeeded(
-                    key: "shift_upcoming_\(shift.id)",
+            let startDate = combineDate(shiftDate, time: shift.start) ?? shiftDate
+            let remindAt = Calendar.current.date(byAdding: .hour, value: -2, to: startDate) ?? startDate
+            if remindAt > now {
+                NotificationService.scheduleLocalNotification(
+                    id: "shift_reminder_\(shift.id)",
                     title: "Upcoming shift",
-                    body: "\(shift.role) on \(shift.date)",
-                    type: .work
+                    body: "\(shift.role) at \(shift.start)",
+                    type: .work,
+                    date: remindAt
                 )
             }
         }
@@ -1314,6 +1319,15 @@ struct RootView: View {
             updatedAt: Date()
         )
         WidgetDataStore.save(summary)
+    }
+
+    private func combineDate(_ date: Date, time: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        guard let t = formatter.date(from: time) else { return nil }
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.hour, .minute], from: t)
+        return cal.date(bySettingHour: comps.hour ?? 0, minute: comps.minute ?? 0, second: 0, of: date)
     }
 
     private func upcomingItem() -> (title: String, subtitle: String) {

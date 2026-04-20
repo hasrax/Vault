@@ -24,9 +24,15 @@ struct NotificationCard: View {
                     .background(notification.type.chipColor)
                     .clipShape(Capsule())
 
+                if !notification.isRead {
+                    Circle()
+                        .fill(notification.type.chipColor)
+                        .frame(width: 6, height: 6)
+                }
+
                 Spacer()
 
-                Text(notification.time)
+                Text(NotificationStore.relativeTimeString(from: notification.createdAt))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -42,8 +48,9 @@ struct NotificationCard: View {
         }
         .padding(14)
         .lightCard()
+        .opacity(notification.isRead ? 0.85 : 1.0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(notification.type.rawValue) notification: \(notification.title). \(notification.message). \(notification.time).")
+        .accessibilityLabel("\(notification.type.rawValue) notification: \(notification.title). \(notification.message). \(NotificationStore.relativeTimeString(from: notification.createdAt)).")
     }
 }
 
