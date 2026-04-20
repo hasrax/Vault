@@ -600,6 +600,7 @@ struct UserProfile: Identifiable {
     var email: String
     var createdAt: Date?
     var photoURL: String?
+    var photoBase64: String?
     var monthlyBudget: Double?
     var needsPercent: Double?
     var wantsPercent: Double?

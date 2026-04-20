@@ -180,14 +180,13 @@ struct PlannerView: View {
 
     private func plannerGridCard(_ mod: PlannerModule) -> some View {
         let accent = appState.plannerTheme.color(for: mod.id)
-        let grad   = appState.plannerTheme.gradient(for: mod.id)
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(mod.pill)
                     .font(.system(size:10,weight:.bold)).textCase(.uppercase)
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(accent)
                     .padding(.horizontal,8).padding(.vertical,3)
-                    .background(grad)
+                    .background(accent.opacity(0.12))
                     .clipShape(Capsule())
                 Spacer()
                 Text(mod.icon)

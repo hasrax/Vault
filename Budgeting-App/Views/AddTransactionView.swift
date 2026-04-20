@@ -25,13 +25,17 @@ struct AddTransactionView: View {
     @State private var showReceiptScanner = false
     @State private var receiptImageUrl: String? = nil
     @State private var receiptImageBase64: String? = nil
+    @State private var shouldCloseAll = false
+
+    private let onSaveAndCloseAll: (() -> Void)?
 
     // Prefill support — used when coming from ReceiptScannerView
     init(
         prefillType: TransactionType? = nil,
         prefillAmount: Double? = nil,
         prefillReceiptUrl: String? = nil,
-        prefillReceiptBase64: String? = nil
+        prefillReceiptBase64: String? = nil,
+        onSaveAndCloseAll: (() -> Void)? = nil
     ) {
         if let type = prefillType {
             _txType = State(initialValue: type)
@@ -45,6 +49,7 @@ struct AddTransactionView: View {
         if let base64 = prefillReceiptBase64 {
             _receiptImageBase64 = State(initialValue: base64)
         }
+        self.onSaveAndCloseAll = onSaveAndCloseAll
     }
 
     private var amount:  Double { Double(amountText) ?? 0 }
@@ -72,7 +77,7 @@ struct AddTransactionView: View {
             .navigationTitle("Add Transaction")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: $showReceiptScanner) {
-                ReceiptScannerView()
+                ReceiptScannerView(shouldCloseAll: $shouldCloseAll)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -83,6 +88,11 @@ struct AddTransactionView: View {
                         .font(.headline)
                         .foregroundStyle(isValid ? Color.uniBlue : Color.secondary)
                         .disabled(!isValid)
+                }
+            }
+            .onChange(of: shouldCloseAll) { _, newValue in
+                if newValue {
+                    dismiss()
                 }
             }
         }
@@ -281,6 +291,7 @@ struct AddTransactionView: View {
             receiptImageBase64: receiptImageBase64
         )
         transactionsVM.addTransaction(newTx)
+        onSaveAndCloseAll?()
         dismiss()
     }
 }

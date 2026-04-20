@@ -178,8 +178,8 @@ class AppState: ObservableObject {
                 completion(.failure(NSError(domain: "AppState", code: 401)))
                 return
             }
-            let applyUpdate: (String?) -> Void = { photoURL in
-                UserService.updateProfile(uid: uid, name: name, email: email, photoURL: photoURL) { error in
+            let applyUpdate: (String?, String?) -> Void = { photoURL, photoBase64 in
+                UserService.updateProfile(uid: uid, name: name, email: email, photoURL: photoURL, photoBase64: photoBase64) { error in
                     DispatchQueue.main.async {
                         if let error = error {
                             completion(.failure(error))
@@ -191,6 +191,7 @@ class AppState: ObservableObject {
                             email: email,
                             createdAt: nil,
                             photoURL: photoURL,
+                            photoBase64: photoBase64,
                             monthlyBudget: self.monthlyBudget,
                             needsPercent: self.needsPercent,
                             wantsPercent: self.wantsPercent,
@@ -200,6 +201,7 @@ class AppState: ObservableObject {
                         updated.name = name
                         updated.email = email
                         if let photoURL = photoURL { updated.photoURL = photoURL }
+                        if let photoBase64 = photoBase64 { updated.photoBase64 = photoBase64 }
                         self.currentUser = updated
                         CoreDataCache.shared.saveUserProfile(updated, ownerId: uid)
                         completion(.success(()))
@@ -208,16 +210,13 @@ class AppState: ObservableObject {
             }
 
             if let photo = photo {
-                ProfileImageService.uploadProfileImage(uid: uid, image: photo) { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let url): applyUpdate(url)
-                        case .failure(let error): completion(.failure(error))
-                        }
-                    }
+                if let encoded = ProfileImageService.encodeProfileImage(image: photo) {
+                    applyUpdate(nil, encoded)
+                } else {
+                    completion(.failure(NSError(domain: "ProfileImageService", code: 2)))
                 }
             } else {
-                applyUpdate(nil)
+                applyUpdate(nil, nil)
             }
         }
     
@@ -905,7 +904,7 @@ class AppState: ObservableObject {
                         if (updated.name.isEmpty || updated.name == "User"), !email.isEmpty {
                             let base = email.split(separator: "@").first.map(String.init) ?? "User"
                             updated.name = base
-                            UserService.updateProfile(uid: uid, name: updated.name, email: email, photoURL: updated.photoURL)
+                            UserService.updateProfile(uid: uid, name: updated.name, email: email, photoURL: updated.photoURL, photoBase64: updated.photoBase64)
                         }
                         self.applyProfile(updated)
                         CoreDataCache.shared.saveUserProfile(updated, ownerId: uid)
@@ -926,6 +925,7 @@ class AppState: ObservableObject {
                                         email: email,
                                         createdAt: nil,
                                         photoURL: nil,
+                                        photoBase64: nil,
                                         monthlyBudget: nil,
                                         needsPercent: nil,
                                         wantsPercent: nil,

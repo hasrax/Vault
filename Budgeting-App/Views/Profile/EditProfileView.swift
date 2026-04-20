@@ -85,6 +85,12 @@ struct EditProfileView: View {
                 Image(uiImage: selectedImage)
                     .resizable()
                     .scaledToFill()
+            } else if let base64 = appState.currentUser?.photoBase64,
+                      let data = Data(base64Encoded: base64),
+                      let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
             } else if let urlStr = appState.currentUser?.photoURL,
                       let url = URL(string: urlStr) {
                 AsyncImage(url: url) { phase in

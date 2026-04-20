@@ -146,11 +146,7 @@ struct HomeView: View {
                 // Top bar
                 HStack {
                     HStack(spacing: 10) {
-                        Text(MockData.userAvatar)
-                            .font(.system(size: 22))
-                            .frame(width: 40, height: 40)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(Circle())
+                        profileAvatar
                         let displayName = appState.currentUser?.name ?? MockData.userName
                         Text("Hi, \(displayName)!")
                             .font(.system(size: 15, weight: .semibold))
@@ -266,6 +262,36 @@ struct HomeView: View {
                 .padding(.bottom, 40)
             }
         }
+    }
+
+    private var profileAvatar: some View {
+        Group {
+            if let base64 = appState.currentUser?.photoBase64,
+               let data = Data(base64Encoded: base64),
+               let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else if let urlStr = appState.currentUser?.photoURL,
+                      let url = URL(string: urlStr) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        Color.white.opacity(0.12)
+                    }
+                }
+            } else {
+                ZStack {
+                    Color.white.opacity(0.12)
+                    Text(MockData.userAvatar)
+                        .font(.system(size: 22))
+                }
+            }
+        }
+        .frame(width: 40, height: 40)
+        .clipShape(Circle())
     }
 
     // MARK: - Glass Overlap Card
@@ -390,22 +416,22 @@ struct HomeView: View {
                 columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
                 spacing: 10
             ) {
-                QuickActionButton(emoji: "📅", label: "Semester", gradient: appState.plannerTheme.gradient(for: "semesterPlanner")) {
+                QuickActionButton(emoji: "📅", label: "Semester", accent: appState.plannerTheme.color(for: "semesterPlanner")) {
                     showSemesterPlanner = true
                 }
-                QuickActionButton(emoji: "💼", label: "Shifts",   gradient: appState.plannerTheme.gradient(for: "workSchedule")) {
+                QuickActionButton(emoji: "💼", label: "Shifts",   accent: appState.plannerTheme.color(for: "workSchedule")) {
                     showWorkSchedule = true
                 }
-                QuickActionButton(emoji: "🍽️", label: "Meals",    gradient: appState.plannerTheme.gradient(for: "mealPlan")) {
+                QuickActionButton(emoji: "🍽️", label: "Meals",    accent: appState.plannerTheme.color(for: "mealPlan")) {
                     showMealPlan = true
                 }
-                QuickActionButton(emoji: "🎯", label: "Savings",  gradient: appState.plannerTheme.gradient(for: "savings")) {
+                QuickActionButton(emoji: "🎯", label: "Savings",  accent: appState.plannerTheme.color(for: "savings")) {
                     showSavings = true
                 }
-                QuickActionButton(emoji: "🤝", label: "Split",    gradient: appState.plannerTheme.gradient(for: "splitBill")) {
+                QuickActionButton(emoji: "🤝", label: "Split",    accent: appState.plannerTheme.color(for: "splitBill")) {
                     showSplitBill = true
                 }
-                QuickActionButton(emoji: "📊", label: "Analytics", gradient: appState.plannerTheme.gradient(for: "analytics")) {
+                QuickActionButton(emoji: "📊", label: "Analytics", accent: appState.plannerTheme.color(for: "analytics")) {
                     showAnalytics = true
                 }
             }

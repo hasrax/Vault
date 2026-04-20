@@ -72,24 +72,28 @@ struct MealPlanView: View {
             VStack(spacing:14) {
                 HStack {
                     VStack(alignment:.leading,spacing:4) {
-                        Text("Meal Swipes").font(.system(size:13)).foregroundStyle(Color.white.opacity(0.9))
-                        Text("63").font(.system(size:40,weight:.bold)).foregroundStyle(Color.white)
-                        Text("remaining").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.8))
+                        Text("Meal Swipes").font(.system(size:13)).foregroundStyle(Color.secondary)
+                        Text("63").font(.system(size:40,weight:.bold)).foregroundStyle(Color.primary)
+                        Text("remaining").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                     }
                     Spacer()
                     VStack(alignment:.trailing,spacing:4) {
-                        Text("This Week").font(.system(size:12)).foregroundStyle(Color.white.opacity(0.9))
-                        Text("9/14").font(.system(size:22,weight:.semibold)).foregroundStyle(Color.white)
+                        Text("This Week").font(.system(size:12)).foregroundStyle(Color.secondary)
+                        Text("9/14").font(.system(size:22,weight:.semibold)).foregroundStyle(Color.primary)
                     }
                 }
-                UniProgressBar(progress:0.42, color:.white, height:8)
+                UniProgressBar(progress:0.42, color:accent, height:8)
                 Text("💡 Use ~1.8 swipes/day to last the semester")
-                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.9))
+                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                     .multilineTextAlignment(.center)
             }
             .padding(20)
-            .background(grad)
+            .background(Color(UIColor.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius:18))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(accent.opacity(0.25), lineWidth: 1)
+            )
 
             // Dining dollars + flex
             HStack(spacing:12) {
@@ -116,13 +120,17 @@ struct MealPlanView: View {
     private var studyTab: some View {
         VStack(spacing:14) {
             VStack(spacing:8) {
-                Text("Study Expenses This Month").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.9))
-                Text("Rs.4,965").font(.system(size:36,weight:.bold)).foregroundStyle(Color.white)
-                Text("5 transactions").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.8))
+                Text("Study Expenses This Month").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                Text("Rs.4,965").font(.system(size:36,weight:.bold)).foregroundStyle(Color.primary)
+                Text("5 transactions").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
             }
             .frame(maxWidth:.infinity).padding(24)
-            .background(grad)
+            .background(Color(UIColor.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius:18))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(accent.opacity(0.25), lineWidth: 1)
+            )
 
             LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:4),spacing:10) {
                 ForEach([("🖨️","Printing"),("📚","Books"),("👨‍🏫","Tutoring"),("📝","Supplies")],id:\.0) { emoji,label in

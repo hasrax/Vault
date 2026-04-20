@@ -186,6 +186,7 @@ final class CoreDataCache {
             email: email,
             createdAt: nil,
             photoURL: photoURL,
+            photoBase64: nil,
             monthlyBudget: monthlyBudget,
             needsPercent: needsPercent,
             wantsPercent: wantsPercent,

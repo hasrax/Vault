@@ -250,33 +250,37 @@ struct SemesterPlannerView: View {
             VStack(spacing: 16) {
                 HStack {
                     VStack(alignment:.leading,spacing:4) {
-                        Text("Semester Budget").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.8))
-                        Text(semesterBudget.currencyRS).font(.system(size:28,weight:.bold,design:.rounded)).foregroundStyle(Color.white)
+                        Text("Semester Budget").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text(semesterBudget.currencyRS).font(.system(size:28,weight:.bold,design:.rounded)).foregroundStyle(Color.primary)
                     }
                     Spacer()
                     VStack(alignment:.trailing,spacing:4) {
-                        Text("Remaining").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.8))
-                        Text(remaining.currencyRS).font(.system(size:20,weight:.semibold)).foregroundStyle(Color.white)
+                        Text("Remaining").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text(remaining.currencyRS).font(.system(size:20,weight:.semibold)).foregroundStyle(Color.primary)
                     }
                 }
                 VStack(spacing:8) {
                     HStack {
-                        Text("Budget used").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.8))
+                        Text("Budget used").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                         Spacer()
-                        Text("\(Int(budgetProgress*100))%").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.white)
+                        Text("\(Int(budgetProgress*100))%").font(.system(size: 12, weight: .bold)).foregroundStyle(accent)
                     }
-                    UniProgressBar(progress:budgetProgress, color:budgetProgress > weekProgress ? Color.warning : Color.white, height:8)
+                    UniProgressBar(progress:budgetProgress, color:budgetProgress > weekProgress ? Color.warning : accent, height:8)
                     HStack {
-                        Text("Semester progress").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.8))
+                        Text("Semester progress").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                         Spacer()
-                        Text("Week \(currentWeek) of \(totalWeeks)").font(.system(size: 12, weight: .bold)).foregroundStyle(Color.white)
+                        Text("Week \(currentWeek) of \(totalWeeks)").font(.system(size: 12, weight: .bold)).foregroundStyle(accent)
                     }
-                    UniProgressBar(progress:weekProgress, color:.white, height:8)
+                    UniProgressBar(progress:weekProgress, color:accent, height:8)
                 }
             }
             .padding(24)
-            .background(appState.plannerTheme.gradient(for: "semesterPlanner"))
+            .background(Color(UIColor.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius:20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(accent.opacity(0.25), lineWidth: 1)
+            )
 
             // Weekly budget suggestion
             HStack(spacing:14) {

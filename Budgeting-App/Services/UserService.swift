@@ -36,6 +36,7 @@ struct UserService {
             "savingsPercent": savingsPercent,
             "hasCompletedSetup": hasCompletedSetup,
             "photoURL": NSNull(),
+            "photoBase64": NSNull(),
             "carryOverBalance": 0,
             "budgetHistory": []
         ]
@@ -50,6 +51,7 @@ struct UserService {
                 email: email,
                 createdAt: Date(),
                 photoURL: nil,
+                photoBase64: nil,
                 monthlyBudget: monthlyBudget,
                 needsPercent: needsPercent,
                 wantsPercent: wantsPercent,
@@ -77,6 +79,7 @@ struct UserService {
             let email = data["email"] as? String ?? ""
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
             let photoURL = data["photoURL"] as? String
+            let photoBase64 = data["photoBase64"] as? String
             let monthlyBudget = data["monthlyBudget"] as? Double
             let needsPercent = data["needsPercent"] as? Double
             let wantsPercent = data["wantsPercent"] as? Double
@@ -88,6 +91,7 @@ struct UserService {
                 email: email,
                 createdAt: createdAt,
                 photoURL: photoURL,
+                photoBase64: photoBase64,
                 monthlyBudget: monthlyBudget,
                 needsPercent: needsPercent,
                 wantsPercent: wantsPercent,
@@ -116,6 +120,7 @@ struct UserService {
             let name = data["name"] as? String ?? "User"
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
             let photoURL = data["photoURL"] as? String
+            let photoBase64 = data["photoBase64"] as? String
             let monthlyBudget = data["monthlyBudget"] as? Double
             let needsPercent = data["needsPercent"] as? Double
             let wantsPercent = data["wantsPercent"] as? Double
@@ -127,6 +132,7 @@ struct UserService {
                 email: emailLower,
                 createdAt: createdAt,
                 photoURL: photoURL,
+                photoBase64: photoBase64,
                 monthlyBudget: monthlyBudget,
                 needsPercent: needsPercent,
                 wantsPercent: wantsPercent,
@@ -142,6 +148,7 @@ struct UserService {
         name: String,
         email: String,
         photoURL: String?,
+        photoBase64: String? = nil,
         completion: ((Error?) -> Void)? = nil
     ) {
         let nameLower = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -154,6 +161,9 @@ struct UserService {
         ]
         if let photoURL = photoURL {
             data["photoURL"] = photoURL
+        }
+        if let photoBase64 = photoBase64 {
+            data["photoBase64"] = photoBase64
         }
         usersCollection.document(uid).setData(data, merge: true) { error in
             completion?(error)
@@ -199,6 +209,7 @@ struct UserService {
                 let email = (data["email"] as? String) ?? emailFallback ?? ""
                 let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
                 let photoURL = data["photoURL"] as? String
+                let photoBase64 = data["photoBase64"] as? String
                 let monthlyBudget = data["monthlyBudget"] as? Double
                 let needsPercent = data["needsPercent"] as? Double
                 let wantsPercent = data["wantsPercent"] as? Double
@@ -210,6 +221,7 @@ struct UserService {
                     email: email,
                     createdAt: createdAt,
                     photoURL: photoURL,
+                    photoBase64: photoBase64,
                     monthlyBudget: monthlyBudget,
                     needsPercent: needsPercent,
                     wantsPercent: wantsPercent,

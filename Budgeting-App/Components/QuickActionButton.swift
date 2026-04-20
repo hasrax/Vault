@@ -11,7 +11,7 @@ import SwiftUI
 struct QuickActionButton: View {
     let emoji:    String
     let label:    String
-    let gradient: LinearGradient
+    let accent:   Color
     let action:   () -> Void
 
     var body: some View {
@@ -21,11 +21,19 @@ struct QuickActionButton: View {
                     .font(.system(size: 24))
                 Text(label)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.primary)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 72)
-            .background(gradient)
+            .background(
+                ZStack {
+                    Color(UIColor.systemBackground)
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(accent.opacity(0.35), lineWidth: 1)
+            )
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .accessibilityLabel(label)
@@ -35,12 +43,12 @@ struct QuickActionButton: View {
 
 #Preview {
     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-        QuickActionButton(emoji: "📄", label: "History",  gradient: .primaryGrad, action: {})
-        QuickActionButton(emoji: "📅", label: "Planner",  gradient: .purpleGrad,  action: {})
-        QuickActionButton(emoji: "💼", label: "Jobs",     gradient: .greenGrad,   action: {})
-        QuickActionButton(emoji: "🍕", label: "Split",    gradient: .orangeGrad,  action: {})
-        QuickActionButton(emoji: "🛒", label: "Meals",    gradient: .tealGrad,    action: {})
-        QuickActionButton(emoji: "🐷", label: "Savings",  gradient: .pinkGrad,    action: {})
+        QuickActionButton(emoji: "📄", label: "History",  accent: .uniBlue,   action: {})
+        QuickActionButton(emoji: "📅", label: "Planner",  accent: .uniPurple, action: {})
+        QuickActionButton(emoji: "💼", label: "Jobs",     accent: .uniGreen,  action: {})
+        QuickActionButton(emoji: "🍕", label: "Split",    accent: .uniOrange, action: {})
+        QuickActionButton(emoji: "🛒", label: "Meals",    accent: .uniTeal,   action: {})
+        QuickActionButton(emoji: "🐷", label: "Savings",  accent: .uniPink,   action: {})
     }
     .padding()
 }

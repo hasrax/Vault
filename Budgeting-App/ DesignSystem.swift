@@ -187,26 +187,12 @@ struct PlannerModuleCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(
-                ZStack {
-                    Color(UIColor.systemBackground)
-                    accent.opacity(0.05)
-                }
+                Color(UIColor.systemBackground)
                 .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             )
             .overlay(
-                VStack {
-                    Rectangle()
-                        .fill(accent.opacity(0.75))
-                        .frame(height: 3)
-                        .clipShape(Capsule())
-                        .padding(.horizontal, 12)
-                        .padding(.top, 10)
-                    Spacer()
-                }
-            )
-            .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                    .stroke(accent.opacity(0.35), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }

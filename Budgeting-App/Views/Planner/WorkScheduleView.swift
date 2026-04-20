@@ -39,9 +39,9 @@ struct WorkScheduleView: View {
     private var totalEarned:     Double { completed.reduce(0){$0+$1.pay} }
     private var projectedEarnings: Double { shifts.reduce(0){$0+$1.pay} }
     private var totalHours:      Int { completed.reduce(0){$0+$1.hours} }
-    private var statValueColor:  Color { Color(white: 0.88) }
-    private var statLabelColor:  Color { Color(white: 0.70) }
-    private var statSubColor:    Color { Color(white: 0.62) }
+    private var statValueColor:  Color { accent }
+    private var statLabelColor:  Color { Color.secondary }
+    private var statSubColor:    Color { Color.secondary.opacity(0.8) }
     private var accent: Color { appState.plannerTheme.color(for: "workSchedule") }
     private var grad: LinearGradient {
         let base = appState.plannerTheme.color(for: "workSchedule")
@@ -383,9 +383,12 @@ struct WorkScheduleView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 22)
         .frame(maxWidth: .infinity)
-        .background(grad)
-        .overlay(Color.black.opacity(0.10))
+        .background(Color(UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(accent.opacity(0.25), lineWidth: 1)
+        )
         .padding(.horizontal, 16)
         .padding(.top, 16)
     }

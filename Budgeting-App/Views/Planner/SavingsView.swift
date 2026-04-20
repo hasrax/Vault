@@ -26,15 +26,19 @@ struct SavingsView: View {
             VStack(spacing:16) {
                 // Total card
                 VStack(spacing:12) {
-                    Text("Total Saved").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.9))
+                    Text("Total Saved").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                     Text(totalSaved.currencyRS)
-                        .font(.system(size:36,weight:.bold,design:.rounded)).foregroundStyle(Color.white)
-                    Text("of \(totalTarget.currencyRS) goal").font(.subheadline).foregroundStyle(Color.white.opacity(0.8))
-                    UniProgressBar(progress: totalProgress, color: .white, height: 10)
+                        .font(.system(size:36,weight:.bold,design:.rounded)).foregroundStyle(Color.primary)
+                    Text("of \(totalTarget.currencyRS) goal").font(.subheadline).foregroundStyle(Color.secondary)
+                    UniProgressBar(progress: totalProgress, color: accent, height: 10)
                 }
                 .padding(24)
-                .background(grad)
+                .background(Color(UIColor.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius:20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(accent.opacity(0.25), lineWidth: 1)
+                )
 
                 // Goals
                 ForEach(goals) { goal in
