@@ -50,6 +50,7 @@ struct EditProfileView: View {
         }
         .navigationTitle("Edit Profile")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Cancel") { dismiss() }
@@ -83,6 +84,12 @@ struct EditProfileView: View {
         Group {
             if let selectedImage = selectedImage {
                 Image(uiImage: selectedImage)
+                    .resizable()
+                    .scaledToFill()
+            } else if let base64 = appState.currentUser?.photoBase64,
+                      let data = Data(base64Encoded: base64),
+                      let image = UIImage(data: data) {
+                Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
             } else if let urlStr = appState.currentUser?.photoURL,

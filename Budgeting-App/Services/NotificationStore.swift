@@ -6,15 +6,41 @@ final class NotificationStore: ObservableObject {
 
     @Published private(set) var items: [AppNotification] = []
 
-    private let storageKey = "app_notifications"
+    private var storageKey = "app_notifications"
 
     private init() {
+        load()
+    }
+
+    func setOwnerId(_ id: String?) {
+        let key = id?.isEmpty == false ? "app_notifications_\(id!)" : "app_notifications_guest"
+        if key == storageKey { return }
+        storageKey = key
+        items = []
         load()
     }
 
     func add(_ item: AppNotification) {
         items.insert(item, at: 0)
         save()
+    }
+
+    func markRead(_ id: UUID) {
+        guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
+        if items[idx].isRead { return }
+        items[idx].isRead = true
+        save()
+    }
+
+    func markAllRead() {
+        var changed = false
+        for idx in items.indices {
+            if !items[idx].isRead {
+                items[idx].isRead = true
+                changed = true
+            }
+        }
+        if changed { save() }
     }
 
     func clear() {
@@ -45,5 +71,12 @@ final class NotificationStore: ObservableObject {
         if hours < 24 { return "\(hours)h ago" }
         let days = hours / 24
         return "\(days)d ago"
+    }
+
+    static func absoluteTimeString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }

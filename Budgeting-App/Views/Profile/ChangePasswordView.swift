@@ -11,6 +11,7 @@ struct ChangePasswordView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
 
+    @State private var currentPassword = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
     @State private var errorMessage = ""
@@ -18,6 +19,10 @@ struct ChangePasswordView: View {
 
     var body: some View {
         Form {
+            Section("Current Password") {
+                SecureField("Current password", text: $currentPassword)
+            }
+
             Section("New Password") {
                 SecureField("New password", text: $newPassword)
                 SecureField("Confirm new password", text: $confirmPassword)
@@ -32,6 +37,7 @@ struct ChangePasswordView: View {
         }
         .navigationTitle("Change Password")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Cancel") { dismiss() }
@@ -49,6 +55,10 @@ struct ChangePasswordView: View {
     }
 
     private func save() {
+        guard !currentPassword.isEmpty else {
+            errorMessage = "Enter your current password."
+            return
+        }
         guard newPassword.count >= 6 else {
             errorMessage = "Password must be at least 6 characters."
             return
@@ -59,7 +69,7 @@ struct ChangePasswordView: View {
         }
         isSaving = true
         errorMessage = ""
-        appState.changePassword(newPassword: newPassword) { result in
+        appState.changePassword(currentPassword: currentPassword, newPassword: newPassword) { result in
             DispatchQueue.main.async {
                 isSaving = false
                 switch result {

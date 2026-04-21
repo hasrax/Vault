@@ -35,6 +35,7 @@ struct NotificationService {
         content.title = title
         content.body = body
         content.sound = .default
+        content.userInfo["type"] = type.rawValue
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(
@@ -44,13 +45,49 @@ struct NotificationService {
         )
         UNUserNotificationCenter.current().add(request)
 
-        let item = AppNotification(
-            title: title,
-            message: body,
-            type: type,
-            time: NotificationStore.relativeTimeString(from: Date())
-        )
+        let item = AppNotification(title: title, message: body, type: type, createdAt: Date(), isRead: false)
         NotificationStore.shared.add(item)
+    }
+
+    static func scheduleLocalNotification(
+        id: String,
+        title: String,
+        body: String,
+        type: AppNotification.NotiType,
+        date: Date
+    ) {
+        guard date > Date() else { return }
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.userInfo["type"] = type.rawValue
+
+        let triggerDate = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: date
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
+
+        let item = AppNotification(title: title, message: body, type: type, createdAt: Date(), isRead: false)
+        NotificationStore.shared.add(item)
+    }
+
+    static func scheduleDailySummary(hour: Int = 20, minute: Int = 0) {
+        let content = UNMutableNotificationContent()
+        content.title = "Daily summary"
+        content.body = "Check your spending and goals for today."
+        content.sound = .default
+        content.userInfo["type"] = AppNotification.NotiType.budget.rawValue
+
+        var comps = DateComponents()
+        comps.hour = hour
+        comps.minute = minute
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+        let request = UNNotificationRequest(identifier: "daily_summary", content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
     }
 
     static func sendLocalNotificationIfNeeded(

@@ -317,4 +317,189 @@ struct PlannerService {
             onChange(.success(items))
         }
     }
+
+    // MARK: - Meal Entries
+    static func fetchMealEntries(completion: @escaping (Result<[MealEntry], Error>) -> Void) {
+        guard let doc = userDoc() else {
+            completion(.failure(NSError(domain: "PlannerService", code: 401)))
+            return
+        }
+        doc.collection("mealEntries").getDocuments { snapshot, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            let items: [MealEntry] = snapshot?.documents.compactMap { d in
+                let data = d.data()
+                let title = data["title"] as? String ?? ""
+                let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
+                let typeRaw = data["type"] as? String ?? MealType.lunch.rawValue
+                let type = MealType(rawValue: typeRaw) ?? .lunch
+                let amount = data["amount"] as? Double ?? 0
+                let location = data["location"] as? String
+                let notes = data["notes"] as? String
+                return MealEntry(
+                    id: UUID(uuidString: d.documentID) ?? UUID(),
+                    title: title,
+                    date: date,
+                    type: type,
+                    amount: amount,
+                    location: location,
+                    notes: notes
+                )
+            } ?? []
+            completion(.success(items))
+        }
+    }
+
+    static func addMealEntry(_ entry: MealEntry, completion: ((Error?) -> Void)? = nil) {
+        guard let doc = userDoc() else {
+            completion?(NSError(domain: "PlannerService", code: 401))
+            return
+        }
+        let data: [String: Any] = [
+            "title": entry.title,
+            "date": Timestamp(date: entry.date),
+            "type": entry.type.rawValue,
+            "amount": entry.amount,
+            "location": entry.location as Any,
+            "notes": entry.notes as Any
+        ]
+        doc.collection("mealEntries").document(entry.id.uuidString).setData(data, merge: true) { error in
+            completion?(error)
+        }
+    }
+
+    static func updateMealEntry(_ entry: MealEntry, completion: ((Error?) -> Void)? = nil) {
+        addMealEntry(entry, completion: completion)
+    }
+
+    static func deleteMealEntry(_ id: UUID, completion: ((Error?) -> Void)? = nil) {
+        guard let doc = userDoc() else {
+            completion?(NSError(domain: "PlannerService", code: 401))
+            return
+        }
+        doc.collection("mealEntries").document(id.uuidString).delete { error in
+            completion?(error)
+        }
+    }
+
+    static func listenMealEntries(onChange: @escaping (Result<[MealEntry], Error>) -> Void) -> ListenerRegistration? {
+        guard let doc = userDoc() else { return nil }
+        return doc.collection("mealEntries").addSnapshotListener { snapshot, error in
+            if let error = error {
+                onChange(.failure(error))
+                return
+            }
+            let items: [MealEntry] = snapshot?.documents.compactMap { d in
+                let data = d.data()
+                let title = data["title"] as? String ?? ""
+                let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
+                let typeRaw = data["type"] as? String ?? MealType.lunch.rawValue
+                let type = MealType(rawValue: typeRaw) ?? .lunch
+                let amount = data["amount"] as? Double ?? 0
+                let location = data["location"] as? String
+                let notes = data["notes"] as? String
+                return MealEntry(
+                    id: UUID(uuidString: d.documentID) ?? UUID(),
+                    title: title,
+                    date: date,
+                    type: type,
+                    amount: amount,
+                    location: location,
+                    notes: notes
+                )
+            } ?? []
+            onChange(.success(items))
+        }
+    }
+
+    // MARK: - Study Expenses
+    static func fetchStudyExpenses(completion: @escaping (Result<[StudyExpense], Error>) -> Void) {
+        guard let doc = userDoc() else {
+            completion(.failure(NSError(domain: "PlannerService", code: 401)))
+            return
+        }
+        doc.collection("studyExpenses").getDocuments { snapshot, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            let items: [StudyExpense] = snapshot?.documents.compactMap { d in
+                let data = d.data()
+                let title = data["title"] as? String ?? ""
+                let amount = data["amount"] as? Double ?? 0
+                let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
+                let category = data["category"] as? String ?? "Other"
+                let notes = data["notes"] as? String
+                return StudyExpense(
+                    id: UUID(uuidString: d.documentID) ?? UUID(),
+                    title: title,
+                    amount: amount,
+                    date: date,
+                    category: category,
+                    notes: notes
+                )
+            } ?? []
+            completion(.success(items))
+        }
+    }
+
+    static func addStudyExpense(_ expense: StudyExpense, completion: ((Error?) -> Void)? = nil) {
+        guard let doc = userDoc() else {
+            completion?(NSError(domain: "PlannerService", code: 401))
+            return
+        }
+        let data: [String: Any] = [
+            "title": expense.title,
+            "amount": expense.amount,
+            "date": Timestamp(date: expense.date),
+            "category": expense.category,
+            "notes": expense.notes as Any
+        ]
+        doc.collection("studyExpenses").document(expense.id.uuidString).setData(data, merge: true) { error in
+            completion?(error)
+        }
+    }
+
+    static func updateStudyExpense(_ expense: StudyExpense, completion: ((Error?) -> Void)? = nil) {
+        addStudyExpense(expense, completion: completion)
+    }
+
+    static func deleteStudyExpense(_ id: UUID, completion: ((Error?) -> Void)? = nil) {
+        guard let doc = userDoc() else {
+            completion?(NSError(domain: "PlannerService", code: 401))
+            return
+        }
+        doc.collection("studyExpenses").document(id.uuidString).delete { error in
+            completion?(error)
+        }
+    }
+
+    static func listenStudyExpenses(onChange: @escaping (Result<[StudyExpense], Error>) -> Void) -> ListenerRegistration? {
+        guard let doc = userDoc() else { return nil }
+        return doc.collection("studyExpenses").addSnapshotListener { snapshot, error in
+            if let error = error {
+                onChange(.failure(error))
+                return
+            }
+            let items: [StudyExpense] = snapshot?.documents.compactMap { d in
+                let data = d.data()
+                let title = data["title"] as? String ?? ""
+                let amount = data["amount"] as? Double ?? 0
+                let date = (data["date"] as? Timestamp)?.dateValue() ?? Date()
+                let category = data["category"] as? String ?? "Other"
+                let notes = data["notes"] as? String
+                return StudyExpense(
+                    id: UUID(uuidString: d.documentID) ?? UUID(),
+                    title: title,
+                    amount: amount,
+                    date: date,
+                    category: category,
+                    notes: notes
+                )
+            } ?? []
+            onChange(.success(items))
+        }
+    }
 }

@@ -44,6 +44,8 @@ final class CoreDataCache {
             let receiptImageBase64 = obj.value(forKey: "receiptImageBase64") as? String
             let linkedShiftId = obj.value(forKey: "linkedShiftId") as? String
             let linkedSplitBillId = obj.value(forKey: "linkedSplitBillId") as? String
+            let linkedStudyExpenseId = obj.value(forKey: "linkedStudyExpenseId") as? String
+            let linkedMealEntryId = obj.value(forKey: "linkedMealEntryId") as? String
 
             return Transaction(
                 id: id,
@@ -57,6 +59,8 @@ final class CoreDataCache {
                 note: note,
                 linkedShiftId: linkedShiftId,
                 linkedSplitBillId: linkedSplitBillId,
+                linkedStudyExpenseId: linkedStudyExpenseId,
+                linkedMealEntryId: linkedMealEntryId,
                 receiptImageUrl: receiptImageUrl,
                 receiptImageBase64: receiptImageBase64
             )
@@ -89,6 +93,8 @@ final class CoreDataCache {
         obj.setValue(tx.receiptImageBase64, forKey: "receiptImageBase64")
         obj.setValue(tx.linkedShiftId, forKey: "linkedShiftId")
         obj.setValue(tx.linkedSplitBillId, forKey: "linkedSplitBillId")
+        obj.setValue(tx.linkedStudyExpenseId, forKey: "linkedStudyExpenseId")
+        obj.setValue(tx.linkedMealEntryId, forKey: "linkedMealEntryId")
 
         if save { saveContext() }
     }
@@ -186,6 +192,7 @@ final class CoreDataCache {
             email: email,
             createdAt: nil,
             photoURL: photoURL,
+            photoBase64: nil,
             monthlyBudget: monthlyBudget,
             needsPercent: needsPercent,
             wantsPercent: wantsPercent,

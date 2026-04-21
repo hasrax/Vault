@@ -11,6 +11,7 @@ import SwiftUI
 /// Shows coloured icon circle, title + subtitle, and coloured amount.
 struct TransactionRow: View {
     let transaction: Transaction
+    @State private var showReceipt = false
 
     private var icon: String {
         if let category = transaction.category {
@@ -74,6 +75,15 @@ struct TransactionRow: View {
 
             Spacer()
 
+            if let thumb = receiptThumbnail {
+                Button {
+                    showReceipt = true
+                } label: {
+                    thumb
+                }
+                .buttonStyle(.plain)
+            }
+
             // Amount
             Text(
                 "\(transaction.type == .income ? "+" : "−")\(transaction.amount.currencyRS)"
@@ -86,6 +96,105 @@ struct TransactionRow: View {
         .accessibilityLabel(
             "\(transaction.name), \(categoryLabel), \(transaction.type == .income ? "income" : "expense") \(transaction.amount.currencyRS)"
         )
+        .sheet(isPresented: $showReceipt) {
+            ReceiptPreview(
+                image: receiptImage,
+                url: receiptUrl
+            )
+        }
+    }
+
+    private var receiptImage: UIImage? {
+        if let base64 = transaction.receiptImageBase64,
+           let data = Data(base64Encoded: base64),
+           let image = UIImage(data: data) {
+            return image
+        }
+        return nil
+    }
+
+    private var receiptUrl: URL? {
+        if let urlStr = transaction.receiptImageUrl {
+            return URL(string: urlStr)
+        }
+        return nil
+    }
+
+    private var receiptThumbnail: AnyView? {
+        if let image = receiptImage {
+            return AnyView(
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 34, height: 34)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                    )
+            )
+        }
+        if let url = receiptUrl {
+            return AnyView(
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    default:
+                        Color(UIColor.secondarySystemBackground)
+                    }
+                }
+                .frame(width: 34, height: 34)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                )
+            )
+        }
+        return nil
+    }
+}
+
+private struct ReceiptPreview: View {
+    @Environment(\.dismiss) var dismiss
+    let image: UIImage?
+    let url: URL?
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .padding()
+                } else if let url {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().scaledToFit().padding()
+                        default:
+                            ProgressView().tint(.white)
+                        }
+                    }
+                } else {
+                    Text("No receipt")
+                        .foregroundStyle(Color.white.opacity(0.7))
+                }
+            }
+            .navigationTitle("Receipt")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
 

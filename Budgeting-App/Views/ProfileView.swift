@@ -89,6 +89,16 @@ struct ProfileView: View {
                             }
                         } icon: { iconBox(systemName: "bell.fill", color: Color.uniOrange) }
                     }.tint(Color.uniBlue)
+
+                    NavigationLink(destination: AccessibilitySettingsView()) {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Accessibility").font(.system(size: 15, weight: .medium))
+                                Text("Text size and contrast")
+                                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                            }
+                        } icon: { iconBox(systemName: "figure.wave", color: Color.uniTeal) }
+                    }
                 }
 
                 Section("Device Tokens") {

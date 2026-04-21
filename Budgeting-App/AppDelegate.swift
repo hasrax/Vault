@@ -66,12 +66,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let title = content.title.isEmpty ? "Notification" : content.title
         let body = content.body
         let type = inferType(from: content.userInfo)
-        let item = AppNotification(
-            title: title,
-            message: body,
-            type: type,
-            time: NotificationStore.relativeTimeString(from: Date())
-        )
+        let item = AppNotification(title: title, message: body, type: type, createdAt: Date(), isRead: false)
         NotificationStore.shared.add(item)
     }
 

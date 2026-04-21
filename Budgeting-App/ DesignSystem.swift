@@ -8,6 +8,18 @@
 import SwiftUI
 import Combine
 
+// MARK: - Accessibility Environment
+private struct AppHighContrastKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var appHighContrast: Bool {
+        get { self[AppHighContrastKey.self] }
+        set { self[AppHighContrastKey.self] = newValue }
+    }
+}
+
 // MARK: - Brand Colours
 extension Color {
     static let uniBlue    = Color(hex: "#1E3A8A")
@@ -156,6 +168,8 @@ enum BudgetCategory: String, CaseIterable, Identifiable, Codable {
 
 /// Glass card — for use on dark/header backgrounds
 struct GlassCardModifier: ViewModifier {
+    @Environment(\.appHighContrast) private var appHighContrast
+
     func body(content: Content) -> some View {
         content
             .background(Color.white.opacity(0.08))
@@ -163,7 +177,7 @@ struct GlassCardModifier: ViewModifier {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(Color.white.opacity(appHighContrast ? 0.28 : 0.12), lineWidth: appHighContrast ? 1.5 : 1)
             )
     }
 }
@@ -171,22 +185,51 @@ struct GlassCardModifier: ViewModifier {
 /// Light card — for use on light/grouped backgrounds
 struct LightCardModifier: ViewModifier {
     var radius: CGFloat
+    @Environment(\.appHighContrast) private var appHighContrast
+
     func body(content: Content) -> some View {
         content
             .background(Color(UIColor.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(Color.primary.opacity(appHighContrast ? 0.12 : 0), lineWidth: appHighContrast ? 1 : 0)
+            )
             .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+}
+
+/// Planner module card — subtle tint + top accent line.
+struct PlannerModuleCardModifier: ViewModifier {
+    let accent: Color
+    var radius: CGFloat = 16
+    @Environment(\.appHighContrast) private var appHighContrast
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                Color(UIColor.systemBackground)
+                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(accent.opacity(appHighContrast ? 0.6 : 0.35), lineWidth: appHighContrast ? 1.5 : 1)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 }
 
 extension View {
     func glassCard() -> some View            { modifier(GlassCardModifier()) }
     func lightCard(_ r: CGFloat = 16) -> some View { modifier(LightCardModifier(radius: r)) }
+    func plannerModuleCard(accent: Color, radius: CGFloat = 16) -> some View {
+        modifier(PlannerModuleCardModifier(accent: accent, radius: radius))
+    }
     func appBackground() -> some View        { modifier(AppBackgroundModifier()) }
 }
 
 // MARK: - Status Bar Style
-struct StatusBarStyleSetter: UIViewControllerRepresentable {
+struct AppStatusBarStyleSetter: UIViewControllerRepresentable {
     var style: UIStatusBarStyle
 
     func makeUIViewController(context: Context) -> UIViewController {
@@ -218,8 +261,8 @@ struct StatusBarStyleSetter: UIViewControllerRepresentable {
 }
 
 extension View {
-    func statusBarStyle(_ style: UIStatusBarStyle) -> some View {
-        background(StatusBarStyleSetter(style: style))
+    func appStatusBarStyle(_ style: UIStatusBarStyle) -> some View {
+        background(AppStatusBarStyleSetter(style: style))
     }
 }
 
@@ -354,6 +397,34 @@ extension Font {
     static let caption1     = Font.system(size: 12, weight: .medium)
     static let caption2Text = Font.system(size: 11, weight: .regular)
     static let labelFont    = Font.system(size: 11, weight: .semibold)
+}
+
+// MARK: - Accessibility Font Scale
+enum AppFontScale: String, CaseIterable, Identifiable, Codable {
+    case small
+    case `default`
+    case large
+    case extraLarge
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .small:      return "Small"
+        case .default:    return "Default"
+        case .large:      return "Large"
+        case .extraLarge: return "Extra Large"
+        }
+    }
+
+    var dynamicTypeSize: DynamicTypeSize {
+        switch self {
+        case .small:      return .small
+        case .default:    return .medium
+        case .large:      return .large
+        case .extraLarge: return .xxLarge
+        }
+    }
 }
 
 // MARK: - Missing Gradients

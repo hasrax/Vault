@@ -80,7 +80,7 @@ struct GoalCard: View {
             }
         }
         .padding(20)
-        .lightCard()
+        .plannerModuleCard(accent: goal.color)
     }
 }
 

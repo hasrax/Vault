@@ -26,6 +26,12 @@ struct LoginView: View {
     @State private var faceIdError = ""
     @State private var selectedAccount = ""
     @State private var selectedProvider: String? = nil
+    @FocusState private var focusedField: LoginField?
+
+    private enum LoginField {
+        case email
+        case password
+    }
 
     var body: some View {
         ZStack {
@@ -91,6 +97,9 @@ struct LoginView: View {
                                     .autocorrectionDisabled()
                                     .textInputAutocapitalization(.never)
                                     .foregroundStyle(Color.primary)
+                                    .focused($focusedField, equals: .email)
+                                    .submitLabel(.next)
+                                    .onSubmit { focusedField = .password }
                                 if !savedAccounts.isEmpty {
                                     Menu {
                                         ForEach(savedAccounts, id: \.self) { account in
@@ -123,6 +132,9 @@ struct LoginView: View {
                                 }
                                 .foregroundStyle(Color.primary)
                                 .autocorrectionDisabled()
+                                .focused($focusedField, equals: .password)
+                                .submitLabel(.go)
+                                .onSubmit { signIn() }
                                 Button {
                                     showPassword.toggle()
                                 } label: {
@@ -448,6 +460,14 @@ struct SignUpView: View {
     @State private var errorMessage = ""
     @State private var isLoading = false
     @State private var isGoogleLoading = false
+    @FocusState private var focusedField: SignUpField?
+
+    private enum SignUpField {
+        case name
+        case email
+        case password
+        case confirm
+    }
 
     var isValid: Bool {
         !name.isEmpty && !email.isEmpty && password.count >= 6 && password == confirmPassword && agreedToTerms
@@ -472,14 +492,52 @@ struct SignUpView: View {
                     .padding(.horizontal, 24).padding(.top, 28)
 
                     VStack(spacing: 18) {
-                        ForEach([
-                            ("Full Name",        "Enter your name",          name,            false),
-                            ("Email",            "your@university.lk",       email,           false),
-                            ("Password",         "Create a password",        password,        true),
-                            ("Confirm Password", "Confirm your password",    confirmPassword, true),
-                        ], id: \.0) { label, ph, _, isSecure in
-                            darkFormField(label: label, placeholder: ph,
-                                          text: fieldBinding(label), isSecure: isSecure)
+                        darkFormField(
+                            label: "Full Name",
+                            placeholder: "Enter your name",
+                            text: $name,
+                            isSecure: false,
+                            focus: $focusedField,
+                            field: .name,
+                            submitLabel: .next
+                        ) {
+                            focusedField = .email
+                        }
+
+                        darkFormField(
+                            label: "Email",
+                            placeholder: "your@university.lk",
+                            text: $email,
+                            isSecure: false,
+                            focus: $focusedField,
+                            field: .email,
+                            submitLabel: .next
+                        ) {
+                            focusedField = .password
+                        }
+
+                        darkFormField(
+                            label: "Password",
+                            placeholder: "Create a password",
+                            text: $password,
+                            isSecure: true,
+                            focus: $focusedField,
+                            field: .password,
+                            submitLabel: .next
+                        ) {
+                            focusedField = .confirm
+                        }
+
+                        darkFormField(
+                            label: "Confirm Password",
+                            placeholder: "Confirm your password",
+                            text: $confirmPassword,
+                            isSecure: true,
+                            focus: $focusedField,
+                            field: .confirm,
+                            submitLabel: .go
+                        ) {
+                            signUp()
                         }
 
                         HStack(spacing: 12) {
@@ -545,15 +603,6 @@ struct SignUpView: View {
         }
     }
 
-    private func fieldBinding(_ label: String) -> Binding<String> {
-        switch label {
-        case "Full Name":        return $name
-        case "Email":            return $email
-        case "Password":         return $password
-        default:                 return $confirmPassword
-        }
-    }
-
     private func signUp() {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard isValid else {
@@ -602,8 +651,16 @@ struct SignUpView: View {
     }
 
     @ViewBuilder
-    private func darkFormField(label: String, placeholder: String,
-                               text: Binding<String>, isSecure: Bool) -> some View {
+    private func darkFormField(
+        label: String,
+        placeholder: String,
+        text: Binding<String>,
+        isSecure: Bool,
+        focus: FocusState<SignUpField?>.Binding,
+        field: SignUpField,
+        submitLabel: SubmitLabel,
+        onSubmit: @escaping () -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
             Group {
@@ -615,6 +672,9 @@ struct SignUpView: View {
                         .textInputAutocapitalization(label == "Email" ? .never : .words)
                 }
             }
+            .focused(focus, equals: field)
+            .submitLabel(submitLabel)
+            .onSubmit(onSubmit)
             .foregroundStyle(Color.primary)
             .padding(14)
             .background(Color.black.opacity(0.04))

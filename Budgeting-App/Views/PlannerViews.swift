@@ -99,7 +99,7 @@ struct PlannerView: View {
                 }
             }
         }
-        .statusBarStyle(.lightContent)
+            .appStatusBarStyle(.lightContent)
         .sheet(isPresented: $showThemePicker) {
             PlannerThemePickerView()
         }
@@ -180,14 +180,13 @@ struct PlannerView: View {
 
     private func plannerGridCard(_ mod: PlannerModule) -> some View {
         let accent = appState.plannerTheme.color(for: mod.id)
-        let grad   = appState.plannerTheme.gradient(for: mod.id)
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(mod.pill)
                     .font(.system(size:10,weight:.bold)).textCase(.uppercase)
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(accent)
                     .padding(.horizontal,8).padding(.vertical,3)
-                    .background(grad)
+                    .background(accent.opacity(0.12))
                     .clipShape(Capsule())
                 Spacer()
                 Text(mod.icon)
@@ -325,34 +324,3 @@ struct PlannerThemePickerView: View {
 }
 
 #Preview("Planner")   { PlannerView().environmentObject(AppState()) }
-
-private struct StatusBarStyleSetter: UIViewControllerRepresentable {
-    var style: UIStatusBarStyle
-
-    func makeUIViewController(context: Context) -> UIViewController {
-        StyleController(style: style)
-    }
-
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
-        guard let controller = uiViewController as? StyleController else { return }
-        controller.style = style
-        controller.setNeedsStatusBarAppearanceUpdate()
-    }
-
-    private final class StyleController: UIViewController {
-        var style: UIStatusBarStyle
-
-        init(style: UIStatusBarStyle) {
-            self.style = style
-            super.init(nibName: nil, bundle: nil)
-        }
-
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override var preferredStatusBarStyle: UIStatusBarStyle {
-            style
-        }
-    }
-}

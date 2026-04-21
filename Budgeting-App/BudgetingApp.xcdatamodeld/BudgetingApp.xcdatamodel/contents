@@ -13,6 +13,8 @@
         <attribute name="receiptImageBase64" attributeType="String" optional="YES"/>
         <attribute name="linkedShiftId" attributeType="String" optional="YES"/>
         <attribute name="linkedSplitBillId" attributeType="String" optional="YES"/>
+        <attribute name="linkedStudyExpenseId" attributeType="String" optional="YES"/>
+        <attribute name="linkedMealEntryId" attributeType="String" optional="YES"/>
     </entity>
     <entity name="CachedSavingsGoal" representedClassName="NSManagedObject" syncable="YES">
         <attribute name="id" attributeType="UUID" optional="NO"/>

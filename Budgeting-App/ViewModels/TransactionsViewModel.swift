@@ -64,6 +64,14 @@ final class TransactionsViewModel: ObservableObject {
                 }
             }
         }
+
+        if tx.type == .expense {
+            NotificationService.sendLocalNotification(
+                title: "Expense added",
+                body: "\(tx.name) · \(tx.amount.currencyRS)",
+                type: .budget
+            )
+        }
     }
 
     func updateTransaction(_ tx: Transaction) {
@@ -98,6 +106,70 @@ final class TransactionsViewModel: ObservableObject {
         }
     }
 
+    func updateLinkedStudyExpenseTransaction(_ expense: StudyExpense) {
+        if let existing = transactions.first(where: { $0.linkedStudyExpenseId == expense.id.uuidString }) {
+            var updated = existing
+            updated.name = "Study: \(expense.title)"
+            updated.amount = expense.amount
+            updated.date = expense.date
+            updated.budgetCategory = .needs
+            updated.category = studyExpenseCategory(expense.category)
+            updateTransaction(updated)
+        } else if expense.amount > 0 {
+            let tx = Transaction(
+                name: "Study: \(expense.title)",
+                amount: expense.amount,
+                type: .expense,
+                category: studyExpenseCategory(expense.category),
+                incomeSource: nil,
+                budgetCategory: .needs,
+                date: expense.date,
+                note: "Study expense",
+                linkedStudyExpenseId: expense.id.uuidString
+            )
+            addTransaction(tx)
+        }
+    }
+
+    func deleteLinkedStudyExpenseTransaction(expenseId: String) {
+        if let tx = transactions.first(where: { $0.linkedStudyExpenseId == expenseId }) {
+            deleteTransactions([tx.id])
+        }
+    }
+
+    func updateLinkedMealEntryTransaction(_ entry: MealEntry) {
+        if let existing = transactions.first(where: { $0.linkedMealEntryId == entry.id.uuidString }) {
+            var updated = existing
+            updated.name = "Meal: \(entry.title)"
+            updated.date = entry.date
+            updated.amount = entry.amount
+            updated.category = .dining
+            updated.budgetCategory = .wants
+            updateTransaction(updated)
+        } else if entry.amount > 0 {
+            let tx = Transaction(
+                name: "Meal: \(entry.title)",
+                amount: entry.amount,
+                type: .expense,
+                category: .dining,
+                incomeSource: nil,
+                budgetCategory: .wants,
+                date: entry.date,
+                note: "Meal entry",
+                linkedMealEntryId: entry.id.uuidString
+            )
+            addTransaction(tx)
+        } else {
+            deleteLinkedMealEntryTransaction(entryId: entry.id.uuidString)
+        }
+    }
+
+    func deleteLinkedMealEntryTransaction(entryId: String) {
+        if let tx = transactions.first(where: { $0.linkedMealEntryId == entryId }) {
+            deleteTransactions([tx.id])
+        }
+    }
+
     func deleteTransactions(_ ids: [UUID]) {
         transactions.removeAll { ids.contains($0.id) }
         TransactionService.deleteTransactions(ids)
@@ -112,5 +184,16 @@ final class TransactionsViewModel: ObservableObject {
         let fmt2 = DateFormatter()
         fmt2.dateFormat = "MMM yyyy"
         return fmt1.date(from: dateString) ?? fmt2.date(from: dateString)
+    }
+
+    private func studyExpenseCategory(_ category: String) -> ExpenseCategory? {
+        switch category.lowercased() {
+        case "books", "tutoring":
+            return .education
+        case "printing", "supplies":
+            return .other
+        default:
+            return nil
+        }
     }
 }

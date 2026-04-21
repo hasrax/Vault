@@ -33,6 +33,8 @@ struct TransactionService {
             "note": tx.note,
             "linkedShiftId": tx.linkedShiftId as Any,
             "linkedSplitBillId": tx.linkedSplitBillId as Any,
+            "linkedStudyExpenseId": tx.linkedStudyExpenseId as Any,
+            "linkedMealEntryId": tx.linkedMealEntryId as Any,
             "receiptImageUrl": tx.receiptImageUrl as Any,
             "receiptImageBase64": tx.receiptImageBase64 as Any
         ]
@@ -54,6 +56,8 @@ struct TransactionService {
         let note = data["note"] as? String ?? ""
         let linkedShiftId = data["linkedShiftId"] as? String
         let linkedSplitBillId = data["linkedSplitBillId"] as? String
+        let linkedStudyExpenseId = data["linkedStudyExpenseId"] as? String
+        let linkedMealEntryId = data["linkedMealEntryId"] as? String
         let receiptImageUrl = data["receiptImageUrl"] as? String
         let receiptImageBase64 = data["receiptImageBase64"] as? String
 
@@ -69,6 +73,8 @@ struct TransactionService {
             note: note,
             linkedShiftId: linkedShiftId,
             linkedSplitBillId: linkedSplitBillId,
+            linkedStudyExpenseId: linkedStudyExpenseId,
+            linkedMealEntryId: linkedMealEntryId,
             receiptImageUrl: receiptImageUrl,
             receiptImageBase64: receiptImageBase64
         )

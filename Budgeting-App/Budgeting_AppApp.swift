@@ -12,6 +12,8 @@ class AppState: ObservableObject {
     @Published var hasCompletedOnboarding = false
     @Published var hasCompletedSetup      = false
     @Published var isDarkMode             = false
+    @Published var appFontScale: AppFontScale = .default
+    @Published var highContrastEnabled    = false
     @Published var isFaceIDEnabled        = true
     @Published var notificationsEnabled   = true
     @Published var monthlyBudget: Double  = 45000
@@ -123,16 +125,27 @@ class AppState: ObservableObject {
             stopSavingsGoalsListener()
         }
 
-        func changePassword(newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        func changePassword(currentPassword: String, newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
             guard let user = Auth.auth().currentUser else {
                 completion(.failure(NSError(domain: "AppState", code: 401)))
                 return
             }
-            user.updatePassword(to: newPassword) { error in
+            guard let email = user.email else {
+                completion(.failure(NSError(domain: "AppState", code: 400)))
+                return
+            }
+            let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
+            user.reauthenticate(with: credential) { _, error in
                 if let error = error {
                     completion(.failure(error))
-                } else {
-                    completion(.success(()))
+                    return
+                }
+                user.updatePassword(to: newPassword) { updateError in
+                    if let updateError = updateError {
+                        completion(.failure(updateError))
+                    } else {
+                        completion(.success(()))
+                    }
                 }
             }
         }
@@ -178,8 +191,8 @@ class AppState: ObservableObject {
                 completion(.failure(NSError(domain: "AppState", code: 401)))
                 return
             }
-            let applyUpdate: (String?) -> Void = { photoURL in
-                UserService.updateProfile(uid: uid, name: name, email: email, photoURL: photoURL) { error in
+            let applyUpdate: (String?, String?) -> Void = { photoURL, photoBase64 in
+                UserService.updateProfile(uid: uid, name: name, email: email, photoURL: photoURL, photoBase64: photoBase64) { error in
                     DispatchQueue.main.async {
                         if let error = error {
                             completion(.failure(error))
@@ -191,6 +204,7 @@ class AppState: ObservableObject {
                             email: email,
                             createdAt: nil,
                             photoURL: photoURL,
+                            photoBase64: photoBase64,
                             monthlyBudget: self.monthlyBudget,
                             needsPercent: self.needsPercent,
                             wantsPercent: self.wantsPercent,
@@ -200,6 +214,7 @@ class AppState: ObservableObject {
                         updated.name = name
                         updated.email = email
                         if let photoURL = photoURL { updated.photoURL = photoURL }
+                        if let photoBase64 = photoBase64 { updated.photoBase64 = photoBase64 }
                         self.currentUser = updated
                         CoreDataCache.shared.saveUserProfile(updated, ownerId: uid)
                         completion(.success(()))
@@ -208,16 +223,13 @@ class AppState: ObservableObject {
             }
 
             if let photo = photo {
-                ProfileImageService.uploadProfileImage(uid: uid, image: photo) { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let url): applyUpdate(url)
-                        case .failure(let error): completion(.failure(error))
-                        }
-                    }
+                if let encoded = ProfileImageService.encodeProfileImage(image: photo) {
+                    applyUpdate(nil, encoded)
+                } else {
+                    completion(.failure(NSError(domain: "ProfileImageService", code: 2)))
                 }
             } else {
-                applyUpdate(nil)
+                applyUpdate(nil, nil)
             }
         }
     
@@ -905,7 +917,7 @@ class AppState: ObservableObject {
                         if (updated.name.isEmpty || updated.name == "User"), !email.isEmpty {
                             let base = email.split(separator: "@").first.map(String.init) ?? "User"
                             updated.name = base
-                            UserService.updateProfile(uid: uid, name: updated.name, email: email, photoURL: updated.photoURL)
+                            UserService.updateProfile(uid: uid, name: updated.name, email: email, photoURL: updated.photoURL, photoBase64: updated.photoBase64)
                         }
                         self.applyProfile(updated)
                         CoreDataCache.shared.saveUserProfile(updated, ownerId: uid)
@@ -926,6 +938,7 @@ class AppState: ObservableObject {
                                         email: email,
                                         createdAt: nil,
                                         photoURL: nil,
+                                        photoBase64: nil,
                                         monthlyBudget: nil,
                                         needsPercent: nil,
                                         wantsPercent: nil,
@@ -1050,6 +1063,8 @@ struct Budgeting_App: App {
                 .environmentObject(splitBillsVM)
                 .tint(Color.uniBlue)
                 .preferredColorScheme(appState.isDarkMode ? .dark : .light)
+                .environment(\.dynamicTypeSize, appState.appFontScale.dynamicTypeSize)
+                .environment(\.appHighContrast, appState.highContrastEnabled)
         }
     }
 }
@@ -1084,7 +1099,8 @@ struct RootView: View {
                     onBudgetChange: sendBudgetNotifications,
                     onShiftChange: sendShiftNotifications,
                     onSplitBillChange: sendSplitBillNotifications,
-                    onSavingsChange: sendSavingsNotifications
+                    onSavingsChange: sendSavingsNotifications,
+                    onPlannerChange: sendPlannerNotifications
                 )
             )
             .modifier(
@@ -1133,6 +1149,7 @@ struct RootView: View {
 
     private func handleAuthChange(_ isAuthed: Bool) {
         if isAuthed, let uid = Auth.auth().currentUser?.uid {
+            NotificationStore.shared.setOwnerId(uid)
             transactionsVM.loadCached(uid: uid)
             transactionsVM.loadRemote(uid: uid)
             transactionsVM.startListener(uid: uid)
@@ -1142,7 +1159,11 @@ struct RootView: View {
             plannerVM.loadRemote()
             plannerVM.startListeners()
             splitBillsVM.startListener()
+            if authVM.notificationsEnabled {
+                NotificationService.scheduleDailySummary(hour: 20, minute: 0)
+            }
         } else {
+            NotificationStore.shared.setOwnerId(nil)
             transactionsVM.stopListener()
             transactionsVM.transactions = []
             savingsVM.stopListener()
@@ -1198,13 +1219,15 @@ struct RootView: View {
         let now = Date()
         for shift in plannerVM.workShifts where shift.status == .upcoming {
             guard let shiftDate = parseShiftDate(shift.date) else { continue }
-            let interval = shiftDate.timeIntervalSince(now)
-            if interval > 0 && interval <= 24 * 3600 {
-                NotificationService.sendLocalNotificationIfNeeded(
-                    key: "shift_upcoming_\(shift.id)",
+            let startDate = combineDate(shiftDate, time: shift.start) ?? shiftDate
+            let remindAt = Calendar.current.date(byAdding: .hour, value: -2, to: startDate) ?? startDate
+            if remindAt > now {
+                NotificationService.scheduleLocalNotification(
+                    id: "shift_reminder_\(shift.id)",
                     title: "Upcoming shift",
-                    body: "\(shift.role) on \(shift.date)",
-                    type: .work
+                    body: "\(shift.role) at \(shift.start)",
+                    type: .work,
+                    date: remindAt
                 )
             }
         }
@@ -1255,6 +1278,32 @@ struct RootView: View {
                     title: "Goal almost there",
                     body: "You are close to \(goal.name).",
                     type: .budget
+                )
+            }
+        }
+    }
+
+    private func sendPlannerNotifications() {
+        guard authVM.notificationsEnabled else { return }
+        let now = Date()
+        for item in plannerVM.importantDates {
+            let days = Calendar.current.dateComponents([.day], from: now, to: item.date).day ?? 0
+            if days < 0 { continue }
+            if days == 0 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "planner_due_today_\(item.id)",
+                    title: "Due today",
+                    body: "\(item.title) is today.",
+                    type: .planner,
+                    cooldown: 12 * 3600
+                )
+            } else if days <= 3 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "planner_due_soon_\(item.id)",
+                    title: "Upcoming deadline",
+                    body: "\(item.title) in \(days) day(s).",
+                    type: .planner,
+                    cooldown: 24 * 3600
                 )
             }
         }
@@ -1312,6 +1361,15 @@ struct RootView: View {
         WidgetDataStore.save(summary)
     }
 
+    private func combineDate(_ date: Date, time: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        guard let t = formatter.date(from: time) else { return nil }
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.hour, .minute], from: t)
+        return cal.date(bySettingHour: comps.hour ?? 0, minute: comps.minute ?? 0, second: 0, of: date)
+    }
+
     private func upcomingItem() -> (title: String, subtitle: String) {
         let upcomingShift = plannerVM.workShifts
             .filter { $0.status == .upcoming }
@@ -1357,6 +1415,7 @@ private struct RootLifecycleModifier: ViewModifier {
     let onShiftChange: () -> Void
     let onSplitBillChange: () -> Void
     let onSavingsChange: () -> Void
+    let onPlannerChange: () -> Void
 
     func body(content: Content) -> some View {
         content
@@ -1380,7 +1439,8 @@ private struct RootLifecycleModifier: ViewModifier {
                     onBudgetChange: onBudgetChange,
                     onShiftChange: onShiftChange,
                     onSplitBillChange: onSplitBillChange,
-                    onSavingsChange: onSavingsChange
+                    onSavingsChange: onSavingsChange,
+                    onPlannerChange: onPlannerChange
                 )
             )
     }
@@ -1474,6 +1534,7 @@ private struct RootNotificationTriggersModifier: ViewModifier {
     let onShiftChange: () -> Void
     let onSplitBillChange: () -> Void
     let onSavingsChange: () -> Void
+    let onPlannerChange: () -> Void
 
     func body(content: Content) -> some View {
         content
@@ -1494,7 +1555,8 @@ private struct RootNotificationTriggersModifier: ViewModifier {
                 PlannerChangeModifier(
                     authVM: authVM,
                     plannerVM: plannerVM,
-                    onShiftChange: onShiftChange
+                    onShiftChange: onShiftChange,
+                    onPlannerChange: onPlannerChange
                 )
             )
             .modifier(
@@ -1587,6 +1649,7 @@ private struct PlannerChangeModifier: ViewModifier {
     let authVM: AuthViewModel
     let plannerVM: PlannerViewModel
     let onShiftChange: () -> Void
+    let onPlannerChange: () -> Void
     @State private var didHandle = false
 
     func body(content: Content) -> some View {
@@ -1600,6 +1663,13 @@ private struct PlannerChangeModifier: ViewModifier {
                     return
                 }
                 onShiftChange()
+            }
+            .onChange(of: plannerVM.importantDates) { _, _ in
+                if !didHandle {
+                    didHandle = true
+                    return
+                }
+                onPlannerChange()
             }
     }
 }
@@ -1618,6 +1688,7 @@ private struct SplitBillChangeModifier: ViewModifier {
             .onChange(of: splitBillsVM.splitBills) { _, _ in
                 if !didHandle {
                     didHandle = true
+                    onSplitBillChange()
                     return
                 }
                 onSplitBillChange()

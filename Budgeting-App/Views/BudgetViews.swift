@@ -143,7 +143,7 @@ struct BudgetView: View {
                 BudgetHistoryView()
             }
         }
-        .statusBarStyle(.lightContent)
+        .appStatusBarStyle(.lightContent)
     }
 
     // Dark glass summary at top
@@ -413,18 +413,18 @@ struct AnalyticsView: View {
                     VStack(spacing: 12) {
                         Text("Total Spending")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.75))
+                            .foregroundStyle(Color.secondary)
                         Text(totalSpent.currencyRS)
                             .font(.system(size:40,weight:.bold,design:.rounded))
-                            .foregroundStyle(Color.white)
+                            .foregroundStyle(Color.primary)
                     }
                     .frame(maxWidth:.infinity)
                     .padding(24)
-                    .background(appState.plannerTheme.gradient(for: "analytics"))
+                    .background(Color(UIColor.systemBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(accent.opacity(0.45), lineWidth: 1)
+                            .stroke(accent.opacity(0.35), lineWidth: 1)
                     )
 
                     // Weekly bar chart

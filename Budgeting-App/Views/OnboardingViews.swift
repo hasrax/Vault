@@ -95,9 +95,9 @@ struct WelcomeView: View {
     @State private var showLogin = false
 
     private let features = [
-        ("📊", "Smart Budget Tracking",  "50/30/20 auto-allocation"),
+        ("🧾", "Smart Budget Tracking",  "50/30/20 auto-allocation"),
         ("🔔", "Spending Alerts",        "Never overspend again"),
-        ("🎯", "Savings Goals",          "Plan for what matters"),
+        ("📌", "Savings Goals",          "Plan for what matters"),
     ]
 
     var body: some View {

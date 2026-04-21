@@ -75,8 +75,8 @@ final class AuthViewModel: ObservableObject {
         appState.restoreSession()
     }
 
-    func changePassword(newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        appState.changePassword(newPassword: newPassword, completion: completion)
+    func changePassword(currentPassword: String, newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        appState.changePassword(currentPassword: currentPassword, newPassword: newPassword, completion: completion)
     }
 
     func deleteAccount(completion: @escaping (Result<Void, Error>) -> Void) {
