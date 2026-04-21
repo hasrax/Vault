@@ -73,15 +73,14 @@ struct HomeView: View {
         return appState.monthlyBudget * (percent / 100)
     }
 
-    private var receivedText: String {
+    private func receivedText(at date: Date) -> String {
         let cal = Calendar.current
-        let now = Date()
-        let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
-        let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
+        let start = cal.date(from: cal.dateComponents([.year, .month], from: date)) ?? date
+        let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? date
         let fmt = DateFormatter()
         fmt.dateFormat = "MMM d"
         let received = fmt.string(from: start)
-        let daysLeft = cal.dateComponents([.day], from: cal.startOfDay(for: now), to: end).day ?? 0
+        let daysLeft = cal.dateComponents([.day], from: cal.startOfDay(for: date), to: end).day ?? 0
         let leftText = "\(daysLeft) days left"
         return "Received \(received) · \(leftText)"
     }
@@ -174,9 +173,11 @@ struct HomeView: View {
                     Text(balance.currencyRS)
                         .font(.system(size: 40, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.white)
-                    Text(receivedText)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.white.opacity(0.4))
+                    TimelineView(.periodic(from: Date(), by: 60)) { context in
+                        Text(receivedText(at: context.date))
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.white.opacity(0.4))
+                    }
                 }
                 .padding(.top, 24)
 

@@ -64,6 +64,14 @@ final class TransactionsViewModel: ObservableObject {
                 }
             }
         }
+
+        if tx.type == .expense {
+            NotificationService.sendLocalNotification(
+                title: "Expense added",
+                body: "\(tx.name) · \(tx.amount.currencyRS)",
+                type: .budget
+            )
+        }
     }
 
     func updateTransaction(_ tx: Transaction) {

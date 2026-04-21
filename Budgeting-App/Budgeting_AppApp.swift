@@ -125,16 +125,27 @@ class AppState: ObservableObject {
             stopSavingsGoalsListener()
         }
 
-        func changePassword(newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        func changePassword(currentPassword: String, newPassword: String, completion: @escaping (Result<Void, Error>) -> Void) {
             guard let user = Auth.auth().currentUser else {
                 completion(.failure(NSError(domain: "AppState", code: 401)))
                 return
             }
-            user.updatePassword(to: newPassword) { error in
+            guard let email = user.email else {
+                completion(.failure(NSError(domain: "AppState", code: 400)))
+                return
+            }
+            let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
+            user.reauthenticate(with: credential) { _, error in
                 if let error = error {
                     completion(.failure(error))
-                } else {
-                    completion(.success(()))
+                    return
+                }
+                user.updatePassword(to: newPassword) { updateError in
+                    if let updateError = updateError {
+                        completion(.failure(updateError))
+                    } else {
+                        completion(.success(()))
+                    }
                 }
             }
         }
@@ -1088,7 +1099,8 @@ struct RootView: View {
                     onBudgetChange: sendBudgetNotifications,
                     onShiftChange: sendShiftNotifications,
                     onSplitBillChange: sendSplitBillNotifications,
-                    onSavingsChange: sendSavingsNotifications
+                    onSavingsChange: sendSavingsNotifications,
+                    onPlannerChange: sendPlannerNotifications
                 )
             )
             .modifier(
@@ -1137,6 +1149,7 @@ struct RootView: View {
 
     private func handleAuthChange(_ isAuthed: Bool) {
         if isAuthed, let uid = Auth.auth().currentUser?.uid {
+            NotificationStore.shared.setOwnerId(uid)
             transactionsVM.loadCached(uid: uid)
             transactionsVM.loadRemote(uid: uid)
             transactionsVM.startListener(uid: uid)
@@ -1150,6 +1163,7 @@ struct RootView: View {
                 NotificationService.scheduleDailySummary(hour: 20, minute: 0)
             }
         } else {
+            NotificationStore.shared.setOwnerId(nil)
             transactionsVM.stopListener()
             transactionsVM.transactions = []
             savingsVM.stopListener()
@@ -1269,6 +1283,32 @@ struct RootView: View {
         }
     }
 
+    private func sendPlannerNotifications() {
+        guard authVM.notificationsEnabled else { return }
+        let now = Date()
+        for item in plannerVM.importantDates {
+            let days = Calendar.current.dateComponents([.day], from: now, to: item.date).day ?? 0
+            if days < 0 { continue }
+            if days == 0 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "planner_due_today_\(item.id)",
+                    title: "Due today",
+                    body: "\(item.title) is today.",
+                    type: .planner,
+                    cooldown: 12 * 3600
+                )
+            } else if days <= 3 {
+                NotificationService.sendLocalNotificationIfNeeded(
+                    key: "planner_due_soon_\(item.id)",
+                    title: "Upcoming deadline",
+                    body: "\(item.title) in \(days) day(s).",
+                    type: .planner,
+                    cooldown: 24 * 3600
+                )
+            }
+        }
+    }
+
     private func parseShiftDate(_ dateString: String) -> Date? {
         let cal = Calendar.current
         let fmt1 = DateFormatter()
@@ -1375,6 +1415,7 @@ private struct RootLifecycleModifier: ViewModifier {
     let onShiftChange: () -> Void
     let onSplitBillChange: () -> Void
     let onSavingsChange: () -> Void
+    let onPlannerChange: () -> Void
 
     func body(content: Content) -> some View {
         content
@@ -1398,7 +1439,8 @@ private struct RootLifecycleModifier: ViewModifier {
                     onBudgetChange: onBudgetChange,
                     onShiftChange: onShiftChange,
                     onSplitBillChange: onSplitBillChange,
-                    onSavingsChange: onSavingsChange
+                    onSavingsChange: onSavingsChange,
+                    onPlannerChange: onPlannerChange
                 )
             )
     }
@@ -1492,6 +1534,7 @@ private struct RootNotificationTriggersModifier: ViewModifier {
     let onShiftChange: () -> Void
     let onSplitBillChange: () -> Void
     let onSavingsChange: () -> Void
+    let onPlannerChange: () -> Void
 
     func body(content: Content) -> some View {
         content
@@ -1512,7 +1555,8 @@ private struct RootNotificationTriggersModifier: ViewModifier {
                 PlannerChangeModifier(
                     authVM: authVM,
                     plannerVM: plannerVM,
-                    onShiftChange: onShiftChange
+                    onShiftChange: onShiftChange,
+                    onPlannerChange: onPlannerChange
                 )
             )
             .modifier(
@@ -1605,6 +1649,7 @@ private struct PlannerChangeModifier: ViewModifier {
     let authVM: AuthViewModel
     let plannerVM: PlannerViewModel
     let onShiftChange: () -> Void
+    let onPlannerChange: () -> Void
     @State private var didHandle = false
 
     func body(content: Content) -> some View {
@@ -1618,6 +1663,13 @@ private struct PlannerChangeModifier: ViewModifier {
                     return
                 }
                 onShiftChange()
+            }
+            .onChange(of: plannerVM.importantDates) { _, _ in
+                if !didHandle {
+                    didHandle = true
+                    return
+                }
+                onPlannerChange()
             }
     }
 }
@@ -1636,6 +1688,7 @@ private struct SplitBillChangeModifier: ViewModifier {
             .onChange(of: splitBillsVM.splitBills) { _, _ in
                 if !didHandle {
                     didHandle = true
+                    onSplitBillChange()
                     return
                 }
                 onSplitBillChange()

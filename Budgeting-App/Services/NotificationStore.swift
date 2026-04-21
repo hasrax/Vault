@@ -6,9 +6,17 @@ final class NotificationStore: ObservableObject {
 
     @Published private(set) var items: [AppNotification] = []
 
-    private let storageKey = "app_notifications"
+    private var storageKey = "app_notifications"
 
     private init() {
+        load()
+    }
+
+    func setOwnerId(_ id: String?) {
+        let key = id?.isEmpty == false ? "app_notifications_\(id!)" : "app_notifications_guest"
+        if key == storageKey { return }
+        storageKey = key
+        items = []
         load()
     }
 

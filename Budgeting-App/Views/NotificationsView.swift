@@ -58,6 +58,15 @@ struct NotificationsView: View {
                                 NotificationCard(notification: n)
                             }
                             .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                if !n.isRead {
+                                    Button {
+                                        store.markRead(n.id)
+                                    } label: {
+                                        Label("Mark Read", systemImage: "checkmark.circle")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -114,7 +123,13 @@ private struct NotificationDetailView: View {
         .padding(20)
         .navigationTitle("Details")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { store.markRead(notification.id) }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if !notification.isRead {
+                    Button("Mark Read") { store.markRead(notification.id) }
+                }
+            }
+        }
     }
 }
 
