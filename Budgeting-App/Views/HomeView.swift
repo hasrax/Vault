@@ -26,6 +26,7 @@ struct HomeView: View {
     @State private var showSavings        = false
     @State private var showSemesterPlanner = false
     @State private var showAnalytics      = false
+    @State private var showProfile        = false
 
     private var currentMonthTransactions: [Transaction] {
         let cal = Calendar.current
@@ -131,6 +132,9 @@ struct HomeView: View {
             .navigationDestination(isPresented: $showAnalytics) {
                 AnalyticsView()
             }
+            .navigationDestination(isPresented: $showProfile) {
+                ProfileView()
+            }
         }
     }
 
@@ -145,7 +149,12 @@ struct HomeView: View {
                 // Top bar
                 HStack {
                     HStack(spacing: 10) {
-                        profileAvatar
+                        Button {
+                            showProfile = true
+                        } label: {
+                            profileAvatar
+                        }
+                        .buttonStyle(.plain)
                         let displayName = appState.currentUser?.name ?? MockData.userName
                         Text("Hi, \(displayName)!")
                             .font(.system(size: 15, weight: .semibold))

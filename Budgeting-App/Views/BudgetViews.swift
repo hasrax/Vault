@@ -74,8 +74,9 @@ struct BudgetView: View {
                             }
                         }
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 14)
                     }
+                    .padding(.top, 12)
 
                     // History summary
                     VStack(spacing: 10) {
@@ -120,6 +121,7 @@ struct BudgetView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    .padding(.top, 8)
                     .padding(.bottom, 8)
 
                     // Cards
