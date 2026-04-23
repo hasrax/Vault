@@ -422,6 +422,7 @@ struct SplitBillView: View {
         let me = bill.participants.first { $0.userId == currentUserId }
         let isCreator = bill.createdBy == currentUserId
         let confirmedCount = bill.participants.filter { !$0.isCreator && $0.status == .accepted }.count
+        let paidCount = bill.participants.filter { !$0.isCreator && $0.status == .paid }.count
         let invitedCount = bill.participants.filter { !$0.isCreator }.count
         let allPaid = bill.participants
             .filter { !$0.isCreator && $0.status != .declined }
@@ -451,9 +452,12 @@ struct SplitBillView: View {
             }
 
             if isCreator {
-                Text("Confirmed: \(confirmedCount)/\(invitedCount)")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Accepted: \(confirmedCount)/\(invitedCount)")
+                    Text("Paid: \(paidCount)/\(invitedCount)")
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.secondary)
             } else if let me = me, me.status == .accepted {
                 Text("Status: Confirmed")
                     .font(.system(size: 12, weight: .medium))

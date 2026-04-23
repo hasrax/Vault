@@ -1238,27 +1238,42 @@ struct RootView: View {
         guard let uid = authVM.currentUser?.id else { return }
 
         for bill in splitBillsVM.splitBills {
-            if let me = bill.participants.first(where: { $0.userId == uid }), me.status == .invited {
-                NotificationService.sendLocalNotificationIfNeeded(
-                    key: "split_invited_\(bill.id)",
-                    title: "Split bill request",
-                    body: "You were invited to split \(bill.title).",
-                    type: .planner
-                )
-            }
+            for participant in bill.participants {
+                let key = splitStatusKey(uid: uid, billId: bill.id, participantId: participant.userId)
+                let lastStatus = UserDefaults.standard.string(forKey: key)
+                if lastStatus == participant.status.rawValue { continue }
 
-            if bill.createdBy == uid {
-                let anyPaid = bill.participants.contains { !$0.isCreator && $0.status == .paid }
-                if anyPaid {
-                    NotificationService.sendLocalNotificationIfNeeded(
-                        key: "split_paid_\(bill.id)",
-                        title: "Split bill paid",
-                        body: "Someone paid their share for \(bill.title).",
+                if participant.userId == uid, participant.status == .invited {
+                    NotificationService.sendLocalNotification(
+                        title: "Split bill request",
+                        body: "You were invited to split \(bill.title).",
                         type: .planner
                     )
                 }
+
+                if bill.createdBy == uid, !participant.isCreator {
+                    if participant.status == .accepted {
+                        NotificationService.sendLocalNotification(
+                            title: "Split accepted",
+                            body: "\(participant.name) accepted the split for \(bill.title).",
+                            type: .planner
+                        )
+                    } else if participant.status == .paid {
+                        NotificationService.sendLocalNotification(
+                            title: "Split bill paid",
+                            body: "\(participant.name) paid their share for \(bill.title).",
+                            type: .planner
+                        )
+                    }
+                }
+
+                UserDefaults.standard.set(participant.status.rawValue, forKey: key)
             }
         }
+    }
+
+    private func splitStatusKey(uid: String, billId: UUID, participantId: String) -> String {
+        "split_status_\(uid)_\(billId.uuidString)_\(participantId)"
     }
 
     private func sendSavingsNotifications() {
@@ -1688,7 +1703,6 @@ private struct SplitBillChangeModifier: ViewModifier {
             .onChange(of: splitBillsVM.splitBills) { _, _ in
                 if !didHandle {
                     didHandle = true
-                    onSplitBillChange()
                     return
                 }
                 onSplitBillChange()

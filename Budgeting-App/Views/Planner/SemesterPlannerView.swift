@@ -24,18 +24,25 @@ struct SemesterPlannerView: View {
     @State private var selectedDate = Date()
     @State private var editGoal: SemesterGoal?
     @State private var editDate: ImportantDate?
+    @State private var showAddPlan = false
+    @State private var editPlan: SemesterPlanMonth?
+    @State private var showPlanSettings = false
+    @State private var planMonthDate = Date()
+    @State private var planBudgetText = ""
+    @State private var planSpentText = ""
+    @State private var planStatus: SemesterPlanStatus = .upcoming
 
-    private let semesterBudget = 4000.0
-    private let spent = 1650.0
-    private let totalWeeks = 16
-    private let currentWeek = 9
+    private var semesterBudget: Double { plannerVM.semesterPlanMonths.reduce(0) { $0 + $1.budget } }
+    private var spent: Double { plannerVM.semesterPlanMonths.reduce(0) { $0 + $1.spent } }
+    private var totalWeeks: Int { plannerVM.semesterPlanSettings.totalWeeks }
+    private var currentWeek: Int { plannerVM.semesterPlanSettings.currentWeek }
     private var accent: Color { appState.plannerTheme.color(for: "semesterPlanner") }
 
     private var remaining: Double { semesterBudget - spent }
-    private var weeksLeft: Int   { totalWeeks - currentWeek }
+    private var weeksLeft: Int   { max(totalWeeks - currentWeek, 0) }
     private var weeklyBudget: Double { weeksLeft > 0 ? remaining / Double(weeksLeft) : remaining }
-    private var budgetProgress: Double { spent / semesterBudget }
-    private var weekProgress: Double   { Double(currentWeek) / Double(totalWeeks) }
+    private var budgetProgress: Double { semesterBudget > 0 ? spent / semesterBudget : 0 }
+    private var weekProgress: Double   { totalWeeks > 0 ? Double(currentWeek) / Double(totalWeeks) : 0 }
 
     var body: some View {
         ScrollView {
@@ -242,6 +249,141 @@ struct SemesterPlannerView: View {
                 }
             }
         }
+        .sheet(isPresented: $showAddPlan) {
+            NavigationStack {
+                Form {
+                    Section("Month") {
+                        DatePicker("Month", selection: $planMonthDate, displayedComponents: .date)
+                    }
+                    Section("Budget") {
+                        TextField("Budget", text: $planBudgetText)
+                            .keyboardType(.decimalPad)
+                        TextField("Spent", text: $planSpentText)
+                            .keyboardType(.decimalPad)
+                    }
+                    Section("Status") {
+                        Picker("Status", selection: $planStatus) {
+                            ForEach(SemesterPlanStatus.allCases) { s in
+                                Text(s.label).tag(s)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+                .navigationTitle("Add Month")
+                .navigationBarTitleDisplayMode(.inline)
+                .onAppear {
+                    planMonthDate = Date()
+                    planBudgetText = ""
+                    planSpentText = ""
+                    planStatus = .upcoming
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { showAddPlan = false }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Save") {
+                            let budget = Double(planBudgetText) ?? 0
+                            let spent = Double(planSpentText) ?? 0
+                            plannerVM.addSemesterPlanMonth(
+                                monthDate: startOfMonth(planMonthDate),
+                                budget: budget,
+                                spent: spent,
+                                status: planStatus
+                            )
+                            planBudgetText = ""
+                            planSpentText = ""
+                            planStatus = .upcoming
+                            showAddPlan = false
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(item: $editPlan) { item in
+            NavigationStack {
+                Form {
+                    Section("Month") {
+                        DatePicker("Month", selection: $planMonthDate, displayedComponents: .date)
+                    }
+                    Section("Budget") {
+                        TextField("Budget", text: $planBudgetText)
+                            .keyboardType(.decimalPad)
+                        TextField("Spent", text: $planSpentText)
+                            .keyboardType(.decimalPad)
+                    }
+                    Section("Status") {
+                        Picker("Status", selection: $planStatus) {
+                            ForEach(SemesterPlanStatus.allCases) { s in
+                                Text(s.label).tag(s)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+                .navigationTitle("Edit Month")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { editPlan = nil }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Save") {
+                            let budget = Double(planBudgetText) ?? 0
+                            let spent = Double(planSpentText) ?? 0
+                            let updated = SemesterPlanMonth(
+                                id: item.id,
+                                monthDate: startOfMonth(planMonthDate),
+                                budget: budget,
+                                spent: spent,
+                                status: planStatus
+                            )
+                            plannerVM.updateSemesterPlanMonth(updated)
+                            editPlan = nil
+                        }
+                    }
+                }
+                .onAppear {
+                    planMonthDate = item.monthDate
+                    planBudgetText = String(Int(item.budget))
+                    planSpentText = String(Int(item.spent))
+                    planStatus = item.status
+                }
+            }
+        }
+        .sheet(isPresented: $showPlanSettings) {
+            NavigationStack {
+                Form {
+                    Section("Weeks") {
+                        Stepper(value: $plannerVM.semesterPlanSettings.totalWeeks, in: 1...52) {
+                            Text("Total weeks: \(plannerVM.semesterPlanSettings.totalWeeks)")
+                        }
+                        Stepper(value: $plannerVM.semesterPlanSettings.currentWeek, in: 1...plannerVM.semesterPlanSettings.totalWeeks) {
+                            Text("Current week: \(plannerVM.semesterPlanSettings.currentWeek)")
+                        }
+                    }
+                }
+                .onChange(of: plannerVM.semesterPlanSettings.totalWeeks) { newValue in
+                    if plannerVM.semesterPlanSettings.currentWeek > newValue {
+                        plannerVM.semesterPlanSettings.currentWeek = newValue
+                    }
+                }
+                .navigationTitle("Plan Settings")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Close") { showPlanSettings = false }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Save") {
+                            plannerVM.updateSemesterPlanSettings(plannerVM.semesterPlanSettings)
+                            showPlanSettings = false
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private var overviewTab: some View {
@@ -265,7 +407,7 @@ struct SemesterPlannerView: View {
                         Spacer()
                         Text("\(Int(budgetProgress*100))%").font(.system(size: 12, weight: .bold)).foregroundStyle(accent)
                     }
-                    UniProgressBar(progress:budgetProgress, color:budgetProgress > weekProgress ? Color.warning : accent, height:8)
+                    UniProgressBar(progress:budgetProgress, color:accent, height:8)
                     HStack {
                         Text("Semester progress").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
                         Spacer()
@@ -301,18 +443,37 @@ struct SemesterPlannerView: View {
 
             // Monthly breakdown
             VStack(alignment:.leading,spacing:14) {
-                Text("Monthly Plan").font(.system(size: 18, weight: .semibold))
+                HStack {
+                    Text("Monthly Plan").font(.system(size: 18, weight: .semibold))
+                    Spacer()
+                    Button("Settings") { showPlanSettings = true }
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(accent)
+                }
                 VStack(spacing:0) {
-                    ForEach([
-                        ("January",800.0,780.0,"completed"),
-                        ("February",1000.0,870.0,"completed"),
-                        ("March",1000.0,420.0,"current"),
-                        ("April",700.0,0.0,"upcoming"),
-                        ("May",500.0,0.0,"upcoming"),
-                    ],id:\.0) { month, budget, mSpent, status in
-                        monthRow(month:month,budget:budget,spent:mSpent,status:status)
+                    ForEach(plannerVM.semesterPlanMonths.sorted { $0.monthDate < $1.monthDate }) { item in
+                        monthRow(item: item)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button {
+                                    editPlan = item
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                Button(role: .destructive) {
+                                    plannerVM.deleteSemesterPlanMonth(item)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                     }
                 }
+                Button("+ Add Month") { showAddPlan = true }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(LinearGradient.ctaGrad)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding(.horizontal,16).padding(.vertical,20)
             .plannerModuleCard(accent: accent)
@@ -320,30 +481,39 @@ struct SemesterPlannerView: View {
         .padding(.horizontal,16).padding(.top,16)
     }
 
-    private func monthRow(month:String,budget:Double,spent:Double,status:String) -> some View {
+    private func monthRow(item: SemesterPlanMonth) -> some View {
         VStack(spacing:0) {
             HStack {
-                Text(month).font(.system(size:15,weight:.semibold))
-                if status == "current" {
+                Text(monthLabel(item.monthDate)).font(.system(size:15,weight:.semibold))
+                if item.status == .current {
                     Text("Current").font(.system(size:10,weight:.bold)).foregroundStyle(Color.uniBlue)
                         .padding(.horizontal,7).padding(.vertical,3).background(Color.uniBlue.opacity(0.12)).clipShape(Capsule())
-                } else if status == "completed" {
+                } else if item.status == .completed {
                     Text("✓ Done").font(.system(size:10,weight:.bold)).foregroundStyle(Color.income)
                         .padding(.horizontal,7).padding(.vertical,3).background(Color.income.opacity(0.12)).clipShape(Capsule())
                 }
                 Spacer()
-                Text("\(spent.currencyRS) / \(budget.currencyRS)")
+                Text("\(item.spent.currencyRS) / \(item.budget.currencyRS)")
                     .font(.system(size:13,weight:.semibold))
-                    .foregroundStyle(spent > budget ? Color.expense : Color.primary)
+                    .foregroundStyle(item.spent > item.budget ? Color.expense : Color.primary)
             }
             .padding(.vertical,14)
-            UniProgressBar(progress:budget > 0 ? min(spent/budget,1) : 0,
-                           color:status == "upcoming" ? Color(UIColor.tertiarySystemFill)
-                            : spent > budget ? Color.expense : Color.uniBlue, height:6)
+            UniProgressBar(progress:item.budget > 0 ? min(item.spent/item.budget,1) : 0,
+                           color:item.status == .upcoming ? accent.opacity(0.35) : accent, height:6)
                 .padding(.bottom,14)
             Divider()
         }
         .padding(.horizontal,16)
+    }
+
+    private func startOfMonth(_ date: Date) -> Date {
+        Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: date)) ?? date
+    }
+
+    private func monthLabel(_ date: Date) -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMMM"
+        return fmt.string(from: date)
     }
 
     private var calendarTab: some View {
@@ -445,7 +615,7 @@ struct SemesterPlannerView: View {
                                     Spacer()
                                     Text("\(p)%").font(.system(size:11,weight:.bold)).foregroundStyle(Color.uniBlue)
                                 }
-                                UniProgressBar(progress:Double(p)/100,color:Color.uniBlue,height:6)
+                                UniProgressBar(progress:Double(p)/100,color:accent,height:6)
                             }
                         }
                     }

@@ -625,6 +625,51 @@ struct PlannerModule: Identifiable {
     var destination: String
 }
 
+// MARK: - Semester Plan
+
+enum SemesterPlanStatus: String, CaseIterable, Identifiable, Codable {
+    case upcoming
+    case current
+    case completed
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .upcoming: return "Upcoming"
+        case .current: return "Current"
+        case .completed: return "Completed"
+        }
+    }
+}
+
+struct SemesterPlanMonth: Identifiable, Codable, Equatable {
+    let id: UUID
+    var monthDate: Date
+    var budget: Double
+    var spent: Double
+    var status: SemesterPlanStatus
+
+    init(
+        id: UUID = UUID(),
+        monthDate: Date,
+        budget: Double,
+        spent: Double,
+        status: SemesterPlanStatus
+    ) {
+        self.id = id
+        self.monthDate = monthDate
+        self.budget = budget
+        self.spent = spent
+        self.status = status
+    }
+}
+
+struct SemesterPlanSettings: Codable, Equatable {
+    var totalWeeks: Int = 16
+    var currentWeek: Int = 1
+}
+
 // MARK: - Meal Plan
 
 enum MealType: String, CaseIterable, Identifiable, Codable {

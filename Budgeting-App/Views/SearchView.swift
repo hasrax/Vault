@@ -21,6 +21,7 @@ struct SearchView: View {
     @State private var selectedBudgetCategory: BudgetCategory? = nil
     @State private var dateFilter: DateFilter = .all
     @State private var showAdd      = false
+    @State private var historyTab: HistoryTab = .recent
 
     enum TxFilter: String, CaseIterable {
         case all     = "All"
@@ -34,6 +35,13 @@ struct SearchView: View {
         case last30 = "Last 30 days"
         case thisMonth = "This month"
         case thisYear = "This year"
+    }
+
+    enum HistoryTab: String, CaseIterable, Identifiable {
+        case recent = "Recent"
+        case summary = "Summary"
+
+        var id: String { rawValue }
     }
 
     // MARK: - Computed
@@ -79,6 +87,50 @@ struct SearchView: View {
 
     private var totalIncome:  Double { transactionsVM.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
     private var totalExpense: Double { transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private let pastMonthsCount = 6
+
+    private struct MonthlySummary: Identifiable {
+        let id: Date
+        let label: String
+        let income: Double
+        let expense: Double
+        let savingsDelta: Double
+        let savingsTotal: Double
+    }
+
+    private var monthlySummaries: [MonthlySummary] {
+        let cal = Calendar.current
+        let startOfCurrentMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date())) ?? Date()
+        let monthStarts = (0..<pastMonthsCount).compactMap { offset in
+            cal.date(byAdding: .month, value: -offset, to: startOfCurrentMonth)
+        }.sorted()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM yyyy"
+
+        var summaries: [MonthlySummary] = []
+        var runningTotal: Double = 0
+        for monthStart in monthStarts {
+            let nextMonth = cal.date(byAdding: .month, value: 1, to: monthStart) ?? monthStart
+            let monthTxs = transactionsVM.transactions.filter { $0.date >= monthStart && $0.date < nextMonth }
+            let income = monthTxs.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+            let expense = monthTxs.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+            let savingsDelta = monthTxs
+                .filter { $0.budgetCategory == .savings }
+                .reduce(0) { $0 + ($1.type == .income ? $1.amount : -$1.amount) }
+            runningTotal += savingsDelta
+            summaries.append(
+                MonthlySummary(
+                    id: monthStart,
+                    label: fmt.string(from: monthStart),
+                    income: income,
+                    expense: expense,
+                    savingsDelta: savingsDelta,
+                    savingsTotal: runningTotal
+                )
+            )
+        }
+        return summaries.sorted { $0.id > $1.id }
+    }
 
     // MARK: - Body
     var body: some View {
@@ -188,52 +240,82 @@ struct SearchView: View {
             .padding(.vertical, 12)
             .background(Color(UIColor.systemBackground))
 
+            Picker("History Tab", selection: $historyTab) {
+                ForEach(HistoryTab.allCases) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
+            .background(Color(UIColor.systemBackground))
+
             Divider()
 
             // ── Transaction list ─────────────────────────────────────────────
-            if filtered.isEmpty {
-                Spacer()
-                VStack(spacing: 14) {
-                    Text("🔍").font(.system(size: 48))
-                    Text("No transactions found")
-                        .font(.system(size: 17, weight: .medium))
-                    Text("Try adjusting your search or filters")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            } else {
+            if historyTab == .summary {
                 ScrollView {
-                    LazyVStack(spacing: 16, pinnedViews: .sectionHeaders) {
-                        ForEach(grouped, id: \.date) { group in
-                            Section {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(group.txs.enumerated()), id: \.element.id) { idx, tx in
-                                        TransactionRow(transaction: tx)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 2)
-                                        if idx < group.txs.count - 1 {
-                                            Divider()
-                                                .padding(.leading, 72)
-                                                .padding(.trailing, 16)
-                                        }
-                                    }
-                                }
-                                .background(Color(UIColor.systemBackground))
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                            } header: {
-                                Text(group.date)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 6)
-                                    .background(Color.clear)
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("Past \(pastMonthsCount) months")
+                                .font(.system(size: 14, weight: .semibold))
+                            Spacer()
+                        }
+
+                        VStack(spacing: 8) {
+                            ForEach(monthlySummaries) { item in
+                                monthSummaryRow(item)
                             }
                         }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 100)
+                }
+            } else {
+                if filtered.isEmpty {
+                    Spacer()
+                    VStack(spacing: 14) {
+                        Text("🔍").font(.system(size: 48))
+                        Text("No transactions found")
+                            .font(.system(size: 17, weight: .medium))
+                        Text("Try adjusting your search or filters")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16, pinnedViews: .sectionHeaders) {
+                            ForEach(grouped, id: \.date) { group in
+                                Section {
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(group.txs.enumerated()), id: \.element.id) { idx, tx in
+                                            TransactionRow(transaction: tx)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 2)
+                                            if idx < group.txs.count - 1 {
+                                                Divider()
+                                                    .padding(.leading, 72)
+                                                    .padding(.trailing, 16)
+                                            }
+                                        }
+                                    }
+                                    .background(Color(UIColor.systemBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                } header: {
+                                    Text(group.date)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 6)
+                                        .background(Color.clear)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 100)
+                    }
                 }
             }
         }
@@ -304,6 +386,30 @@ struct SearchView: View {
         case .thisYear:
             return calendar.date(from: calendar.dateComponents([.year], from: now))
         }
+    }
+
+    private func monthSummaryRow(_ item: MonthlySummary) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.label)
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Income \(item.income.currencyRS) • Expense \(item.expense.currencyRS)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("Saved \(item.savingsDelta.currencyRS)")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Total \(item.savingsTotal.currencyRS)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color.secondary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(UIColor.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
