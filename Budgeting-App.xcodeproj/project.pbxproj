@@ -27,6 +27,13 @@
 			remoteGlobalIDString = 0504F7AF2F81035A008B72AA;
 			remoteInfo = vaultExtension;
 		};
+		056ABCB92FAB327000329B90 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 05EA6E012F74FD600016FE08 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 05EA6E082F74FD600016FE08;
+			remoteInfo = "Budgeting-App";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -48,6 +55,7 @@
 		0504F7B22F81035A008B72AA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		0504F7B42F81035A008B72AA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		0504F7CD2F81046D008B72AA /* vaultExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = vaultExtension.entitlements; sourceTree = "<group>"; };
+		056ABCB52FAB327000329B90 /* Budgeting-AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Budgeting-AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		05EA6E092F74FD600016FE08 /* Budgeting-App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Budgeting-App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -85,6 +93,11 @@
 			path = vault;
 			sourceTree = "<group>";
 		};
+		056ABCB62FAB327000329B90 /* Budgeting-AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Budgeting-AppTests";
+			sourceTree = "<group>";
+		};
 		05EA6E0B2F74FD600016FE08 /* Budgeting-App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -103,6 +116,13 @@
 			files = (
 				0504F7B52F81035A008B72AA /* SwiftUI.framework in Frameworks */,
 				0504F7B32F81035A008B72AA /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		056ABCB22FAB327000329B90 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,6 +158,7 @@
 				0504F7CD2F81046D008B72AA /* vaultExtension.entitlements */,
 				05EA6E0B2F74FD600016FE08 /* Budgeting-App */,
 				0504F7B62F81035A008B72AA /* vault */,
+				056ABCB62FAB327000329B90 /* Budgeting-AppTests */,
 				0504F7B12F81035A008B72AA /* Frameworks */,
 				05EA6E0A2F74FD600016FE08 /* Products */,
 			);
@@ -148,6 +169,7 @@
 			children = (
 				05EA6E092F74FD600016FE08 /* Budgeting-App.app */,
 				0504F7B02F81035A008B72AA /* vaultExtension.appex */,
+				056ABCB52FAB327000329B90 /* Budgeting-AppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -176,6 +198,29 @@
 			productName = vaultExtension;
 			productReference = 0504F7B02F81035A008B72AA /* vaultExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		056ABCB42FAB327000329B90 /* Budgeting-AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 056ABCBB2FAB327000329B90 /* Build configuration list for PBXNativeTarget "Budgeting-AppTests" */;
+			buildPhases = (
+				056ABCB12FAB327000329B90 /* Sources */,
+				056ABCB22FAB327000329B90 /* Frameworks */,
+				056ABCB32FAB327000329B90 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				056ABCBA2FAB327000329B90 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				056ABCB62FAB327000329B90 /* Budgeting-AppTests */,
+			);
+			name = "Budgeting-AppTests";
+			packageProductDependencies = (
+			);
+			productName = "Budgeting-AppTests";
+			productReference = 056ABCB52FAB327000329B90 /* Budgeting-AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		05EA6E082F74FD600016FE08 /* Budgeting-App */ = {
 			isa = PBXNativeTarget;
@@ -221,6 +266,10 @@
 					0504F7AF2F81035A008B72AA = {
 						CreatedOnToolsVersion = 26.2;
 					};
+					056ABCB42FAB327000329B90 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 05EA6E082F74FD600016FE08;
+					};
 					05EA6E082F74FD600016FE08 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -246,12 +295,20 @@
 			targets = (
 				05EA6E082F74FD600016FE08 /* Budgeting-App */,
 				0504F7AF2F81035A008B72AA /* vaultExtension */,
+				056ABCB42FAB327000329B90 /* Budgeting-AppTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		0504F7AE2F81035A008B72AA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		056ABCB32FAB327000329B90 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -275,6 +332,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		056ABCB12FAB327000329B90 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		05EA6E052F74FD600016FE08 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -289,6 +353,11 @@
 			isa = PBXTargetDependency;
 			target = 0504F7AF2F81035A008B72AA /* vaultExtension */;
 			targetProxy = 0504F7C42F81035B008B72AA /* PBXContainerItemProxy */;
+		};
+		056ABCBA2FAB327000329B90 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 05EA6E082F74FD600016FE08 /* Budgeting-App */;
+			targetProxy = 056ABCB92FAB327000329B90 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -352,6 +421,46 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		056ABCBC2FAB327000329B90 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.023.Budgeting-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Budgeting-App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Budgeting-App";
+			};
+			name = Debug;
+		};
+		056ABCBD2FAB327000329B90 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.023.Budgeting-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Budgeting-App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Budgeting-App";
 			};
 			name = Release;
 		};
@@ -558,6 +667,15 @@
 			buildConfigurations = (
 				0504F7C82F81035B008B72AA /* Debug */,
 				0504F7C92F81035B008B72AA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		056ABCBB2FAB327000329B90 /* Build configuration list for PBXNativeTarget "Budgeting-AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				056ABCBC2FAB327000329B90 /* Debug */,
+				056ABCBD2FAB327000329B90 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

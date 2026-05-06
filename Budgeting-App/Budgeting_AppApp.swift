@@ -342,10 +342,8 @@ class AppState: ObservableObject {
             let calendar = Calendar.current
             let now = Date()
             let lastMonth = calendar.date(byAdding: .month, value: -1, to: now) ?? now
-            let pastExpenses = transactions.filter {
-                $0.type == .expense && $0.date < calendar.startOfDay(for: now)
-            }
-            guard let firstDate = pastExpenses.map({ $0.date }).min() else { return }
+            let pastTransactions = transactions.filter { $0.date < calendar.startOfDay(for: now) }
+            guard let firstDate = pastTransactions.map({ $0.date }).min() else { return }
             let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: firstDate)) ?? firstDate
             let endMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: lastMonth)) ?? lastMonth
             guard startMonth <= endMonth else { return }
@@ -356,8 +354,8 @@ class AppState: ObservableObject {
 
             while monthCursor <= endMonth {
                 let monthKeyValue = monthKey(for: monthCursor)
-                let monthExpenses = pastExpenses.filter {
-                    calendar.isDate($0.date, equalTo: monthCursor, toGranularity: .month)
+                let monthExpenses = pastTransactions.filter {
+                    $0.type == .expense && calendar.isDate($0.date, equalTo: monthCursor, toGranularity: .month)
                 }
 
                 let needsSpent = monthExpenses
@@ -1339,21 +1337,25 @@ struct RootView: View {
     }
 
     private func updateWidgetSnapshot() {
-        let income = transactionsVM.transactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
-        let expense = transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+        let cal = Calendar.current
+        let monthTxs = transactionsVM.transactions.filter {
+            cal.isDate($0.date, equalTo: Date(), toGranularity: .month)
+        }
+        let income = monthTxs.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+        let expense = monthTxs.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
         let balance = appState.monthlyBudget + income - expense
 
         let needsLimit = appState.monthlyBudget * (appState.needsPercent / 100)
         let wantsLimit = appState.monthlyBudget * (appState.wantsPercent / 100)
         let savingsLimit = appState.monthlyBudget * (appState.savingsPercent / 100)
 
-        let needsSpent = transactionsVM.transactions
+        let needsSpent = monthTxs
             .filter { $0.type == .expense && $0.budgetCategory == .needs }
             .reduce(0) { $0 + $1.amount }
-        let wantsSpent = transactionsVM.transactions
+        let wantsSpent = monthTxs
             .filter { $0.type == .expense && $0.budgetCategory == .wants }
             .reduce(0) { $0 + $1.amount }
-        let savingsSpent = transactionsVM.transactions
+        let savingsSpent = monthTxs
             .filter { $0.type == .expense && $0.budgetCategory == .savings }
             .reduce(0) { $0 + $1.amount }
 
