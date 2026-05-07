@@ -25,11 +25,11 @@ struct PersonRow: View {
                         .fill(color.opacity(0.15))
                         .frame(width: 44, height: 44)
                     Text(avatar)
-                        .font(.system(size: 20))
+                        .scaledFont(size: 20, relativeTo: .title3)
                 }
 
                 Text(name)
-                    .font(.system(size: 16, weight: .medium))
+                    .scaledFont(size: 16, weight: .medium, relativeTo: .headline)
                     .foregroundStyle(.white)
 
                 Spacer()
@@ -41,7 +41,7 @@ struct PersonRow: View {
                         .frame(width: 24, height: 24)
                     if isSelected {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
+                            .scaledFont(size: 11, weight: .bold, relativeTo: .caption2)
                             .foregroundStyle(.white)
                     }
                 }

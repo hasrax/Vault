@@ -82,11 +82,11 @@ struct BudgetView: View {
                     VStack(spacing: 10) {
                         HStack {
                             Text("Monthly history")
-                                .font(.system(size: 16, weight: .semibold))
+                                .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                                 .foregroundStyle(Color.primary)
                             Spacer()
                             Button("See all") { showHistory = true }
-                                .font(.system(size: 13, weight: .semibold))
+                                .scaledFont(size: 13, weight: .semibold, relativeTo: .subheadline)
                                 .foregroundStyle(Color.uniBlue)
                         }
 
@@ -94,19 +94,19 @@ struct BudgetView: View {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(formatMonth(latest.monthKey))
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                                         .foregroundStyle(Color.primary)
                                     Text("Spent \(latest.totalSpent.currencyRS)")
-                                        .font(.system(size: 12))
+                                        .scaledFont(size: 12, relativeTo: .caption)
                                         .foregroundStyle(Color.secondary)
                                 }
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 4) {
                                     Text("Carry-over")
-                                        .font(.system(size: 12))
+                                        .scaledFont(size: 12, relativeTo: .caption)
                                         .foregroundStyle(Color.secondary)
                                     Text(latest.carryOverAdded.currencyRS)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                                         .foregroundStyle(Color.primary)
                                 }
                             }
@@ -115,7 +115,7 @@ struct BudgetView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         } else {
                             Text("No history yet")
-                                .font(.system(size: 12))
+                                .scaledFont(size: 12, relativeTo: .caption)
                                 .foregroundStyle(Color.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -168,7 +168,7 @@ struct BudgetView: View {
                         showEditBudget = true
                     } label: {
                         Text("Edit")
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold, relativeTo: .body)
                             .foregroundStyle(headerText)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 7)
@@ -181,19 +181,19 @@ struct BudgetView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Total Budget")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12, relativeTo: .caption)
                             .foregroundStyle(headerSubText)
                         Text(totalBudget.currencyRS)
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .scaledFont(size: 26, weight: .bold, design: .rounded, relativeTo: .title2)
                             .foregroundStyle(headerText)
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("Spent")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12, relativeTo: .caption)
                             .foregroundStyle(headerSubText)
                         Text(totalSpent.currencyRS)
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .scaledFont(size: 26, weight: .bold, design: .rounded, relativeTo: .title2)
                             .foregroundStyle(headerText)
                     }
                 }
@@ -201,11 +201,11 @@ struct BudgetView: View {
                                color: totalSpent > totalBudget ? Color.expense : Color.uniBlue,
                                height: 8)
                 Text("\((totalBudget - totalSpent).currencyRS) remaining (\(Int(max(0,(totalBudget-totalSpent)/safeTotal*100)))%)")
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12, relativeTo: .caption)
                     .foregroundStyle(headerSubText)
                 if appState.carryOverBalance > 0 {
                     Text("Savings pool: \(appState.carryOverBalance.currencyRS)")
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12, relativeTo: .caption)
                         .foregroundStyle(headerSubText)
                 }
             }
@@ -245,23 +245,23 @@ struct BudgetHistoryView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(formatMonth(entry.monthKey))
-                                .font(.system(size: 16, weight: .semibold))
+                                .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                             Spacer()
                             Text(entry.monthlyBudget.currencyRS)
-                                .font(.system(size: 14, weight: .semibold))
+                                .scaledFont(size: 14, weight: .semibold, relativeTo: .subheadline)
                                 .foregroundStyle(Color.secondary)
                         }
                         Text("Spent \(entry.totalSpent.currencyRS)")
-                            .font(.system(size: 13))
+                            .scaledFont(size: 13, relativeTo: .subheadline)
                             .foregroundStyle(Color.secondary)
                         Text("Needs \(entry.needsSpent.currencyRS) · Wants \(entry.wantsSpent.currencyRS) · Savings \(entry.savingsSpent.currencyRS)")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12, relativeTo: .caption)
                             .foregroundStyle(Color.secondary)
                         Text("Carry-over added: \(entry.carryOverAdded.currencyRS)")
-                            .font(.system(size: 13))
+                            .scaledFont(size: 13, relativeTo: .subheadline)
                             .foregroundStyle(Color.secondary)
                         Text("Savings pool: \(entry.carryOverBalance.currencyRS)")
-                            .font(.system(size: 13))
+                            .scaledFont(size: 13, relativeTo: .subheadline)
                             .foregroundStyle(Color.secondary)
                     }
                     .padding(.vertical, 6)
@@ -390,7 +390,7 @@ struct AnalyticsView: View {
                             timeFilter = f
                         } label: {
                             Text(f)
-                                .font(.system(size: 15, weight: .semibold))
+                                .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                                 .foregroundStyle(isActive ? Color.white : Color.primary)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
@@ -414,10 +414,10 @@ struct AnalyticsView: View {
                     // Total spending card
                     VStack(spacing: 12) {
                         Text("Total Spending")
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                             .foregroundStyle(Color.secondary)
                         Text(totalSpent.currencyRS)
-                            .font(.system(size:40,weight:.bold,design:.rounded))
+                            .scaledFont(size: 40, weight: .bold, design: .rounded, relativeTo: .largeTitle)
                             .foregroundStyle(Color.primary)
                     }
                     .frame(maxWidth:.infinity)
@@ -431,7 +431,7 @@ struct AnalyticsView: View {
 
                     // Weekly bar chart
                     VStack(alignment:.leading, spacing:14) {
-                        Text("Spending Trend").font(.system(size: 18, weight: .semibold))
+                        Text("Spending Trend").scaledFont(size: 18, weight: .semibold, relativeTo: .title3)
                         Chart(weeklySpending) { day in
                             BarMark(
                                 x:.value("Day", day.day),
@@ -448,7 +448,7 @@ struct AnalyticsView: View {
 
                     // Top categories
                     VStack(alignment:.leading, spacing:14) {
-                        Text("Top Spending Categories").font(.system(size: 18, weight: .semibold))
+                        Text("Top Spending Categories").scaledFont(size: 18, weight: .semibold, relativeTo: .title3)
                         VStack(spacing:0) {
                             ForEach(Array(topCategories.enumerated()), id:\.offset) { idx, item in
                                 let (cat, spent, pct) = item
@@ -459,19 +459,19 @@ struct AnalyticsView: View {
                                                 .fill(cat.color.opacity(0.12))
                                                 .frame(width:44,height:44)
                                             Image(systemName: cat.icon)
-                                                .font(.system(size:18))
+                                                .scaledFont(size: 18, relativeTo: .headline)
                                                 .foregroundStyle(cat.color)
                                         }
                                         VStack(alignment:.leading,spacing:4) {
                                             HStack {
-                                                Text(cat.rawValue).font(.system(size: 15, weight: .semibold))
+                                                Text(cat.rawValue).scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                                                 Spacer()
-                                                Text(spent.currencyRS).font(.system(size: 15, weight: .semibold))
+                                                Text(spent.currencyRS).scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                                             }
                                             HStack(spacing:10) {
                                                 UniProgressBar(progress:pct,color:cat.color)
                                                 Text("\(Int(pct*100))%")
-                                                    .font(.system(size: 11)).foregroundStyle(Color.secondary)
+                                                    .scaledFont(size: 11, relativeTo: .caption2).foregroundStyle(Color.secondary)
                                                     .frame(width:30)
                                             }
                                         }

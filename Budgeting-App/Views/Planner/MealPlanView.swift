@@ -42,7 +42,7 @@ struct MealPlanView: View {
                             withAnimation(.spring(duration: 0.25)) { activeTab = id }
                         } label: {
                             Text(label)
-                                .font(.system(size:14,weight:.semibold))
+                                .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                                 .foregroundStyle(activeTab == id ? Color.white : Color.secondary)
                                 .frame(maxWidth:.infinity).frame(height:44)
                                 .background(activeTab == id ? Color.uniBlue : Color.clear)
@@ -122,19 +122,20 @@ struct MealPlanView: View {
                 editExpense = nil
             }
         }
+        .appStatusBarStyle(.darkContent)
     }
 
     private var mealsTab: some View {
         VStack(spacing:14) {
             // Plan info
             HStack(spacing:12) {
-                Text("🎓").font(.system(size:28))
+                Text("🎓").scaledFont(size: 28, relativeTo: .largeTitle)
                 VStack(alignment:.leading,spacing:3) {
-                    Text("Gold Meal Plan").font(.system(size:15,weight:.semibold))
-                    Text("58 days left in semester").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                    Text("Gold Meal Plan").scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
+                    Text("58 days left in semester").scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
                 }
                 Spacer()
-                Text("58d").font(.system(size:12,weight:.bold)).foregroundStyle(Color.uniBlue)
+                Text("58d").scaledFont(size: 12, weight: .bold, relativeTo: .caption).foregroundStyle(Color.uniBlue)
                     .padding(.horizontal,8).padding(.vertical,4).background(Color.uniBlue.opacity(0.1)).clipShape(Capsule())
             }
             .padding(16).plannerModuleCard(accent: accent)
@@ -143,19 +144,19 @@ struct MealPlanView: View {
             VStack(spacing:14) {
                 HStack {
                     VStack(alignment:.leading,spacing:4) {
-                        Text("Meal Swipes").font(.system(size:13)).foregroundStyle(Color.secondary)
-                        Text("63").font(.system(size:40,weight:.bold)).foregroundStyle(Color.primary)
-                        Text("remaining").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text("Meal Swipes").scaledFont(size: 13, relativeTo: .caption).foregroundStyle(Color.secondary)
+                        Text("63").scaledFont(size: 40, weight: .bold, relativeTo: .largeTitle).foregroundStyle(Color.primary)
+                        Text("remaining").scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
                     }
                     Spacer()
                     VStack(alignment:.trailing,spacing:4) {
-                        Text("This Week").font(.system(size:12)).foregroundStyle(Color.secondary)
-                        Text("9/14").font(.system(size:22,weight:.semibold)).foregroundStyle(Color.primary)
+                        Text("This Week").scaledFont(size: 12, relativeTo: .caption).foregroundStyle(Color.secondary)
+                        Text("9/14").scaledFont(size: 22, weight: .semibold, relativeTo: .title3).foregroundStyle(Color.primary)
                     }
                 }
                 UniProgressBar(progress:0.42, color:accent, height:8)
                 Text("💡 Use ~1.8 swipes/day to last the semester")
-                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                    .scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
                     .multilineTextAlignment(.center)
             }
             .padding(20)
@@ -169,14 +170,14 @@ struct MealPlanView: View {
             // Dining dollars + flex
             HStack(spacing:12) {
                 VStack(alignment:.leading,spacing:8) {
-                    Text("Dining Dollars").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                    Text("Rs.2,655").font(.system(size:20,weight:.bold)).foregroundStyle(Color.income)
+                    Text("Dining Dollars").scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
+                    Text("Rs.2,655").scaledFont(size: 20, weight: .bold, relativeTo: .title3).foregroundStyle(Color.income)
                     UniProgressBar(progress:0.47,color:Color.income,height:6)
                 }
                 .padding(16).frame(maxWidth:.infinity).plannerModuleCard(accent: accent)
                 VStack(alignment:.leading,spacing:8) {
-                    Text("Flex Points").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                    Text("Rs.1,217").font(.system(size:20,weight:.bold)).foregroundStyle(Color.uniBlue)
+                    Text("Flex Points").scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
+                    Text("Rs.1,217").scaledFont(size: 20, weight: .bold, relativeTo: .title3).foregroundStyle(Color.uniBlue)
                     UniProgressBar(progress:0.39,color:Color.uniBlue,height:6)
                 }
                 .padding(16).frame(maxWidth:.infinity).plannerModuleCard(accent: accent)
@@ -188,16 +189,16 @@ struct MealPlanView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Meals").font(.system(size: 16, weight: .semibold))
+                    Text("Meals").scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                     Spacer()
                     Button("Add Meal") { showAddMeal = true }
-                        .font(.system(size: 13, weight: .semibold))
+                        .scaledFont(size: 13, weight: .semibold, relativeTo: .caption)
                         .foregroundStyle(accent)
                 }
 
                 if mealEntries.isEmpty {
                     Text("No meals added yet.")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                         .foregroundStyle(Color.secondary)
                         .padding(.vertical, 8)
                 } else {
@@ -228,9 +229,9 @@ struct MealPlanView: View {
     private var studyTab: some View {
         VStack(spacing:14) {
             VStack(spacing:8) {
-                Text("Study Expenses This Month").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                Text(studyTotal.currencyRS).font(.system(size:36,weight:.bold)).foregroundStyle(Color.primary)
-                Text("\(studyExpenses.count) transactions").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                Text("Study Expenses This Month").scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
+                Text(studyTotal.currencyRS).scaledFont(size: 36, weight: .bold, relativeTo: .largeTitle).foregroundStyle(Color.primary)
+                Text("\(studyExpenses.count) transactions").scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
             }
             .frame(maxWidth:.infinity).padding(24)
             .background(Color(UIColor.systemBackground))
@@ -243,8 +244,8 @@ struct MealPlanView: View {
             LazyVGrid(columns:Array(repeating:GridItem(.flexible()),count:4),spacing:10) {
                 ForEach([("🖨️","Printing"),("📚","Books"),("👨‍🏫","Tutoring"),("📝","Supplies")],id:\.0) { emoji,label in
                     VStack(spacing:6) {
-                        Text(emoji).font(.system(size:22))
-                        Text(label).font(.system(size:11,weight:.medium)).foregroundStyle(Color.secondary)
+                        Text(emoji).scaledFont(size: 22, relativeTo: .title2)
+                        Text(label).scaledFont(size: 11, weight: .medium, relativeTo: .caption2).foregroundStyle(Color.secondary)
                     }
                     .frame(maxWidth:.infinity).padding(.vertical,14)
                     .background(Color(UIColor.secondarySystemBackground))
@@ -258,16 +259,16 @@ struct MealPlanView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Study Expenses").font(.system(size: 16, weight: .semibold))
+                    Text("Study Expenses").scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                     Spacer()
                     Button("Add Expense") { showAddExpense = true }
-                        .font(.system(size: 13, weight: .semibold))
+                        .scaledFont(size: 13, weight: .semibold, relativeTo: .caption)
                         .foregroundStyle(accent)
                 }
 
                 if studyExpenses.isEmpty {
                     Text("No study expenses yet.")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                         .foregroundStyle(Color.secondary)
                         .padding(.vertical, 8)
                 } else {
@@ -301,24 +302,24 @@ struct MealPlanView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(accent.opacity(0.12))
                     .frame(width: 40, height: 40)
-                Text(entry.type.emoji).font(.system(size: 18))
+                Text(entry.type.emoji).scaledFont(size: 18, relativeTo: .body)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(entry.title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                 Text("\(entry.type.label) · \(entry.date, style: .date)")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                     .foregroundStyle(Color.secondary)
                 if let location = entry.location, !location.isEmpty {
                     Text(location)
-                        .font(.system(size: 11, weight: .medium))
+                        .scaledFont(size: 11, weight: .medium, relativeTo: .caption2)
                         .foregroundStyle(Color.secondary)
                 }
             }
             Spacer()
             if entry.amount > 0 {
                 Text(entry.amount.currencyRS)
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold, relativeTo: .caption)
                     .foregroundStyle(Color.expense)
             }
         }
@@ -330,18 +331,18 @@ struct MealPlanView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(accent.opacity(0.12))
                     .frame(width: 40, height: 40)
-                Text("📘").font(.system(size: 18))
+                Text("📘").scaledFont(size: 18, relativeTo: .body)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(expense.title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                 Text("\(expense.category) · \(expense.date, style: .date)")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                     .foregroundStyle(Color.secondary)
             }
             Spacer()
             Text(expense.amount.currencyRS)
-                .font(.system(size: 13, weight: .semibold))
+                .scaledFont(size: 13, weight: .semibold, relativeTo: .caption)
                 .foregroundStyle(Color.expense)
         }
     }

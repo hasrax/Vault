@@ -137,7 +137,7 @@ struct ApnsSimulatorView: View {
             if !apnsFilePath.isEmpty {
                 Section("Output") {
                     Text("File: \(apnsFilePath)")
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12, relativeTo: .body)
                         .textSelection(.enabled)
                     Button("Copy File Path") {
                         UIPasteboard.general.string = apnsFilePath
@@ -145,7 +145,7 @@ struct ApnsSimulatorView: View {
 
                     if !apnsCommand.isEmpty {
                         Text("Command: \(apnsCommand)")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12, relativeTo: .body)
                             .textSelection(.enabled)
                         Button("Copy simctl Command") {
                             UIPasteboard.general.string = apnsCommand
@@ -157,7 +157,7 @@ struct ApnsSimulatorView: View {
             if !apnsError.isEmpty {
                 Section {
                     Text(apnsError)
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12, relativeTo: .body)
                         .foregroundStyle(Color.warning)
                 }
             }

@@ -22,11 +22,11 @@ struct ShiftCard: View {
             // Day badge
             VStack(spacing: 2) {
                 Text(shift.day)
-                    .font(.system(size: 10, weight: .semibold))
+                    .scaledFont(size: 10, weight: .semibold, relativeTo: .caption2)
                     .textCase(.uppercase)
                     .foregroundStyle(Color.secondary)
                 Text(shift.date.components(separatedBy: " ").last ?? "")
-                    .font(.system(size: 18, weight: .bold))
+                    .scaledFont(size: 18, weight: .bold, relativeTo: .title3)
                     .foregroundStyle(Color.primary)
             }
             .frame(width: 48, height: 52)
@@ -40,10 +40,10 @@ struct ShiftCard: View {
             // Role + time
             VStack(alignment: .leading, spacing: 3) {
                 Text(shift.role)
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                     .lineLimit(1)
                 Text("\(shift.start) – \(shift.end) · \(shift.hours)h")
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13, relativeTo: .subheadline)
                     .foregroundStyle(Color.secondary)
             }
 
@@ -52,11 +52,11 @@ struct ShiftCard: View {
             // Pay + status pill
             VStack(alignment: .trailing, spacing: 4) {
                 Text(shift.pay.currencyRS)
-                    .font(.system(size: 15, weight: .bold))
+                    .scaledFont(size: 15, weight: .bold, relativeTo: .headline)
                     .foregroundStyle(Color.primary)
 
                 Text(isCompleted ? "Done" : "Soon")
-                    .font(.system(size: 10, weight: .semibold))
+                    .scaledFont(size: 10, weight: .semibold, relativeTo: .caption2)
                     .textCase(.uppercase)
                     .foregroundStyle(statusTextColor)
                     .padding(.horizontal, 8)

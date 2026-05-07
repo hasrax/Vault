@@ -32,12 +32,12 @@ struct WeekDayStrip: View {
 
                         VStack(spacing: 4) {
                             Text(dayLabel)
-                                .font(.system(size: 10, weight: .semibold))
+                                .scaledFont(size: 10, weight: .semibold, relativeTo: .caption2)
                                 .textCase(.uppercase)
                                 .foregroundStyle(isToday ? Color.white.opacity(0.7) : Color.secondary)
 
                             Text("\(dayNumber)")
-                                .font(.system(size: 15, weight: .bold))
+                                .scaledFont(size: 15, weight: .bold, relativeTo: .headline)
                                 .foregroundStyle(isToday ? Color.white : Color.primary)
 
                             Circle()

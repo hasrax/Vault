@@ -20,18 +20,18 @@ struct GlassStatCard: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(label)
-                .font(.system(size: 11, weight: .semibold))
+                .scaledFont(size: 11, weight: .semibold, relativeTo: .caption2)
                 .foregroundStyle(labelColor)
                 .textCase(.uppercase)
                 .tracking(0.5)
 
             Text(value)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .scaledFont(size: 22, weight: .bold, design: .rounded, relativeTo: .title3)
                 .foregroundStyle(valueColor)
 
             if let s = sub {
                 Text(s)
-                    .font(.system(size: 11))
+                    .scaledFont(size: 11, relativeTo: .caption2)
                     .foregroundStyle(subColor)
             }
         }

@@ -250,6 +250,7 @@ struct SearchView: View {
         .background(Color.clear)
         .navigationTitle("")
         .navigationBarHidden(true)
+        .appStatusBarStyle(.darkContent)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 HStack(spacing: 14) {

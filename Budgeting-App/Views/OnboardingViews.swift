@@ -47,7 +47,7 @@ struct SplashView: View {
                 .opacity(opacity)
 
                 Text("Vault")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .scaledFont(size: 32, weight: .bold, design: .rounded, relativeTo: .largeTitle)
                     .foregroundStyle(Color.primary)
                     .padding(.top, 24)
                     .opacity(opacity)
@@ -111,7 +111,7 @@ struct WelcomeView: View {
                 AppLogoMark(size: 80)
 
                 Text("Welcome to Vault")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .scaledFont(size: 28, weight: .bold, design: .rounded, relativeTo: .largeTitle)
                     .foregroundStyle(Color.primary)
                     .multilineTextAlignment(.center)
                     .padding(.top, 24)
@@ -123,16 +123,16 @@ struct WelcomeView: View {
                     .padding(.horizontal, 32)
                     .padding(.top, 10)
 
-                // Feature cards
+                /* Feature cards temporarily hidden for a cleaner centered welcome layout.
                 VStack(spacing: 12) {
                     ForEach(features, id: \.0) { emoji, title, desc in
                         HStack(spacing: 14) {
-                            Text(emoji).font(.system(size: 22))
+                            Text(emoji).scaledFont(size: 22, relativeTo: .title2)
                                 .frame(width: 44, height: 44)
                                 .background(Color.black.opacity(0.05))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.primary)
+                                Text(title).scaledFont(size: 15, weight: .semibold, relativeTo: .headline).foregroundStyle(Color.primary)
                                 Text(desc).font(.caption1).foregroundStyle(Color.secondary)
                             }
                             Spacer()
@@ -145,6 +145,7 @@ struct WelcomeView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 32)
+                */
 
                 Spacer()
 
@@ -154,7 +155,7 @@ struct WelcomeView: View {
                         showSignUp = true
                     } label: {
                         Text("Get Started")
-                            .font(.system(size: 17, weight: .semibold))
+                            .scaledFont(size: 17, weight: .semibold, relativeTo: .headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 56)
                             .background(LinearGradient.ctaGrad)
@@ -165,7 +166,7 @@ struct WelcomeView: View {
                         showLogin = true
                     } label: {
                         Text("I already have an account")
-                            .font(.system(size: 15, weight: .medium))
+                            .scaledFont(size: 15, weight: .medium, relativeTo: .body)
                             .foregroundStyle(Color.secondary)
                     }
                 }
@@ -210,7 +211,7 @@ struct SetupBudgetView: View {
                     // ── Title block ──────────────────────────────────────
                     VStack(alignment: .leading, spacing: 6) {
                         Text(isEditing ? "Edit Your Budget" : "Set Your Budget")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .scaledFont(size: 28, weight: .bold, design: .rounded, relativeTo: .largeTitle)
                             .foregroundStyle(Color.primary)
                         Text("Choose your monthly budget and allocation strategy")
                             .font(.subheadline)
@@ -222,10 +223,10 @@ struct SetupBudgetView: View {
                     // ── Monthly Budget card ───────────────────────────────
                     VStack(spacing: 6) {
                         Text("Monthly Budget")
-                            .font(.system(size: 13, weight: .medium))
+                            .scaledFont(size: 13, weight: .medium, relativeTo: .caption)
                             .foregroundStyle(Color.secondary)
                         Text(budget.currencyRS)
-                            .font(.system(size: 38, weight: .bold, design: .rounded))
+                            .scaledFont(size: 38, weight: .bold, design: .rounded, relativeTo: .largeTitle)
                             .foregroundStyle(Color.primary)
                     }
                     .frame(maxWidth: .infinity)
@@ -237,7 +238,7 @@ struct SetupBudgetView: View {
                     // ── Manual budget input ─────────────────────────────
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Type your amount")
-                            .font(.system(size: 13, weight: .medium))
+                            .scaledFont(size: 13, weight: .medium, relativeTo: .caption)
                             .foregroundStyle(Color.secondary)
                         TextField("Enter monthly budget", text: $budgetInput)
                             .keyboardType(.numberPad)
@@ -261,7 +262,7 @@ struct SetupBudgetView: View {
                                     budgetInput = String(Int(preset))
                                 } label: {
                                     Text(preset.shortCurrency)
-                                        .font(.system(size: 14, weight: .medium))
+                                        .scaledFont(size: 14, weight: .medium, relativeTo: .body)
                                         .foregroundStyle(budget == preset ? Color.uniBlue : Color.primary)
                                         .padding(.horizontal, 18)
                                         .padding(.vertical, 10)
@@ -283,7 +284,7 @@ struct SetupBudgetView: View {
                     // ── Allocation Strategy ───────────────────────────────
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Allocation Strategy")
-                            .font(.system(size: 18, weight: .bold))
+                            .scaledFont(size: 18, weight: .bold, relativeTo: .title3)
                             .foregroundStyle(Color.primary)
 
                         // Segmented selector
@@ -296,7 +297,7 @@ struct SetupBudgetView: View {
                                     }
                                 } label: {
                                     Text(label)
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .scaledFont(size: 14, weight: .semibold, relativeTo: .body)
                                         .foregroundStyle(isActive ? .white : Color.primary)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 12)
@@ -321,14 +322,14 @@ struct SetupBudgetView: View {
                                         .fill(cat.color)
                                         .frame(width: 10, height: 10)
                                     Text(cat.rawValue)
-                                        .font(.system(size: 16, weight: .medium))
+                                        .scaledFont(size: 16, weight: .medium, relativeTo: .headline)
                                         .foregroundStyle(Color.primary)
                                     Spacer()
                                     Text("\(Int(pct))%")
-                                        .font(.system(size: 16, weight: .bold))
+                                        .scaledFont(size: 16, weight: .bold, relativeTo: .headline)
                                         .foregroundStyle(Color.primary)
                                     Text((budget * pct / 100).currencyRS)
-                                        .font(.system(size: 14))
+                                        .scaledFont(size: 14, relativeTo: .body)
                                         .foregroundStyle(Color.secondary)
                                         .frame(width: 95, alignment: .trailing)
                                 }
@@ -355,7 +356,7 @@ struct SetupBudgetView: View {
                             )
                         } label: {
                             Text("Confirm")
-                                .font(.system(size: 17, weight: .semibold))
+                                .scaledFont(size: 17, weight: .semibold, relativeTo: .headline)
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
@@ -376,7 +377,7 @@ struct SetupBudgetView: View {
                     // Edit mode: Cancel (left) + Save (right)
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Cancel") { dismiss() }
-                            .font(.system(size: 15, weight: .medium))
+                            .scaledFont(size: 15, weight: .medium, relativeTo: .body)
                             .foregroundStyle(Color.uniBlue)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 7)
@@ -393,7 +394,7 @@ struct SetupBudgetView: View {
                             )
                             dismiss()
                         }
-                        .font(.system(size: 15, weight: .medium))
+                        .scaledFont(size: 15, weight: .medium, relativeTo: .body)
                         .foregroundStyle(Color.uniBlue)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
@@ -407,7 +408,7 @@ struct SetupBudgetView: View {
                             appState.signOut()
                         } label: {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
+                                .scaledFont(size: 14, weight: .semibold, relativeTo: .body)
                                 .foregroundStyle(Color.primary)
                                 .frame(width: 36, height: 36)
                                 .background(Color(UIColor.systemBackground))

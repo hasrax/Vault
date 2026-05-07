@@ -27,9 +27,9 @@ struct SavingsView: View {
             VStack(spacing:16) {
                 // Total card
                 VStack(spacing:12) {
-                    Text("Total Saved").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                    Text("Total Saved").scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
                     Text(totalSaved.currencyRS)
-                        .font(.system(size:36,weight:.bold,design:.rounded)).foregroundStyle(Color.primary)
+                        .scaledFont(size: 36, weight: .bold, design: .rounded, relativeTo: .largeTitle).foregroundStyle(Color.primary)
                     Text("of \(totalTarget.currencyRS) goal").font(.subheadline).foregroundStyle(Color.secondary)
                     UniProgressBar(progress: totalProgress, color: accent, height: 10)
                 }
@@ -62,11 +62,11 @@ struct SavingsView: View {
 
                 // Motivation
                 HStack(spacing:14) {
-                    Text("🚀").font(.system(size:32))
+                    Text("🚀").scaledFont(size: 32, relativeTo: .largeTitle)
                     VStack(alignment:.leading,spacing:4) {
-                        Text("Keep going!").font(.system(size:15,weight:.semibold))
+                        Text("Keep going!").scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                         Text("You've saved \(totalSaved.currencyRS). Just \((totalTarget-totalSaved).currencyRS) more to reach all goals!")
-                            .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .caption).foregroundStyle(Color.secondary)
                     }
                 }
                 .padding(16)
@@ -113,6 +113,7 @@ struct SavingsView: View {
                 editGoal = nil
             }
         }
+        .appStatusBarStyle(.darkContent)
     }
 }
 

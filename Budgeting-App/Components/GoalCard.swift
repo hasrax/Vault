@@ -20,17 +20,17 @@ struct GoalCard: View {
                     RoundedRectangle(cornerRadius: 14)
                         .fill(goal.color.opacity(0.12))
                         .frame(width: 56, height: 56)
-                    Text(goal.icon).font(.system(size: 26))
+                    Text(goal.icon).scaledFont(size: 26, relativeTo: .title2)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
                         Text(goal.name)
-                            .font(.system(size: 17, weight: .semibold))
+                            .scaledFont(size: 17, weight: .semibold, relativeTo: .headline)
                             .lineLimit(1)
                         if goal.isComplete {
                             Text("Done")
-                                .font(.system(size: 11, weight: .bold))
+                                .scaledFont(size: 11, weight: .bold, relativeTo: .caption2)
                                 .foregroundStyle(Color.income)
                                 .padding(.horizontal, 7).padding(.vertical, 3)
                                 .background(Color.income.opacity(0.12))
@@ -42,7 +42,7 @@ struct GoalCard: View {
                         goal.daysLeft != nil   ? "\(goal.daysLeft!) days left" :
                                                  "No deadline"
                     )
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13, relativeTo: .subheadline)
                     .foregroundStyle(Color.secondary)
                 }
                 Spacer()
@@ -51,11 +51,11 @@ struct GoalCard: View {
             // Amount + progress bar
             HStack {
                 Text(goal.currentAmount.currencyRS)
-                    .font(.system(size: 20, weight: .bold))
+                    .scaledFont(size: 20, weight: .bold, relativeTo: .title3)
                     .foregroundStyle(goal.color)
                 Spacer()
                 Text("of \(goal.targetAmount.currencyRS)")
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13, relativeTo: .subheadline)
                     .foregroundStyle(Color.secondary)
             }
             UniProgressBar(progress: goal.progress, color: goal.color, height: 10)
@@ -64,12 +64,12 @@ struct GoalCard: View {
             if !goal.isComplete {
                 HStack {
                     Text("\((goal.targetAmount - goal.currentAmount).currencyRS) to go")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13, relativeTo: .subheadline)
                         .foregroundStyle(Color.secondary)
                     Spacer()
                     Button(action: onAddMoney) {
                         Text("+ Add Money")
-                            .font(.system(size: 13, weight: .semibold))
+                            .scaledFont(size: 13, weight: .semibold, relativeTo: .subheadline)
                             .foregroundStyle(goal.color)
                             .padding(.horizontal, 14).padding(.vertical, 7)
                             .background(goal.color.opacity(0.12))

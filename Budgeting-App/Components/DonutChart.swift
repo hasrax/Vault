@@ -57,10 +57,10 @@ struct DonutChart: View {
             // Centre labels
             VStack(spacing: 2) {
                 Text(centerText)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .scaledFont(size: 13, weight: .bold, design: .rounded, relativeTo: .subheadline)
                     .foregroundStyle(.white)
                 Text(centerSub)
-                    .font(.system(size: 10, weight: .regular))
+                    .scaledFont(size: 10, relativeTo: .caption2)
                     .foregroundStyle(.white.opacity(0.5))
             }
         }

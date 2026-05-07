@@ -17,11 +17,11 @@ struct AmountInput: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             Text(currency)
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .scaledFont(size: 32, weight: .bold, design: .rounded, relativeTo: .title2)
                 .foregroundStyle(accentColor.opacity(0.6))
 
             TextField("0", text: $text)
-                .font(.system(size: 48, weight: .bold, design: .rounded))
+                .scaledFont(size: 48, weight: .bold, design: .rounded, relativeTo: .largeTitle)
                 .foregroundStyle(accentColor)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.center)
