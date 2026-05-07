@@ -15,12 +15,15 @@ final class PlannerViewModel: ObservableObject {
     @Published var workShifts: [WorkShift] = []
     @Published var mealEntries: [MealEntry] = []
     @Published var studyExpenses: [StudyExpense] = []
+    @Published var semesterPlanMonths: [SemesterPlanMonth] = []
+    @Published var semesterPlanSettings = SemesterPlanSettings()
 
     private var importantDatesListener: ListenerRegistration?
     private var semesterGoalsListener: ListenerRegistration?
     private var workShiftsListener: ListenerRegistration?
     private var mealEntriesListener: ListenerRegistration?
     private var studyExpensesListener: ListenerRegistration?
+    private var semesterPlanMonthsListener: ListenerRegistration?
     private let transactionsVM: TransactionsViewModel
 
     init(transactionsVM: TransactionsViewModel) {
@@ -46,6 +49,20 @@ final class PlannerViewModel: ObservableObject {
             DispatchQueue.main.async {
                 if case let .success(items) = result {
                     self.workShifts = items
+                }
+            }
+        }
+        PlannerService.fetchSemesterPlanMonths { result in
+            DispatchQueue.main.async {
+                if case let .success(items) = result {
+                    self.semesterPlanMonths = items
+                }
+            }
+        }
+        PlannerService.fetchSemesterPlanSettings { result in
+            DispatchQueue.main.async {
+                if case let .success(settings) = result {
+                    self.semesterPlanSettings = settings
                 }
             }
         }
@@ -82,6 +99,11 @@ final class PlannerViewModel: ObservableObject {
                 if case let .success(items) = result { self.workShifts = items }
             }
         }
+        semesterPlanMonthsListener = PlannerService.listenSemesterPlanMonths { result in
+            DispatchQueue.main.async {
+                if case let .success(items) = result { self.semesterPlanMonths = items }
+            }
+        }
         mealEntriesListener = PlannerService.listenMealEntries { result in
             DispatchQueue.main.async {
                 if case let .success(items) = result { self.mealEntries = items }
@@ -100,11 +122,13 @@ final class PlannerViewModel: ObservableObject {
         workShiftsListener?.remove()
         mealEntriesListener?.remove()
         studyExpensesListener?.remove()
+        semesterPlanMonthsListener?.remove()
         importantDatesListener = nil
         semesterGoalsListener = nil
         workShiftsListener = nil
         mealEntriesListener = nil
         studyExpensesListener = nil
+        semesterPlanMonthsListener = nil
     }
 
     // MARK: - Semester Goals
@@ -337,5 +361,32 @@ final class PlannerViewModel: ObservableObject {
         default:
             return nil
         }
+    }
+
+    // MARK: - Semester Plan
+    func addSemesterPlanMonth(monthDate: Date, budget: Double, spent: Double, status: SemesterPlanStatus) {
+        let item = SemesterPlanMonth(monthDate: monthDate, budget: budget, spent: spent, status: status)
+        semesterPlanMonths.append(item)
+        PlannerService.addSemesterPlanMonth(item)
+    }
+
+    func updateSemesterPlanMonth(_ item: SemesterPlanMonth) {
+        if let idx = semesterPlanMonths.firstIndex(where: { $0.id == item.id }) {
+            semesterPlanMonths[idx] = item
+        }
+        PlannerService.updateSemesterPlanMonth(item)
+    }
+
+    func deleteSemesterPlanMonth(_ item: SemesterPlanMonth) {
+        semesterPlanMonths.removeAll { $0.id == item.id }
+        PlannerService.deleteSemesterPlanMonth(item.id)
+    }
+
+    func updateSemesterPlanSettings(_ settings: SemesterPlanSettings) {
+        let totalWeeks = max(1, settings.totalWeeks)
+        let currentWeek = min(max(1, settings.currentWeek), totalWeeks)
+        let sanitized = SemesterPlanSettings(totalWeeks: totalWeeks, currentWeek: currentWeek)
+        semesterPlanSettings = sanitized
+        PlannerService.saveSemesterPlanSettings(sanitized)
     }
 }

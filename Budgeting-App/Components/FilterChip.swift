@@ -13,16 +13,24 @@ struct FilterChip: View {
     let isSelected: Bool
     var accentColor: Color = .uniBlue
     let action: () -> Void
+    @Environment(\.appHighContrast) private var appHighContrast
 
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                .scaledFont(size: 14, weight: isSelected ? .semibold : .regular)
                 .foregroundStyle(isSelected ? .white : Color.primary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(isSelected ? accentColor : Color(UIColor.secondarySystemBackground))
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            appHighContrast ? accentColor.opacity(0.6) : Color.clear,
+                            lineWidth: appHighContrast ? 1.2 : 0
+                        )
+                )
                 .animation(.spring(duration: 0.25), value: isSelected)
         }
         .accessibilityLabel("\(label) filter")

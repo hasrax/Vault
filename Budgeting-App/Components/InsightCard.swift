@@ -15,18 +15,19 @@ struct InsightCard: View {
     let message:     String
     let bgColor:     Color
     let borderColor: Color
+    @Environment(\.appHighContrast) private var appHighContrast
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Text(emoji)
-                .font(.system(size: 24))
+                .scaledFont(size: 24)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(size: 15, weight: .semibold)
                 Text(message)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -38,7 +39,7 @@ struct InsightCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(borderColor, lineWidth: 1)
+                .stroke(borderColor.opacity(appHighContrast ? 0.8 : 1.0), lineWidth: appHighContrast ? 1.5 : 1)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title). \(message)")

@@ -318,6 +318,119 @@ struct PlannerService {
         }
     }
 
+    // MARK: - Semester Plan
+    static func fetchSemesterPlanMonths(completion: @escaping (Result<[SemesterPlanMonth], Error>) -> Void) {
+        guard let doc = userDoc() else {
+            completion(.failure(NSError(domain: "PlannerService", code: 401)))
+            return
+        }
+        doc.collection("semesterPlanMonths").getDocuments { snapshot, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            let items: [SemesterPlanMonth] = snapshot?.documents.compactMap { d in
+                let data = d.data()
+                let monthDate = (data["monthDate"] as? Timestamp)?.dateValue() ?? Date()
+                let budget = data["budget"] as? Double ?? 0
+                let spent = data["spent"] as? Double ?? 0
+                let statusRaw = data["status"] as? String ?? SemesterPlanStatus.upcoming.rawValue
+                let status = SemesterPlanStatus(rawValue: statusRaw) ?? .upcoming
+                return SemesterPlanMonth(
+                    id: UUID(uuidString: d.documentID) ?? UUID(),
+                    monthDate: monthDate,
+                    budget: budget,
+                    spent: spent,
+                    status: status
+                )
+            } ?? []
+            completion(.success(items))
+        }
+    }
+
+    static func addSemesterPlanMonth(_ item: SemesterPlanMonth, completion: ((Error?) -> Void)? = nil) {
+        guard let doc = userDoc() else {
+            completion?(NSError(domain: "PlannerService", code: 401))
+            return
+        }
+        let data: [String: Any] = [
+            "monthDate": Timestamp(date: item.monthDate),
+            "budget": item.budget,
+            "spent": item.spent,
+            "status": item.status.rawValue
+        ]
+        doc.collection("semesterPlanMonths").document(item.id.uuidString).setData(data, merge: true) { error in
+            completion?(error)
+        }
+    }
+
+    static func updateSemesterPlanMonth(_ item: SemesterPlanMonth, completion: ((Error?) -> Void)? = nil) {
+        addSemesterPlanMonth(item, completion: completion)
+    }
+
+    static func deleteSemesterPlanMonth(_ id: UUID, completion: ((Error?) -> Void)? = nil) {
+        guard let doc = userDoc() else {
+            completion?(NSError(domain: "PlannerService", code: 401))
+            return
+        }
+        doc.collection("semesterPlanMonths").document(id.uuidString).delete { error in
+            completion?(error)
+        }
+    }
+
+    static func listenSemesterPlanMonths(onChange: @escaping (Result<[SemesterPlanMonth], Error>) -> Void) -> ListenerRegistration? {
+        guard let doc = userDoc() else { return nil }
+        return doc.collection("semesterPlanMonths").addSnapshotListener { snapshot, error in
+            if let error = error {
+                onChange(.failure(error))
+                return
+            }
+            let items: [SemesterPlanMonth] = snapshot?.documents.compactMap { d in
+                let data = d.data()
+                let monthDate = (data["monthDate"] as? Timestamp)?.dateValue() ?? Date()
+                let budget = data["budget"] as? Double ?? 0
+                let spent = data["spent"] as? Double ?? 0
+                let statusRaw = data["status"] as? String ?? SemesterPlanStatus.upcoming.rawValue
+                let status = SemesterPlanStatus(rawValue: statusRaw) ?? .upcoming
+                return SemesterPlanMonth(
+                    id: UUID(uuidString: d.documentID) ?? UUID(),
+                    monthDate: monthDate,
+                    budget: budget,
+                    spent: spent,
+                    status: status
+                )
+            } ?? []
+            onChange(.success(items))
+        }
+    }
+
+    static func fetchSemesterPlanSettings(completion: @escaping (Result<SemesterPlanSettings, Error>) -> Void) {
+        guard let doc = userDoc() else {
+            completion(.failure(NSError(domain: "PlannerService", code: 401)))
+            return
+        }
+        doc.collection("semesterPlanSettings").document("default").getDocument { snapshot, _ in
+            let data = snapshot?.data() ?? [:]
+            let totalWeeks = data["totalWeeks"] as? Int ?? 16
+            let currentWeek = data["currentWeek"] as? Int ?? 1
+            completion(.success(SemesterPlanSettings(totalWeeks: totalWeeks, currentWeek: currentWeek)))
+        }
+    }
+
+    static func saveSemesterPlanSettings(_ settings: SemesterPlanSettings, completion: ((Error?) -> Void)? = nil) {
+        guard let doc = userDoc() else {
+            completion?(NSError(domain: "PlannerService", code: 401))
+            return
+        }
+        let data: [String: Any] = [
+            "totalWeeks": settings.totalWeeks,
+            "currentWeek": settings.currentWeek
+        ]
+        doc.collection("semesterPlanSettings").document("default").setData(data, merge: true) { error in
+            completion?(error)
+        }
+    }
+
     // MARK: - Meal Entries
     static func fetchMealEntries(completion: @escaping (Result<[MealEntry], Error>) -> Void) {
         guard let doc = userDoc() else {

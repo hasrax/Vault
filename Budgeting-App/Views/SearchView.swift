@@ -21,6 +21,8 @@ struct SearchView: View {
     @State private var selectedBudgetCategory: BudgetCategory? = nil
     @State private var dateFilter: DateFilter = .all
     @State private var showAdd      = false
+    @State private var showSummary = false
+    @State private var summaryMonth = Date()
 
     enum TxFilter: String, CaseIterable {
         case all     = "All"
@@ -35,6 +37,7 @@ struct SearchView: View {
         case thisMonth = "This month"
         case thisYear = "This year"
     }
+
 
     // MARK: - Computed
     private var filtered: [Transaction] {
@@ -79,6 +82,13 @@ struct SearchView: View {
 
     private var totalIncome:  Double { transactionsVM.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
     private var totalExpense: Double { transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+    private struct MonthSummary {
+        let income: Double
+        let expense: Double
+        let savingsDelta: Double
+        let remainingBudget: Double
+        let savingsTotal: Double
+    }
 
     // MARK: - Body
     var body: some View {
@@ -242,16 +252,30 @@ struct SearchView: View {
         .navigationBarHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showAdd = true
-                } label: {
-                    Image(systemName: "plus")
+                HStack(spacing: 14) {
+                    Button {
+                        showSummary = true
+                    } label: {
+                        Image(systemName: "chart.bar")
+                    }
+                    .accessibilityLabel("Monthly summary")
+
+                    Button {
+                        showAdd = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Add transaction")
                 }
-                .accessibilityLabel("Add transaction")
             }
         }
         .sheet(isPresented: $showAdd) {
             AddTransactionView()
+        }
+        .sheet(isPresented: $showSummary) {
+            NavigationStack {
+                summarySheet
+            }
         }
         .onChange(of: activeFilter) { _, newValue in
             switch newValue {
@@ -305,6 +329,77 @@ struct SearchView: View {
             return calendar.date(from: calendar.dateComponents([.year], from: now))
         }
     }
+
+    private var summarySheet: some View {
+        let summary = summaryForMonth(summaryMonth)
+        return List {
+            Section("Month") {
+                DatePicker("Month", selection: $summaryMonth, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+            }
+
+            Section("Overview") {
+                summaryRow(label: "Income", value: summary.income, color: .income)
+                summaryRow(label: "Expenses", value: summary.expense, color: .expense)
+                summaryRow(label: "Remaining budget", value: summary.remainingBudget, color: .primary)
+                summaryRow(label: "Savings (month)", value: summary.savingsDelta, color: .savingsGreen)
+                summaryRow(label: "Savings total", value: summary.savingsTotal, color: .savingsGreen)
+            }
+        }
+        .navigationTitle("Monthly Summary")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Done") { showSummary = false }
+            }
+        }
+    }
+
+    private func summaryRow(label: String, value: Double, color: Color) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Text(value.currencyRS)
+                .foregroundStyle(color)
+                .font(.system(size: 14, weight: .semibold))
+        }
+    }
+
+    private func summaryForMonth(_ date: Date) -> MonthSummary {
+        let cal = Calendar.current
+        let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: date)) ?? date
+        let nextMonth = cal.date(byAdding: .month, value: 1, to: monthStart) ?? monthStart
+
+        let monthTxs = transactionsVM.transactions.filter { $0.date >= monthStart && $0.date < nextMonth }
+        let income = monthTxs.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+        let expense = monthTxs.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+        let savingsDelta = monthTxs
+            .filter { $0.budgetCategory == .savings }
+            .reduce(0) { $0 + ($1.type == .income ? $1.amount : -$1.amount) }
+        let remainingBudget = appState.monthlyBudget - expense
+        let savingsTotal = appState.budgetHistory
+            .filter { monthStart >= monthStartForKey($0.monthKey) }
+            .map { $0.carryOverAdded }
+            .reduce(0, +) + savingsDelta
+
+        return MonthSummary(
+            income: income,
+            expense: expense,
+            savingsDelta: savingsDelta,
+            remainingBudget: remainingBudget,
+            savingsTotal: savingsTotal
+        )
+    }
+
+    private func monthStartForKey(_ key: String) -> Date {
+        let parse = DateFormatter()
+        parse.dateFormat = "yyyy-MM"
+        if let date = parse.date(from: key) {
+            return Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: date)) ?? date
+        }
+        return Date.distantPast
+    }
+
 }
 
 #Preview {

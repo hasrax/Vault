@@ -49,26 +49,26 @@ struct TransactionRow: View {
                     .fill(iconColor.opacity(0.12))
                     .frame(width: 44, height: 44)
                 Text(icon)
-                    .font(.system(size: 18))
+                    .scaledFont(size: 18)
             }
             .accessibilityHidden(true)
 
             // Title + meta
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .scaledFont(size: 15, weight: .medium)
                     .foregroundStyle(Color.primary)
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
                     Text(categoryLabel)
-                        .font(.system(size: 12, weight: .regular))
+                        .scaledFont(size: 12, weight: .regular)
                         .foregroundStyle(Color.secondary)
                     Text("•")
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12)
                         .foregroundStyle(Color.secondary)
                     Text(transaction.date, style: .date)
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12)
                         .foregroundStyle(Color.secondary)
                 }
             }
@@ -88,7 +88,7 @@ struct TransactionRow: View {
             Text(
                 "\(transaction.type == .income ? "+" : "−")\(transaction.amount.currencyRS)"
             )
-            .font(.system(size: 15, weight: .bold))
+            .scaledFont(size: 15, weight: .bold)
             .foregroundStyle(transaction.type == .income ? Color.income : Color.expense)
         }
         .padding(.vertical, 4)

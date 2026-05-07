@@ -13,14 +13,15 @@ struct QuickActionButton: View {
     let label:    String
     let accent:   Color
     let action:   () -> Void
+    @Environment(\.appHighContrast) private var appHighContrast
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Text(emoji)
-                    .font(.system(size: 24))
+                    .scaledFont(size: 24)
                 Text(label)
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(Color.primary)
             }
             .frame(maxWidth: .infinity)
@@ -32,7 +33,10 @@ struct QuickActionButton: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(accent.opacity(0.35), lineWidth: 1)
+                    .stroke(
+                        appHighContrast ? accent.opacity(0.75) : accent.opacity(0.35),
+                        lineWidth: appHighContrast ? 1.5 : 1
+                    )
             )
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }

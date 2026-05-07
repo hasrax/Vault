@@ -11,6 +11,7 @@ import SwiftUI
 /// Used in BudgetView for each of Needs / Wants / Savings.
 struct BudgetCategoryCard: View {
     let limit: BudgetLimit
+    @Environment(\.appHighContrast) private var appHighContrast
 
     var body: some View {
         VStack(spacing: 12) {
@@ -22,14 +23,14 @@ struct BudgetCategoryCard: View {
                         .fill(limit.category.color.opacity(0.12))
                         .frame(width: 42, height: 42)
                     Text(limit.category.emoji)
-                        .font(.system(size: 20))
+                        .scaledFont(size: 20)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(limit.category.rawValue)
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold)
                     Text("\(limit.spent.currencyRS) of \(limit.limit.currencyRS)")
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12)
                         .foregroundStyle(Color.secondary)
                 }
 
@@ -37,7 +38,7 @@ struct BudgetCategoryCard: View {
 
                 // Status badge
                 Text(limit.statusLabel)
-                    .font(.system(size: 11, weight: .bold))
+                    .scaledFont(size: 11, weight: .bold)
                     .foregroundStyle(limit.progressColor)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -51,11 +52,11 @@ struct BudgetCategoryCard: View {
             // Footer row
             HStack {
                 Text("\(limit.remaining.currencyRS) left")
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Color.secondary)
                 Spacer()
                 Text("\(Int(limit.progress * 100))% used")
-                    .font(.system(size: 11, weight: .bold))
+                    .scaledFont(size: 11, weight: .bold)
                     .foregroundStyle(limit.progressColor)
             }
         }
@@ -64,8 +65,10 @@ struct BudgetCategoryCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(
-                    limit.isOverBudget ? Color.expense.opacity(0.35) : Color.clear,
-                    lineWidth: 1.5
+                    limit.isOverBudget
+                        ? Color.expense.opacity(appHighContrast ? 0.6 : 0.35)
+                        : Color.clear,
+                    lineWidth: appHighContrast ? 2 : 1.5
                 )
         )
         .accessibilityElement(children: .combine)

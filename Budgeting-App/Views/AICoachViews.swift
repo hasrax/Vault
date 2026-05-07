@@ -8,6 +8,7 @@
 import SwiftUI
 import UIKit
 import FirebaseFirestore
+import CoreML
 
 // MARK: - AI Coach View
 struct AICoachView: View {
@@ -239,7 +240,141 @@ struct AICoachView: View {
             return (message, risk)
         }
 
+        if let modelTip = modelTipReply() {
+            return modelTip
+        }
+
         return ("I’m tracking your budgets and recent activity. Ask about spending, savings, or limits.", nil)
+    }
+
+    private func modelTipReply() -> (text: String, riskLevel: CoachMessage.RiskLevel?)? {
+        guard let label = predictCoachLabel() else { return nil }
+
+        switch label {
+        case "needs_over":
+            return ("Your needs spending looks above plan. Try reviewing essentials and shifting a small amount from wants.", .danger)
+        case "reduce_wants":
+            return ("Wants are running high. Consider a small cutback this week to stay on track.", .caution)
+        case "savings_low":
+            return ("Savings progress is low for this point in the month. Want a simple weekly savings target?", .caution)
+        case "upcoming_bills":
+            return ("You have several bills coming up soon. Make sure to keep a buffer in your balance.", .caution)
+        case "shift_income_tip":
+            return ("Income is a bit tight compared to expenses. If possible, an extra shift could help this week.", .safe)
+        case "good_progress":
+            return ("You’re on track this month. Keep following the plan and you should finish strong.", .safe)
+        default:
+            return nil
+        }
+    }
+
+    private func predictCoachLabel() -> String? {
+        guard let features = buildCoachFeatures() else { return nil }
+        guard let model = try? CoachModel(configuration: MLModelConfiguration()) else { return nil }
+
+        do {
+            let output = try model.prediction(
+                needs_util: features.needsUtil,
+                wants_util: features.wantsUtil,
+                savings_util: features.savingsUtil,
+                savings_progress: features.savingsProgress,
+                net_balance_ratio: features.netBalanceRatio,
+                income_expense_ratio: features.incomeExpenseRatio,
+                upcoming_bills_count: features.upcomingBillsCount,
+                upcoming_shifts_count: features.upcomingShiftsCount
+            )
+            return output.classLabel
+        } catch {
+            return nil
+        }
+    }
+
+    private struct CoachFeatures {
+        let needsUtil: Double
+        let wantsUtil: Double
+        let savingsUtil: Double
+        let savingsProgress: Double
+        let netBalanceRatio: Double
+        let incomeExpenseRatio: Double
+        let upcomingBillsCount: Double
+        let upcomingShiftsCount: Double
+    }
+
+    private func buildCoachFeatures() -> CoachFeatures? {
+        let now = Date()
+        let cal = Calendar.current
+        let monthTxs = appState.transactions.filter {
+            cal.isDate($0.date, equalTo: now, toGranularity: .month)
+        }
+
+        let income = monthTxs.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+        let expense = monthTxs.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+
+        let needsLimit = appState.monthlyBudget * (appState.needsPercent / 100)
+        let wantsLimit = appState.monthlyBudget * (appState.wantsPercent / 100)
+        let savingsLimit = appState.monthlyBudget * (appState.savingsPercent / 100)
+
+        let needsSpent = monthTxs.filter { $0.type == .expense && $0.budgetCategory == .needs }.reduce(0) { $0 + $1.amount }
+        let wantsSpent = monthTxs.filter { $0.type == .expense && $0.budgetCategory == .wants }.reduce(0) { $0 + $1.amount }
+        let savingsSpent = monthTxs.filter { $0.type == .expense && $0.budgetCategory == .savings }.reduce(0) { $0 + $1.amount }
+
+        let needsUtil = needsLimit > 0 ? needsSpent / needsLimit : 0
+        let wantsUtil = wantsLimit > 0 ? wantsSpent / wantsLimit : 0
+        let savingsUtil = savingsLimit > 0 ? savingsSpent / savingsLimit : 0
+
+        let savingsProgress: Double = {
+            let goals = appState.savingsGoals
+            guard !goals.isEmpty else { return 0 }
+            let avg = goals.map { $0.progress }.reduce(0, +) / Double(goals.count)
+            return max(0, min(avg, 1))
+        }()
+
+        let netBalanceRatio = appState.monthlyBudget > 0 ? (income - expense) / appState.monthlyBudget : 0
+        let incomeExpenseRatio = expense > 0 ? income / expense : (income > 0 ? 2.0 : 0)
+
+        let upcomingBillsCount = Double(upcomingBillsCount(from: now))
+        let upcomingShiftsCount = Double(upcomingShiftsCount(from: now))
+
+        return CoachFeatures(
+            needsUtil: needsUtil,
+            wantsUtil: wantsUtil,
+            savingsUtil: savingsUtil,
+            savingsProgress: savingsProgress,
+            netBalanceRatio: netBalanceRatio,
+            incomeExpenseRatio: incomeExpenseRatio,
+            upcomingBillsCount: upcomingBillsCount,
+            upcomingShiftsCount: upcomingShiftsCount
+        )
+    }
+
+    private func upcomingBillsCount(from date: Date) -> Int {
+        let cal = Calendar.current
+        let end = cal.date(byAdding: .day, value: 30, to: date) ?? date
+        return appState.importantDates.filter {
+            $0.type == .bill && $0.date >= date && $0.date <= end
+        }.count
+    }
+
+    private func upcomingShiftsCount(from date: Date) -> Int {
+        let cal = Calendar.current
+        let end = cal.date(byAdding: .day, value: 30, to: date) ?? date
+        return appState.workShifts.compactMap { parseShiftDate($0.date) }
+            .filter { $0 >= cal.startOfDay(for: date) && $0 <= end }
+            .count
+    }
+
+    private func parseShiftDate(_ dateString: String) -> Date? {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        if let parsed = fmt.date(from: dateString) {
+            let cal = Calendar.current
+            let comps = cal.dateComponents([.month, .day], from: parsed)
+            let year = cal.component(.year, from: Date())
+            return cal.date(from: DateComponents(year: year, month: comps.month, day: comps.day))
+        }
+        let fmtAlt = DateFormatter()
+        fmtAlt.dateFormat = "MMM yyyy"
+        return fmtAlt.date(from: dateString)
     }
 
     private func riskLevel(for percent: Double) -> CoachMessage.RiskLevel {

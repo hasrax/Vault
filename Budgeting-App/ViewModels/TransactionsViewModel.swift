@@ -27,8 +27,15 @@ final class TransactionsViewModel: ObservableObject {
         TransactionService.fetchTransactions { result in
             DispatchQueue.main.async {
                 if case let .success(items) = result {
-                    self.transactions = items
-                    CoreDataCache.shared.replaceTransactions(items, ownerId: uid)
+                    let cached = CoreDataCache.shared.fetchTransactions(ownerId: uid)
+                    let remoteIds = Set(items.map { $0.id })
+                    let missing = cached.filter { !remoteIds.contains($0.id) }
+                    if !missing.isEmpty {
+                        missing.forEach { TransactionService.addTransaction($0) }
+                    }
+                    let merged = (items + missing).sorted { $0.date > $1.date }
+                    self.transactions = merged
+                    CoreDataCache.shared.replaceTransactions(merged, ownerId: uid)
                 }
             }
         }

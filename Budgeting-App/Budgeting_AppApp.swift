@@ -342,10 +342,8 @@ class AppState: ObservableObject {
             let calendar = Calendar.current
             let now = Date()
             let lastMonth = calendar.date(byAdding: .month, value: -1, to: now) ?? now
-            let pastExpenses = transactions.filter {
-                $0.type == .expense && $0.date < calendar.startOfDay(for: now)
-            }
-            guard let firstDate = pastExpenses.map({ $0.date }).min() else { return }
+            let pastTransactions = transactions.filter { $0.date < calendar.startOfDay(for: now) }
+            guard let firstDate = pastTransactions.map({ $0.date }).min() else { return }
             let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: firstDate)) ?? firstDate
             let endMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: lastMonth)) ?? lastMonth
             guard startMonth <= endMonth else { return }
@@ -356,8 +354,8 @@ class AppState: ObservableObject {
 
             while monthCursor <= endMonth {
                 let monthKeyValue = monthKey(for: monthCursor)
-                let monthExpenses = pastExpenses.filter {
-                    calendar.isDate($0.date, equalTo: monthCursor, toGranularity: .month)
+                let monthExpenses = pastTransactions.filter {
+                    $0.type == .expense && calendar.isDate($0.date, equalTo: monthCursor, toGranularity: .month)
                 }
 
                 let needsSpent = monthExpenses
@@ -1238,27 +1236,42 @@ struct RootView: View {
         guard let uid = authVM.currentUser?.id else { return }
 
         for bill in splitBillsVM.splitBills {
-            if let me = bill.participants.first(where: { $0.userId == uid }), me.status == .invited {
-                NotificationService.sendLocalNotificationIfNeeded(
-                    key: "split_invited_\(bill.id)",
-                    title: "Split bill request",
-                    body: "You were invited to split \(bill.title).",
-                    type: .planner
-                )
-            }
+            for participant in bill.participants {
+                let key = splitStatusKey(uid: uid, billId: bill.id, participantId: participant.userId)
+                let lastStatus = UserDefaults.standard.string(forKey: key)
+                if lastStatus == participant.status.rawValue { continue }
 
-            if bill.createdBy == uid {
-                let anyPaid = bill.participants.contains { !$0.isCreator && $0.status == .paid }
-                if anyPaid {
-                    NotificationService.sendLocalNotificationIfNeeded(
-                        key: "split_paid_\(bill.id)",
-                        title: "Split bill paid",
-                        body: "Someone paid their share for \(bill.title).",
+                if participant.userId == uid, participant.status == .invited {
+                    NotificationService.sendLocalNotification(
+                        title: "Split bill request",
+                        body: "You were invited to split \(bill.title).",
                         type: .planner
                     )
                 }
+
+                if bill.createdBy == uid, !participant.isCreator {
+                    if participant.status == .accepted {
+                        NotificationService.sendLocalNotification(
+                            title: "Split accepted",
+                            body: "\(participant.name) accepted the split for \(bill.title).",
+                            type: .planner
+                        )
+                    } else if participant.status == .paid {
+                        NotificationService.sendLocalNotification(
+                            title: "Split bill paid",
+                            body: "\(participant.name) paid their share for \(bill.title).",
+                            type: .planner
+                        )
+                    }
+                }
+
+                UserDefaults.standard.set(participant.status.rawValue, forKey: key)
             }
         }
+    }
+
+    private func splitStatusKey(uid: String, billId: UUID, participantId: String) -> String {
+        "split_status_\(uid)_\(billId.uuidString)_\(participantId)"
     }
 
     private func sendSavingsNotifications() {
@@ -1324,21 +1337,25 @@ struct RootView: View {
     }
 
     private func updateWidgetSnapshot() {
-        let income = transactionsVM.transactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
-        let expense = transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+        let cal = Calendar.current
+        let monthTxs = transactionsVM.transactions.filter {
+            cal.isDate($0.date, equalTo: Date(), toGranularity: .month)
+        }
+        let income = monthTxs.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+        let expense = monthTxs.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
         let balance = appState.monthlyBudget + income - expense
 
         let needsLimit = appState.monthlyBudget * (appState.needsPercent / 100)
         let wantsLimit = appState.monthlyBudget * (appState.wantsPercent / 100)
         let savingsLimit = appState.monthlyBudget * (appState.savingsPercent / 100)
 
-        let needsSpent = transactionsVM.transactions
+        let needsSpent = monthTxs
             .filter { $0.type == .expense && $0.budgetCategory == .needs }
             .reduce(0) { $0 + $1.amount }
-        let wantsSpent = transactionsVM.transactions
+        let wantsSpent = monthTxs
             .filter { $0.type == .expense && $0.budgetCategory == .wants }
             .reduce(0) { $0 + $1.amount }
-        let savingsSpent = transactionsVM.transactions
+        let savingsSpent = monthTxs
             .filter { $0.type == .expense && $0.budgetCategory == .savings }
             .reduce(0) { $0 + $1.amount }
 
@@ -1688,7 +1705,6 @@ private struct SplitBillChangeModifier: ViewModifier {
             .onChange(of: splitBillsVM.splitBills) { _, _ in
                 if !didHandle {
                     didHandle = true
-                    onSplitBillChange()
                     return
                 }
                 onSplitBillChange()
