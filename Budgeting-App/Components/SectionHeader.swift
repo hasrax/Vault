@@ -16,13 +16,13 @@ struct SectionHeader: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.system(size: 18, weight: .semibold))
+                .scaledFont(size: 18, weight: .semibold)
                 .foregroundStyle(.primary)
             Spacer()
             if let label = actionLabel {
                 Button(action: action ?? {}) {
                     Text(label)
-                        .font(.subheadline)
+                        .scaledFont(size: 14, weight: .semibold, relativeTo: .subheadline)
                         .foregroundStyle(Color.uniBlue)
                 }
             }

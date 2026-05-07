@@ -11,13 +11,14 @@ import SwiftUI
 /// Used in NotificationsView.
 struct NotificationCard: View {
     let notification: AppNotification
+    @Environment(\.appHighContrast) private var appHighContrast
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 // Type chip
                 Text(notification.type.rawValue.capitalized)
-                    .font(.system(size: 11, weight: .bold))
+                    .scaledFont(size: 11, weight: .bold)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -33,21 +34,25 @@ struct NotificationCard: View {
                 Spacer()
 
                 Text(NotificationStore.relativeTimeString(from: notification.createdAt))
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(.secondary)
             }
 
             Text(notification.title)
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(size: 15, weight: .semibold)
 
             Text(notification.message)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
         .lightCard()
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(appHighContrast ? 0.12 : 0), lineWidth: appHighContrast ? 1 : 0)
+        )
         .opacity(notification.isRead ? 0.85 : 1.0)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(notification.type.rawValue) notification: \(notification.title). \(notification.message). \(NotificationStore.relativeTimeString(from: notification.createdAt)).")

@@ -228,6 +228,34 @@ extension View {
     func appBackground() -> some View        { modifier(AppBackgroundModifier()) }
 }
 
+// MARK: - Scaled Font Modifier
+struct ScaledFontModifier: ViewModifier {
+    @ScaledMetric private var scaledSize: CGFloat
+    let weight: Font.Weight
+    let design: Font.Design
+
+    init(size: CGFloat, weight: Font.Weight, design: Font.Design, relativeTo: Font.TextStyle) {
+        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: relativeTo)
+        self.weight = weight
+        self.design = design
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: scaledSize, weight: weight, design: design))
+    }
+}
+
+extension View {
+    func scaledFont(
+        size: CGFloat,
+        weight: Font.Weight = .regular,
+        design: Font.Design = .default,
+        relativeTo: Font.TextStyle = .body
+    ) -> some View {
+        modifier(ScaledFontModifier(size: size, weight: weight, design: design, relativeTo: relativeTo))
+    }
+}
+
 // MARK: - Status Bar Style
 struct AppStatusBarStyleSetter: UIViewControllerRepresentable {
     var style: UIStatusBarStyle
