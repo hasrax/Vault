@@ -105,7 +105,7 @@ struct SearchView: View {
                 }
 
                 Text("History")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .scaledFont(size: 32, weight: .bold, design: .rounded)
                     .padding(.horizontal, 20)
                     .padding(.top, showBack ? 16 : 8)
                     .padding(.bottom, 14)
@@ -155,9 +155,9 @@ struct SearchView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Text(categoryLabel)
-                                .font(.system(size: 12, weight: .medium))
+                                .scaledFont(size: 12, weight: .medium)
                             Image(systemName: "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
+                                .scaledFont(size: 11, weight: .semibold)
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
@@ -172,9 +172,9 @@ struct SearchView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Text(dateFilter.rawValue)
-                                .font(.system(size: 12, weight: .medium))
+                                .scaledFont(size: 12, weight: .medium)
                             Image(systemName: "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
+                                .scaledFont(size: 11, weight: .semibold)
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
@@ -204,9 +204,9 @@ struct SearchView: View {
             if filtered.isEmpty {
                 Spacer()
                 VStack(spacing: 14) {
-                    Text("🔍").font(.system(size: 48))
+                    Text("🔍").scaledFont(size: 48)
                     Text("No transactions found")
-                        .font(.system(size: 17, weight: .medium))
+                        .scaledFont(size: 17, weight: .medium)
                     Text("Try adjusting your search or filters")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -233,7 +233,7 @@ struct SearchView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
                             } header: {
                                 Text(group.date)
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .scaledFont(size: 13, weight: .semibold)
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 20)
@@ -294,10 +294,10 @@ struct SearchView: View {
     private func summaryCard(label: String, amount: Double, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(label)
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(.secondary)
             Text(amount.currencyRS)
-                .font(.system(size: 18, weight: .bold))
+                .scaledFont(size: 18, weight: .bold)
                 .foregroundStyle(color)
                 .minimumScaleFactor(0.7)
         }
@@ -362,7 +362,7 @@ struct SearchView: View {
             Spacer()
             Text(value.currencyRS)
                 .foregroundStyle(color)
-                .font(.system(size: 14, weight: .semibold))
+                .scaledFont(size: 14, weight: .semibold)
         }
     }
 

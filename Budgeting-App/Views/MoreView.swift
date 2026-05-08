@@ -39,12 +39,12 @@ struct MoreView: View {
                             .clipShape(RoundedCorner(radius: 28, corners: [.bottomLeft, .bottomRight]))
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Vault")
-                                .font(.system(size: 13, weight: .semibold))
+                                .scaledFont(size: 13, weight: .semibold)
                                 .foregroundStyle(.white.opacity(0.5))
                                 .textCase(.uppercase)
                                 .tracking(0.5)
                             Text("More Features")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .scaledFont(size: 28, weight: .bold, design: .rounded)
                                 .foregroundStyle(.white)
                             Text("All your campus life tools")
                                 .font(.subheadline)
@@ -72,9 +72,9 @@ struct MoreView: View {
                         Text("🎓").font(.system(size: 32))
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Student Life Hub")
-                                .font(.system(size: 15, weight: .semibold))
+                                .scaledFont(size: 15, weight: .semibold)
                             Text("6 tools to help manage university life")
-                                .font(.caption1)
+                                .caption1()
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -116,20 +116,19 @@ struct MoreView: View {
             // Gradient icon circle
             ZStack {
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(feature.gradient)
                     .frame(width: 52, height: 52)
-                Text(feature.emoji).font(.system(size: 24))
+                Text(feature.emoji).scaledFont(size: 24)
             }
 
             Spacer()
 
             Text(feature.title)
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(size: 15, weight: .semibold)
                 .foregroundStyle(.primary)
                 .lineLimit(1)
 
             Text(feature.subtitle)
-                .font(.caption1)
+                .caption1()
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
@@ -137,7 +136,7 @@ struct MoreView: View {
             HStack {
                 Spacer()
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(.secondary)
             }
         }

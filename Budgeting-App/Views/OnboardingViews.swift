@@ -133,7 +133,7 @@ struct WelcomeView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(title).scaledFont(size: 15, weight: .semibold, relativeTo: .headline).foregroundStyle(Color.primary)
-                                Text(desc).font(.caption1).foregroundStyle(Color.secondary)
+                                Text(desc).caption1().foregroundStyle(Color.secondary)
                             }
                             Spacer()
                         }

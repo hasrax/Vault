@@ -101,7 +101,7 @@ struct AddTransactionView: View {
     private var scanReceiptButton: some View {
         Button { showReceiptScanner = true } label: {
             Label("Scan Receipt", systemImage: "camera.viewfinder")
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(size: 15, weight: .semibold)
                 .foregroundStyle(Color.uniBlue)
                 .frame(maxWidth: .infinity).frame(height: 52)
                 .background(Color.clear)
@@ -125,7 +125,7 @@ struct AddTransactionView: View {
                     let isExpense  = t == .expense
                     let color      = isExpense ? Color.expense : Color.income
                     Text(isExpense ? "Expense" : "Income")
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold)
                         .foregroundStyle(color)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
@@ -149,7 +149,7 @@ struct AddTransactionView: View {
     private var amountSection: some View {
         VStack(spacing: 6) {
             Text("Amount")
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium)
                 .foregroundStyle(Color.secondary)
             AmountInput(
                 text: $amountText,
@@ -170,7 +170,7 @@ struct AddTransactionView: View {
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Budget Bucket")
-                .font(.system(size: 14, weight: .semibold))
+                .scaledFont(size: 14, weight: .semibold)
                 .foregroundStyle(Color.primary)
 
             // Needs / Wants / Savings buckets (for expense and income)
@@ -201,8 +201,8 @@ struct AddTransactionView: View {
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                Text(emoji).font(.system(size: 13))
-                Text(label).font(.system(size: 12, weight: .medium))
+                Text(emoji).scaledFont(size: 13)
+                Text(label).scaledFont(size: 12, weight: .medium)
             }
             .foregroundStyle(isSelected ? Color.white : Color.primary)
             .padding(.horizontal, 10)
@@ -234,7 +234,7 @@ struct AddTransactionView: View {
             // Date picker styled to match
             VStack(alignment: .leading, spacing: 6) {
                 Text("Date")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.secondary)
                 DatePicker("", selection: $date, displayedComponents: .date)
                     .datePickerStyle(.compact)
@@ -258,7 +258,7 @@ struct AddTransactionView: View {
                     Image(systemName: "paperclip")
                         .foregroundStyle(Color.uniBlue)
                     Text("Receipt attached")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium)
                         .foregroundStyle(Color.secondary)
                     Spacer()
                 }

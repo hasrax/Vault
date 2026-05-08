@@ -157,13 +157,13 @@ struct HomeView: View {
                         .buttonStyle(.plain)
                         let displayName = appState.currentUser?.name ?? MockData.userName
                         Text("Hi, \(displayName)!")
-                            .font(.system(size: 15, weight: .semibold))
+                            .scaledFont(size: 15, weight: .semibold)
                             .foregroundStyle(Color.white)
                     }
                     Spacer()
                     Button { showNotifications = true } label: {
                         Image(systemName: "bell.fill")
-                            .font(.system(size: 16))
+                            .scaledFont(size: 16)
                             .foregroundStyle(Color.white)
                             .frame(width: 40, height: 40)
                             .background(Color.white.opacity(0.1))
@@ -177,14 +177,14 @@ struct HomeView: View {
                 // Balance
                 VStack(spacing: 6) {
                     Text("Monthly Budget")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium)
                         .foregroundStyle(Color.white.opacity(0.5))
                     Text(balance.currencyRS)
-                        .font(.system(size: 40, weight: .bold, design: .rounded))
+                        .scaledFont(size: 40, weight: .bold, design: .rounded)
                         .foregroundStyle(Color.white)
                     TimelineView(.periodic(from: Date(), by: 60)) { context in
                         Text(receivedText(at: context.date))
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .foregroundStyle(Color.white.opacity(0.4))
                     }
                 }
@@ -194,19 +194,19 @@ struct HomeView: View {
                 HStack(spacing: 32) {
                     VStack(spacing: 3) {
                         Text("Income")
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalIncome.currencyRS)
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold)
                             .foregroundStyle(Color.income)
                     }
                     Rectangle().fill(Color.white.opacity(0.15)).frame(width: 1, height: 32)
                     VStack(spacing: 3) {
                         Text("Spent")
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalExpense.currencyRS)
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold)
                             .foregroundStyle(Color.expense)
                     }
                 }
@@ -214,7 +214,7 @@ struct HomeView: View {
 
                 // Donut chart + legend
                 Text("Budget Allocation")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.white.opacity(0.4))
                     .padding(.top, 24)
 
@@ -236,10 +236,10 @@ struct HomeView: View {
                                 Circle().fill(cat.color).frame(width: 8, height: 8)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(cat.rawValue)
-                                        .font(.system(size: 11))
+                                        .scaledFont(size: 11)
                                         .foregroundStyle(Color.white.opacity(0.5))
                                     Text(allocationAmount(for: cat).shortCurrency)
-                                        .font(.system(size: 12, weight: .bold))
+                                        .scaledFont(size: 12, weight: .bold)
                                         .foregroundStyle(Color.white)
                                 }
                             }
@@ -255,7 +255,7 @@ struct HomeView: View {
                             withAnimation(.spring(duration: 0.3)) { activeCategory = cat }
                         } label: {
                             Text(cat.rawValue)
-                                .font(.system(size: 14, weight: activeCategory == cat ? .semibold : .regular))
+                                .scaledFont(size: 14, weight: activeCategory == cat ? .semibold : .regular)
                                 .foregroundStyle(activeCategory == cat ? Color.white : Color.white.opacity(0.4))
                                 .padding(.horizontal, 16).padding(.vertical, 8)
                                 .background(activeCategory == cat ? cat.color : Color.clear)
@@ -296,7 +296,7 @@ struct HomeView: View {
                 ZStack {
                     Color.white.opacity(0.12)
                     Text(MockData.userAvatar)
-                        .font(.system(size: 22))
+                        .scaledFont(size: 22)
                 }
             }
         }
@@ -313,27 +313,27 @@ struct HomeView: View {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(activeCategory.color.opacity(0.12))
                             .frame(width: 40, height: 40)
-                        Text(activeCategory.emoji).font(.system(size: 18))
+                        Text(activeCategory.emoji).scaledFont(size: 18)
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(activeCategory.rawValue)
-                            .font(.system(size: 15, weight: .semibold))
+                            .scaledFont(size: 15, weight: .semibold)
                         Text(activeCategory.subtitle)
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .foregroundStyle(Color.secondary)
                     }
                     Spacer()
                     Text(limit.limit.currencyRS)
-                        .font(.system(size: 17, weight: .bold))
+                        .scaledFont(size: 17, weight: .bold)
                 }
                 UniProgressBar(progress: limit.progress, color: limit.progressColor)
                 HStack {
                     Text("\(limit.remaining.currencyRS) left")
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12)
                         .foregroundStyle(Color.secondary)
                     Spacer()
                     Text("\(Int(limit.progress * 100))% used")
-                        .font(.system(size: 11, weight: .bold))
+                        .scaledFont(size: 11, weight: .bold)
                         .foregroundStyle(limit.progressColor)
                 }
             }
@@ -372,13 +372,13 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Add transaction")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.secondary)
                     .textCase(.uppercase)
                 Text("Log expense or income")
-                    .font(.system(size: 18, weight: .bold))
+                    .scaledFont(size: 18, weight: .bold)
                 Text("Capture rupees right away so budgets stay accurate.")
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Color.secondary)
             }
             HStack(spacing: 12) {
@@ -387,7 +387,7 @@ struct HomeView: View {
                     showAddTransaction = true
                 } label: {
                     Label("Expense", systemImage: "minus.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(Color.expense)
                         .frame(maxWidth: .infinity).frame(height: 44)
                         .background(Color.expense.opacity(0.16))
@@ -402,7 +402,7 @@ struct HomeView: View {
                     showAddTransaction = true
                 } label: {
                     Label("Income", systemImage: "plus.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(Color.income)
                         .frame(maxWidth: .infinity).frame(height: 44)
                         .background(Color.income.opacity(0.16))
