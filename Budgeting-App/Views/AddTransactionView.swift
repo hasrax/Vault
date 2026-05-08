@@ -246,6 +246,8 @@ struct AddTransactionView: View {
                             .stroke(Color.black.opacity(0.06), lineWidth: 1)
                     )
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Transaction Date: \(date.formatted(date: .long, time: .omitted))")
 
             DarkTextField(
                 label:       "Note (optional)",

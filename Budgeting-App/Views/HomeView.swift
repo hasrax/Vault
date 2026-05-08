@@ -86,55 +86,69 @@ struct HomeView: View {
         return "Received \(received) · \(leftText)"
     }
 
+    private var homeSummary: String {
+        let name = appState.currentUser?.name ?? MockData.userName
+        var summary = "Hi \(name). Your monthly budget balance is \(balance.currencyRS). "
+        summary += "This month you have received \(totalIncome.currencyRS) and spent \(totalExpense.currencyRS). "
+        if let limit = currentLimit {
+            summary += "Your \(activeCategory.rawValue) budget is \(Int(limit.progress * 100)) percent used, with \(limit.remaining.currencyRS) remaining."
+        }
+        return summary
+    }
+
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    darkHeader
-                    glassOverlapCard
-                    contentSection
+        ZStack {
+            NavigationStack {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        darkHeader
+                        glassOverlapCard
+                        contentSection
+                    }
+                }
+                .ignoresSafeArea(edges: .top)
+                .background(Color(UIColor.systemGroupedBackground))
+                // Sheets
+                .sheet(isPresented: $showAddTransaction) {
+                    AddTransactionView(prefillType: addTransactionType)
+                }
+                .sheet(isPresented: $showNotifications) {
+                    NotificationsView()
+                }
+                // Navigation destinations
+                .navigationDestination(isPresented: $showSearch) {
+                    SearchView(showBack: true)
+                }
+                .navigationDestination(isPresented: $showBudget) {
+                    BudgetView()
+                }
+                .navigationDestination(isPresented: $showPlanner) {
+                    PlannerView()
+                }
+                .navigationDestination(isPresented: $showSemesterPlanner) {
+                    SemesterPlannerView()
+                }
+                .navigationDestination(isPresented: $showWorkSchedule) {
+                    WorkScheduleView()
+                }
+                .navigationDestination(isPresented: $showSplitBill) {
+                    SplitBillView()
+                }
+                .navigationDestination(isPresented: $showMealPlan) {
+                    MealPlanView()
+                }
+                .navigationDestination(isPresented: $showSavings) {
+                    SavingsView()
+                }
+                .navigationDestination(isPresented: $showAnalytics) {
+                    AnalyticsView()
+                }
+                .navigationDestination(isPresented: $showProfile) {
+                    ProfileView()
                 }
             }
-            .ignoresSafeArea(edges: .top)
-            .background(Color(UIColor.systemGroupedBackground))
-            // Sheets
-            .sheet(isPresented: $showAddTransaction) {
-                AddTransactionView(prefillType: addTransactionType)
-            }
-            .sheet(isPresented: $showNotifications) {
-                NotificationsView()
-            }
-            // Navigation destinations
-            .navigationDestination(isPresented: $showSearch) {
-                SearchView(showBack: true)
-            }
-            .navigationDestination(isPresented: $showBudget) {
-                BudgetView()
-            }
-            .navigationDestination(isPresented: $showPlanner) {
-                PlannerView()
-            }
-            .navigationDestination(isPresented: $showSemesterPlanner) {
-                SemesterPlannerView()
-            }
-            .navigationDestination(isPresented: $showWorkSchedule) {
-                WorkScheduleView()
-            }
-            .navigationDestination(isPresented: $showSplitBill) {
-                SplitBillView()
-            }
-            .navigationDestination(isPresented: $showMealPlan) {
-                MealPlanView()
-            }
-            .navigationDestination(isPresented: $showSavings) {
-                SavingsView()
-            }
-            .navigationDestination(isPresented: $showAnalytics) {
-                AnalyticsView()
-            }
-            .navigationDestination(isPresented: $showProfile) {
-                ProfileView()
-            }
+            
+            FloatingSpeakButton(textToSpeak: homeSummary)
         }
     }
 
@@ -155,11 +169,15 @@ struct HomeView: View {
                             profileAvatar
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Profile settings")
+                        
                         let displayName = appState.currentUser?.name ?? MockData.userName
                         Text("Hi, \(displayName)!")
                             .scaledFont(size: 15, weight: .semibold)
                             .foregroundStyle(Color.white)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Hi, \(appState.currentUser?.name ?? MockData.userName). Profile settings")
                     Spacer()
                     Button { showNotifications = true } label: {
                         Image(systemName: "bell.fill")
@@ -189,6 +207,8 @@ struct HomeView: View {
                     }
                 }
                 .padding(.top, 24)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Monthly Budget Balance: \(balance.currencyRS). \(receivedText(at: Date()))")
 
                 // Income / Expense row
                 HStack(spacing: 32) {
@@ -200,6 +220,8 @@ struct HomeView: View {
                             .scaledFont(size: 14, weight: .semibold)
                             .foregroundStyle(Color.income)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Total Income: \(totalIncome.currencyRS)")
                     Rectangle().fill(Color.white.opacity(0.15)).frame(width: 1, height: 32)
                     VStack(spacing: 3) {
                         Text("Spent")
@@ -209,6 +231,8 @@ struct HomeView: View {
                             .scaledFont(size: 14, weight: .semibold)
                             .foregroundStyle(Color.expense)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Total Spent: \(totalExpense.currencyRS)")
                 }
                 .padding(.top, 16)
 
@@ -243,6 +267,8 @@ struct HomeView: View {
                                         .foregroundStyle(Color.white)
                                 }
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(cat.rawValue) allocation: \(allocationAmount(for: cat).shortCurrency)")
                         }
                     }
                 }
@@ -339,6 +365,8 @@ struct HomeView: View {
             }
         }
         .padding(16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(currentLimit != nil ? "\(activeCategory.rawValue) budget: \(currentLimit!.limit.currencyRS). \(currentLimit!.remaining.currencyRS) left. \(Int(currentLimit!.progress * 100)) percent used." : "")
         .background(Color(UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.10), radius: 12, y: 4)
