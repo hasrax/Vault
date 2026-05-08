@@ -19,3 +19,7 @@ GoogleService-Info.plist
 # Sensitive
 Secrets.swift
 APIKeys.swift
+
+# Python virtual environment
+ml/.venv/
+
