@@ -342,11 +342,18 @@ struct ProfileView: View {
 
     private var profileAvatar: some View {
         Group {
-            if let urlStr = appState.currentUser?.photoURL,
-               let url = URL(string: urlStr) {
+            if let base64 = appState.currentUser?.photoBase64,
+               let data = Data(base64Encoded: base64),
+               let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else if let urlStr = appState.currentUser?.photoURL,
+                      let url = URL(string: urlStr) {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let image): image.resizable().scaledToFill()
+                    case .success(let image):
+                        image.resizable().scaledToFill()
                     default:
                         Circle().fill(LinearGradient.primaryGrad)
                             .overlay(Text(MockData.userAvatar).scaledFont(size: 28))
