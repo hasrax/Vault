@@ -56,7 +56,7 @@ struct CanIAffordSheet: View {
                     Section {
                         VStack(spacing: 12) {
                             Image(systemName: r.icon)
-                                .font(.system(size: 44))
+                                .scaledFont(size: 44, relativeTo: .body)
                                 .foregroundStyle(r.color)
                             Text(r.message)
                                 .font(.subheadline)

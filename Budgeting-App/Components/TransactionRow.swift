@@ -94,8 +94,9 @@ struct TransactionRow: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(transaction.name), \(categoryLabel), \(transaction.type == .income ? "income" : "expense") \(transaction.amount.currencyRS)"
+            "\(transaction.name), \(categoryLabel), \(transaction.type == .income ? "income" : "expense") \(transaction.amount.currencyRS), \(transaction.date.formatted(date: .abbreviated, time: .omitted))"
         )
+        .accessibilityHint(receiptThumbnail != nil ? "Double tap to view receipt" : "")
         .sheet(isPresented: $showReceipt) {
             ReceiptPreview(
                 image: receiptImage,

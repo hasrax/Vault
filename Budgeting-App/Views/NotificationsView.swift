@@ -47,7 +47,7 @@ struct NotificationsView: View {
 
                     if filteredItems.isEmpty {
                         Text("No notifications yet")
-                            .font(.system(size: 14, weight: .medium))
+                            .scaledFont(size: 14, weight: .medium)
                             .foregroundStyle(.secondary)
                             .padding(.vertical, 24)
                     } else {
@@ -96,26 +96,26 @@ private struct NotificationDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(notification.title)
-                .font(.system(size: 20, weight: .bold))
+                .scaledFont(size: 20, weight: .bold)
 
             Text(notification.message)
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .foregroundStyle(Color.secondary)
 
             HStack(spacing: 8) {
                 Text("Type:")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.secondary)
                 Text(notification.type.rawValue.capitalized)
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
             }
 
             HStack(spacing: 8) {
                 Text("Time:")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.secondary)
                 Text(NotificationStore.absoluteTimeString(from: notification.createdAt))
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
             }
 
             Spacer()

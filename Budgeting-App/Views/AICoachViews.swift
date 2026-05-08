@@ -56,7 +56,7 @@ struct AICoachView: View {
 
             HStack(alignment: .center) {
                 Text("AI Coach")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .scaledFont(size: 34, weight: .bold, design: .rounded, relativeTo: .largeTitle)
                     .foregroundStyle(Color.white)
                 Spacer()
                 Button {
@@ -67,7 +67,7 @@ struct AICoachView: View {
                             .fill(Color.white)
                             .frame(width: 42, height: 42)
                         Image(systemName: "questionmark")
-                            .font(.system(size: 17, weight: .bold))
+                            .scaledFont(size: 17, weight: .bold, relativeTo: .title3)
                             .foregroundStyle(Color.uniBlue)
                     }
                 }
@@ -150,7 +150,7 @@ struct AICoachView: View {
 
             VStack(alignment: message.isFromUser ? .trailing : .leading, spacing: 6) {
                 Text(message.text)
-                    .font(.system(size: 14, weight: .medium))
+                    .scaledFont(size: 14, weight: .medium, relativeTo: .body)
                     .foregroundStyle(message.isFromUser ? .white : Color.primary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
@@ -160,9 +160,9 @@ struct AICoachView: View {
                 if !message.isFromUser, let risk = message.riskLevel {
                     HStack(spacing: 6) {
                         Image(systemName: risk.icon)
-                            .font(.system(size: 12, weight: .semibold))
+                            .scaledFont(size: 12, weight: .semibold, relativeTo: .caption)
                         Text(risk.label)
-                            .font(.system(size: 12, weight: .semibold))
+                            .scaledFont(size: 12, weight: .semibold, relativeTo: .caption)
                     }
                     .foregroundStyle(risk.color)
                 }
@@ -178,14 +178,14 @@ struct AICoachView: View {
         HStack(spacing: 10) {
             TextField("Ask about your budget...", text: $inputText, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 15))
+                .scaledFont(size: 15, relativeTo: .body)
                 .lineLimit(1...4)
 
             Button {
                 sendMessage()
             } label: {
                 Image(systemName: "paperplane.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(size: 15, weight: .semibold, relativeTo: .body)
                     .foregroundStyle(.white)
                     .padding(10)
                     .background(Color.uniBlue)

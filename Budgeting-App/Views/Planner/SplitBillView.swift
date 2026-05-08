@@ -65,7 +65,7 @@ struct SplitBillView: View {
     private var amountInputSection: some View {
         VStack(spacing: 8) {
             Text("Total Amount")
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                 .foregroundStyle(Color.secondary)
             AmountInput(text: $amountText, accentColor: Color.uniBlue)
         }
@@ -87,7 +87,7 @@ struct SplitBillView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("What's this for?")
-                        .font(.system(size: 14, weight: .medium))
+                        .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.primary)
                     TextField("e.g. Dinner, Rent, Utilities", text: $description)
                         .foregroundStyle(Color.primary)
@@ -101,7 +101,7 @@ struct SplitBillView: View {
                 // Split method + preview
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Split Method")
-                        .font(.system(size: 14, weight: .medium))
+                        .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.primary)
                     HStack(spacing: 10) {
                         ForEach(splitOptions, id: \.id) { option in
@@ -109,9 +109,9 @@ struct SplitBillView: View {
                                 splitMethod = option.id
                             } label: {
                                 VStack(spacing: 6) {
-                                    Text(option.emoji).font(.system(size: 22))
+                                    Text(option.emoji).scaledFont(size: 22, relativeTo: .body)
                                     Text(option.label)
-                                        .font(.system(size: 11, weight: .medium))
+                                        .scaledFont(size: 11, weight: .medium, relativeTo: .headline)
                                         .foregroundStyle(splitMethod == option.id ? Color.uniBlue : Color.secondary)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -127,17 +127,17 @@ struct SplitBillView: View {
                     if amount > 0 && totalPeople > 0 {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Split preview")
-                                .font(.system(size: 12, weight: .medium))
+                                .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                                 .foregroundStyle(Color.secondary)
                             Text("Each pays \(currentUserShare.currencyRS)")
-                                .font(.system(size: 16, weight: .semibold))
+                                .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                                 .foregroundStyle(Color.uniBlue)
                             Text("Split between \(totalPeople) people")
-                                .font(.system(size: 11, weight: .medium))
+                                .scaledFont(size: 11, weight: .medium, relativeTo: .headline)
                                 .foregroundStyle(Color.secondary)
                             if splitMethod == "custom" {
                                 Text("Custom total: \(customTotal.currencyRS)")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .scaledFont(size: 11, weight: .medium, relativeTo: .headline)
                                     .foregroundStyle(customTotal == amount ? Color.income : Color.secondary)
                             }
                         }
@@ -153,7 +153,7 @@ struct SplitBillView: View {
                 // People selection
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Split with")
-                        .font(.system(size: 14, weight: .medium))
+                        .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.primary)
 
                     HStack(spacing: 8) {
@@ -180,11 +180,11 @@ struct SplitBillView: View {
 
                     if isSearching {
                         Text("Searching...")
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                             .foregroundStyle(Color.secondary)
                     } else if !searchError.isEmpty {
                         Text(searchError)
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                             .foregroundStyle(Color.expense)
                     }
 
@@ -201,15 +201,15 @@ struct SplitBillView: View {
                                         Circle().fill(Color.uniBlue.opacity(0.2)).frame(width: 34, height: 34)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(user.name)
-                                                .font(.system(size: 14, weight: .medium))
+                                                .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
                                                 .foregroundStyle(Color.primary)
                                             Text(user.email)
-                                                .font(.system(size: 11))
+                                                .scaledFont(size: 11, relativeTo: .body)
                                                 .foregroundStyle(Color.secondary)
                                         }
                                         Spacer()
                                         Text("Add")
-                                            .font(.system(size: 12, weight: .bold))
+                                            .scaledFont(size: 12, weight: .bold, relativeTo: .headline)
                                             .foregroundStyle(Color.uniBlue)
                                     }
                                     .padding(12)
@@ -238,7 +238,7 @@ struct SplitBillView: View {
                 if splitMethod == "custom" {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Custom shares")
-                            .font(.system(size:14,weight:.medium))
+                            .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
                             .foregroundStyle(Color.primary)
                         ForEach(selectedUsers, id: \.id) { user in
                             shareRow(name: user.name, binding: shareBinding(for: user.id))
@@ -247,10 +247,10 @@ struct SplitBillView: View {
                         if includeSelf {
                             HStack {
                                 Text("You (remaining)")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
                                 Spacer()
                                 Text(remainingForSelf.currencyRS)
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                                     .foregroundStyle(Color.uniBlue)
                             }
                             .padding(12)
@@ -267,7 +267,7 @@ struct SplitBillView: View {
                     createSplitBill()
                 } label: {
                     Text("Send Request")
-                        .font(.system(size: 16, weight: .semibold))
+                        .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(Color.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
@@ -283,7 +283,7 @@ struct SplitBillView: View {
                 if !splitBillsVM.splitBills.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Requests")
-                            .font(.system(size: 14, weight: .medium))
+                            .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
                             .foregroundStyle(Color.primary)
 
                         ForEach(splitBillsVM.splitBills) { bill in
@@ -319,10 +319,10 @@ struct SplitBillView: View {
             HStack(spacing:14) {
                 ZStack {
                     Circle().fill(color.opacity(0.15)).frame(width:44,height:44)
-                    Text(avatar).font(.system(size:20))
+                    Text(avatar).scaledFont(size: 20, relativeTo: .body)
                 }
                 VStack(alignment:.leading,spacing:2) {
-                    Text(name).font(.system(size:15,weight:.medium)).foregroundStyle(Color.primary)
+                    Text(name).scaledFont(size: 15, weight: .medium, relativeTo: .headline).foregroundStyle(Color.primary)
                 }
                 Spacer()
                 ZStack {
@@ -330,7 +330,7 @@ struct SplitBillView: View {
                         .fill(isSelected ? Color.uniPurple : Color(UIColor.tertiarySystemFill))
                         .frame(width:24,height:24)
                     if isSelected {
-                        Image(systemName:"checkmark").font(.system(size:11,weight:.bold)).foregroundStyle(Color.white)
+                        Image(systemName:"checkmark").scaledFont(size: 11, weight: .bold, relativeTo: .headline).foregroundStyle(Color.white)
                     }
                 }
             }
@@ -345,7 +345,7 @@ struct SplitBillView: View {
     private func shareRow(name: String, binding: Binding<String>) -> some View {
         HStack {
             Text(name)
-                .font(.system(size: 14, weight: .medium))
+                .scaledFont(size: 14, weight: .medium, relativeTo: .headline)
             Spacer()
             TextField("0", text: binding)
                 .keyboardType(.numberPad)
@@ -432,14 +432,14 @@ struct SplitBillView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(bill.title)
-                        .font(.system(size:15,weight:.semibold))
+                        .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                     Text(bill.totalAmount.currencyRS)
-                        .font(.system(size:12,weight:.medium))
+                        .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.secondary)
                 }
                 Spacer()
                 Text(bill.status.rawValue.capitalized)
-                    .font(.system(size: 11, weight: .bold))
+                    .scaledFont(size: 11, weight: .bold, relativeTo: .headline)
                     .padding(.horizontal,8).padding(.vertical,4)
                     .background(Color(UIColor.secondarySystemBackground))
                     .clipShape(Capsule())
@@ -447,7 +447,7 @@ struct SplitBillView: View {
 
             if let me = me {
                 Text("Your share: \(me.shareAmount.currencyRS)")
-                    .font(.system(size:12,weight:.medium))
+                    .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                     .foregroundStyle(Color.secondary)
             }
 
@@ -456,11 +456,11 @@ struct SplitBillView: View {
                     Text("Accepted: \(confirmedCount)/\(invitedCount)")
                     Text("Paid: \(paidCount)/\(invitedCount)")
                 }
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                 .foregroundStyle(Color.secondary)
             } else if let me = me, me.status == .accepted {
                 Text("Status: Confirmed")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                     .foregroundStyle(Color.secondary)
             }
 
@@ -468,7 +468,7 @@ struct SplitBillView: View {
                 ForEach(bill.participants.filter { !$0.isCreator }) { participant in
                     HStack {
                         Text(participant.name)
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                         Spacer()
                         statusBadge(participant.status)
                     }
@@ -478,7 +478,7 @@ struct SplitBillView: View {
             HStack(spacing: 10) {
                 if bill.status == .settled {
                     Text("Settled")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.income)
                 } else if isCreator {
                     if allPaid {
@@ -488,7 +488,7 @@ struct SplitBillView: View {
                         .buttonStyle(.borderedProminent)
                     } else {
                         Text("Waiting for payments")
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                             .foregroundStyle(Color.secondary)
                     }
                 } else if let me = me {
@@ -503,11 +503,11 @@ struct SplitBillView: View {
                             .buttonStyle(.borderedProminent)
                     case .paid:
                         Text("Paid")
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                             .foregroundStyle(Color.income)
                     case .declined:
                         Text("Declined")
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                             .foregroundStyle(Color.secondary)
                     }
                 }
@@ -519,7 +519,7 @@ struct SplitBillView: View {
 
     private func statusBadge(_ status: SplitParticipantStatus) -> some View {
         Text(statusLabel(status))
-            .font(.system(size: 10, weight: .bold))
+            .scaledFont(size: 10, weight: .bold, relativeTo: .headline)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(statusColor(status).opacity(0.15))

@@ -19,15 +19,15 @@ struct FAQView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Frequently Asked Questions")
-                    .font(.system(size: 24, weight: .bold))
+                    .scaledFont(size: 24, weight: .bold, relativeTo: .headline)
 
                 ForEach(faqs.indices, id: \.self) { idx in
                     let item = faqs[idx]
                     VStack(alignment: .leading, spacing: 6) {
                         Text(item.0)
-                            .font(.system(size: 16, weight: .semibold))
+                            .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                         Text(item.1)
-                            .font(.system(size: 14))
+                            .scaledFont(size: 14, relativeTo: .body)
                             .foregroundStyle(.secondary)
                     }
                     .padding(14)

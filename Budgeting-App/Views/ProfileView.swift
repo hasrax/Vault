@@ -32,12 +32,12 @@ struct ProfileView: View {
                             let displayName = appState.currentUser?.name ?? MockData.userName
                             let displayEmail = appState.currentUser?.email ?? MockData.userEmail
                             Text(displayName)
-                                .font(.system(size: 18, weight: .bold))
+                                .scaledFont(size: 18, weight: .bold)
                             Text(displayEmail)
-                                .font(.system(size: 14))
+                                .scaledFont(size: 14)
                                 .foregroundStyle(.secondary)
                             Text("Student · LKR")
-                                .font(.system(size: 12, weight: .medium))
+                                .scaledFont(size: 12, weight: .medium)
                                 .foregroundStyle(Color.uniBlue)
                                 .padding(.horizontal, 8).padding(.vertical, 3)
                                 .background(Color.uniBlue.opacity(0.1))
@@ -50,7 +50,7 @@ struct ProfileView: View {
 
                 Section {
                     NavigationLink(destination: EditProfileView()) {
-                        Label { Text("Edit Profile").font(.system(size: 15, weight: .medium))
+                        Label { Text("Edit Profile").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "pencil", color: Color.uniBlue) }
                     }
                 }
@@ -60,9 +60,9 @@ struct ProfileView: View {
                     Toggle(isOn: $appState.isDarkMode) {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Dark Mode").font(.system(size: 15, weight: .medium))
+                                Text("Dark Mode").scaledFont(size: 15, weight: .medium)
                                 Text(appState.isDarkMode ? "Currently on" : "Currently off")
-                                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                                    .scaledFont(size: 12).foregroundStyle(.secondary)
                             }
                         } icon: {
                             iconBox(systemName: appState.isDarkMode ? "moon.fill" : "sun.max.fill",
@@ -73,9 +73,9 @@ struct ProfileView: View {
                     Toggle(isOn: $appState.isFaceIDEnabled) {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Face ID").font(.system(size: 15, weight: .medium))
+                                Text("Face ID").scaledFont(size: 15, weight: .medium)
                                 Text("Unlock with Face ID")
-                                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                                    .scaledFont(size: 12).foregroundStyle(.secondary)
                             }
                         } icon: { iconBox(systemName: "faceid", color: Color.uniBlue) }
                     }.tint(Color.uniBlue)
@@ -83,9 +83,9 @@ struct ProfileView: View {
                     Toggle(isOn: $appState.notificationsEnabled) {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Push Notifications").font(.system(size: 15, weight: .medium))
+                                Text("Push Notifications").scaledFont(size: 15, weight: .medium)
                                 Text("Budget alerts & reminders")
-                                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                                    .scaledFont(size: 12).foregroundStyle(.secondary)
                             }
                         } icon: { iconBox(systemName: "bell.fill", color: Color.uniOrange) }
                     }.tint(Color.uniBlue)
@@ -93,9 +93,9 @@ struct ProfileView: View {
                     NavigationLink(destination: AccessibilitySettingsView()) {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Accessibility").font(.system(size: 15, weight: .medium))
+                                Text("Accessibility").scaledFont(size: 15, weight: .medium)
                                 Text("Text size and contrast")
-                                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                                    .scaledFont(size: 12).foregroundStyle(.secondary)
                             }
                         } icon: { iconBox(systemName: "figure.wave", color: Color.uniTeal) }
                     }
@@ -104,20 +104,20 @@ struct ProfileView: View {
                 Section("Device Tokens") {
                     if !tokenStore.fcmToken.isEmpty {
                         Text("FCM: \(tokenStore.fcmToken)")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .textSelection(.enabled)
                         Button("Copy FCM Token") {
                             UIPasteboard.general.string = tokenStore.fcmToken
                         }
                     } else {
                         Text("FCM token not available yet.")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .foregroundStyle(.secondary)
                     }
 
                     if !tokenStore.apnsToken.isEmpty {
                         Text("APNs: \(tokenStore.apnsToken)")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .textSelection(.enabled)
                     }
                 }
@@ -125,23 +125,23 @@ struct ProfileView: View {
                 // ── Account ───────────────────────────────────────────────
                 Section("Account") {
                     NavigationLink(destination: SearchView(showBack: true)) {
-                        Label { Text("History").font(.system(size: 15, weight: .medium))
+                        Label { Text("History").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "clock", color: Color.uniPurple) }
                     }
                     NavigationLink(destination: ApnsSimulatorView()) {
-                        Label { Text("APNs Simulator").font(.system(size: 15, weight: .medium))
+                        Label { Text("APNs Simulator").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "bell.badge", color: Color.uniOrange) }
                     }
                     NavigationLink(destination: SavingsView()) {
-                        Label { Text("Savings Goals").font(.system(size: 15, weight: .medium))
+                        Label { Text("Savings Goals").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "banknote", color: Color.uniGreen) }
                     }
                     NavigationLink(destination: BudgetView()) {
-                        Label { Text("Budget Settings").font(.system(size: 15, weight: .medium))
+                        Label { Text("Budget Settings").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "slider.horizontal.3", color: Color.uniBlue) }
                     }
                     NavigationLink(destination: ChangePasswordView()) {
-                        Label { Text("Change Password").font(.system(size: 15, weight: .medium))
+                        Label { Text("Change Password").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "key.fill", color: Color.uniOrange) }
                     }
                 }
@@ -149,23 +149,23 @@ struct ProfileView: View {
                 // ── Tools ─────────────────────────────────────────────────
                 Section("Tools") {
                     NavigationLink(destination: SemesterPlannerView()) {
-                        Label { Text("Semester Planner").font(.system(size: 15, weight: .medium))
+                        Label { Text("Semester Planner").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "calendar", color: Color.uniPurple) }
                     }
                     NavigationLink(destination: WorkScheduleView()) {
-                        Label { Text("Work Schedule").font(.system(size: 15, weight: .medium))
+                        Label { Text("Work Schedule").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "briefcase", color: Color.uniTeal) }
                     }
                     NavigationLink(destination: ReceiptScannerView()) {
-                        Label { Text("Receipt Scanner").font(.system(size: 15, weight: .medium))
+                        Label { Text("Receipt Scanner").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "camera.viewfinder", color: Color.uniGreen) }
                     }
                     NavigationLink(destination: AnalyticsView()) {
-                        Label { Text("Analytics").font(.system(size: 15, weight: .medium))
+                        Label { Text("Analytics").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "chart.bar.xaxis", color: Color.uniBlue) }
                     }
                     NavigationLink(destination: MoreView()) {
-                        Label { Text("More Features").font(.system(size: 15, weight: .medium))
+                        Label { Text("More Features").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "square.grid.2x2.fill", color: Color.uniOrange) }
                     }
                 }
@@ -180,19 +180,19 @@ struct ProfileView: View {
 
                 Section("Support") {
                     NavigationLink(destination: FAQView()) {
-                        Label { Text("FAQ").font(.system(size: 15, weight: .medium))
+                        Label { Text("FAQ").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "questionmark.circle", color: Color.uniTeal) }
                     }
                     NavigationLink(destination: HelpView()) {
-                        Label { Text("Help & Support").font(.system(size: 15, weight: .medium))
+                        Label { Text("Help & Support").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "lifepreserver", color: Color.uniBlue) }
                     }
                     NavigationLink(destination: TermsView()) {
-                        Label { Text("Terms of Service").font(.system(size: 15, weight: .medium))
+                        Label { Text("Terms of Service").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "doc.text", color: Color.uniOrange) }
                     }
                     NavigationLink(destination: PrivacyView()) {
-                        Label { Text("Privacy Policy").font(.system(size: 15, weight: .medium))
+                        Label { Text("Privacy Policy").scaledFont(size: 15, weight: .medium)
                         } icon: { iconBox(systemName: "lock.shield", color: Color.uniPurple) }
                     }
                 }
@@ -287,7 +287,7 @@ struct ProfileView: View {
                 .fill(color.opacity(0.12))
                 .frame(width: 34, height: 34)
             Image(systemName: systemName)
-                .font(.system(size: 16))
+                .scaledFont(size: 16)
                 .foregroundStyle(color)
         }
     }
@@ -307,15 +307,15 @@ struct ProfileView: View {
 
             VStack(spacing: 12) {
                 Text(title)
-                    .font(.system(size: 18, weight: .bold))
+                    .scaledFont(size: 18, weight: .bold)
                 Text(message)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Color.secondary)
                     .multilineTextAlignment(.center)
 
                 HStack(spacing: 12) {
                     Button("Cancel") { onCancel() }
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(Color.primary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 40)
@@ -323,7 +323,7 @@ struct ProfileView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 10))
 
                     Button(confirmTitle) { onConfirm() }
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 40)
@@ -342,19 +342,26 @@ struct ProfileView: View {
 
     private var profileAvatar: some View {
         Group {
-            if let urlStr = appState.currentUser?.photoURL,
-               let url = URL(string: urlStr) {
+            if let base64 = appState.currentUser?.photoBase64,
+               let data = Data(base64Encoded: base64),
+               let image = UIImage(data: data) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else if let urlStr = appState.currentUser?.photoURL,
+                      let url = URL(string: urlStr) {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let image): image.resizable().scaledToFill()
+                    case .success(let image):
+                        image.resizable().scaledToFill()
                     default:
                         Circle().fill(LinearGradient.primaryGrad)
-                            .overlay(Text(MockData.userAvatar).font(.system(size: 28)))
+                            .overlay(Text(MockData.userAvatar).scaledFont(size: 28))
                     }
                 }
             } else {
                 Circle().fill(LinearGradient.primaryGrad)
-                    .overlay(Text(MockData.userAvatar).font(.system(size: 28)))
+                    .overlay(Text(MockData.userAvatar).scaledFont(size: 28))
             }
         }
         .clipShape(Circle())
@@ -372,22 +379,22 @@ struct ProfileView: View {
 
             VStack(spacing: 12) {
                 Text("Logout")
-                    .font(.system(size: 17, weight: .semibold))
+                    .scaledFont(size: 17, weight: .semibold)
                     .foregroundStyle(Color.uniBlue)
 
                 VStack(spacing: 4) {
                     Text("Are you sure you want to logout of")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Color.primary)
                     Text("\(accountName)'s account ?")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Color.secondary)
                 }
                 .multilineTextAlignment(.center)
 
                 HStack(spacing: 14) {
                     Button("Logout") { onConfirm() }
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(Color.uniBlue)
                         .frame(maxWidth: .infinity)
                         .frame(height: 40)
@@ -398,7 +405,7 @@ struct ProfileView: View {
                         )
 
                     Button("Cancel") { onCancel() }
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 40)

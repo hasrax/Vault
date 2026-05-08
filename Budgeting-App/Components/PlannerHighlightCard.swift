@@ -20,15 +20,15 @@ struct PlannerHighlightCard: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(.primary)
                     Text(detail)
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12, relativeTo: .subheadline)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium, relativeTo: .body)
                     .foregroundStyle(accent)
             }
             .padding(14)

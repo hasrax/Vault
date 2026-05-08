@@ -28,7 +28,7 @@ struct EditProfileView: View {
                         .clipShape(Circle())
                     PhotosPicker(selection: $selectedItem, matching: .images) {
                         Text("Change photo")
-                            .font(.system(size: 15, weight: .semibold))
+                            .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                     }
                 }
             }
@@ -104,7 +104,7 @@ struct EditProfileView: View {
                 ZStack {
                     Color(UIColor.secondarySystemBackground)
                     Text(MockData.userAvatar)
-                        .font(.system(size: 26))
+                        .scaledFont(size: 26, relativeTo: .body)
                 }
             }
         }

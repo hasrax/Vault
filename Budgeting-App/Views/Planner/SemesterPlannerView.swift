@@ -54,7 +54,7 @@ struct SemesterPlannerView: View {
                             withAnimation(.spring(duration: 0.3)) { activeTab = id }
                         } label: {
                             Text(label)
-                                .font(.system(size:13,weight:.semibold))
+                                .scaledFont(size: 13, weight: .semibold)
                                 .foregroundStyle(activeTab == id ? Color.white : Color.secondary)
                                 .frame(maxWidth:.infinity).frame(height:40)
                                 .background(activeTab == id ? Color.uniBlue : Color.clear)
@@ -384,6 +384,7 @@ struct SemesterPlannerView: View {
                 }
             }
         }
+        .appStatusBarStyle(.darkContent)
     }
 
     private var overviewTab: some View {
@@ -392,26 +393,26 @@ struct SemesterPlannerView: View {
             VStack(spacing: 16) {
                 HStack {
                     VStack(alignment:.leading,spacing:4) {
-                        Text("Semester Budget").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                        Text(semesterBudget.currencyRS).font(.system(size:28,weight:.bold,design:.rounded)).foregroundStyle(Color.primary)
+                        Text("Semester Budget").scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
+                        Text(semesterBudget.currencyRS).scaledFont(size: 28, weight: .bold, design: .rounded).foregroundStyle(Color.primary)
                     }
                     Spacer()
                     VStack(alignment:.trailing,spacing:4) {
-                        Text("Remaining").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                        Text(remaining.currencyRS).font(.system(size:20,weight:.semibold)).foregroundStyle(Color.primary)
+                        Text("Remaining").scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
+                        Text(remaining.currencyRS).scaledFont(size: 20, weight: .semibold).foregroundStyle(Color.primary)
                     }
                 }
                 VStack(spacing:8) {
                     HStack {
-                        Text("Budget used").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text("Budget used").scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                         Spacer()
-                        Text("\(Int(budgetProgress*100))%").font(.system(size: 12, weight: .bold)).foregroundStyle(accent)
+                        Text("\(Int(budgetProgress*100))%").scaledFont(size: 12, weight: .bold).foregroundStyle(accent)
                     }
                     UniProgressBar(progress:budgetProgress, color:accent, height:8)
                     HStack {
-                        Text("Semester progress").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        Text("Semester progress").scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                         Spacer()
-                        Text("Week \(currentWeek) of \(totalWeeks)").font(.system(size: 12, weight: .bold)).foregroundStyle(accent)
+                        Text("Week \(currentWeek) of \(totalWeeks)").scaledFont(size: 12, weight: .bold).foregroundStyle(accent)
                     }
                     UniProgressBar(progress:weekProgress, color:accent, height:8)
                 }
@@ -426,13 +427,13 @@ struct SemesterPlannerView: View {
 
             // Weekly budget suggestion
             HStack(spacing:14) {
-                Text("💡").font(.system(size:28))
+                Text("💡").scaledFont(size: 28)
                 VStack(alignment:.leading,spacing:4) {
-                    Text("Recommended weekly budget").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                    Text("Recommended weekly budget").scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                     Text(weeklyBudget.currencyRS)
-                        .font(.system(size:24,weight:.bold,design:.rounded)).foregroundStyle(Color.income)
+                        .scaledFont(size: 24, weight: .bold, design: .rounded).foregroundStyle(Color.income)
                     Text("To stay on track for \(weeksLeft) remaining weeks")
-                        .font(.system(size: 11)).foregroundStyle(Color.secondary)
+                        .scaledFont(size: 11).foregroundStyle(Color.secondary)
                 }
             }
             .padding(18)
@@ -444,10 +445,10 @@ struct SemesterPlannerView: View {
             // Monthly breakdown
             VStack(alignment:.leading,spacing:14) {
                 HStack {
-                    Text("Monthly Plan").font(.system(size: 18, weight: .semibold))
+                    Text("Monthly Plan").scaledFont(size: 18, weight: .semibold)
                     Spacer()
                     Button("Settings") { showPlanSettings = true }
-                        .font(.system(size: 12, weight: .semibold))
+                        .scaledFont(size: 12, weight: .semibold)
                         .foregroundStyle(accent)
                 }
                 VStack(spacing:0) {
@@ -468,7 +469,7 @@ struct SemesterPlannerView: View {
                     }
                 }
                 Button("+ Add Month") { showAddPlan = true }
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold)
                     .foregroundStyle(Color.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
@@ -484,17 +485,17 @@ struct SemesterPlannerView: View {
     private func monthRow(item: SemesterPlanMonth) -> some View {
         VStack(spacing:0) {
             HStack {
-                Text(monthLabel(item.monthDate)).font(.system(size:15,weight:.semibold))
+                Text(monthLabel(item.monthDate)).scaledFont(size: 15, weight: .semibold)
                 if item.status == .current {
-                    Text("Current").font(.system(size:10,weight:.bold)).foregroundStyle(Color.uniBlue)
+                    Text("Current").scaledFont(size: 10, weight: .bold).foregroundStyle(Color.uniBlue)
                         .padding(.horizontal,7).padding(.vertical,3).background(Color.uniBlue.opacity(0.12)).clipShape(Capsule())
                 } else if item.status == .completed {
-                    Text("✓ Done").font(.system(size:10,weight:.bold)).foregroundStyle(Color.income)
+                    Text("✓ Done").scaledFont(size: 10, weight: .bold).foregroundStyle(Color.income)
                         .padding(.horizontal,7).padding(.vertical,3).background(Color.income.opacity(0.12)).clipShape(Capsule())
                 }
                 Spacer()
                 Text("\(item.spent.currencyRS) / \(item.budget.currencyRS)")
-                    .font(.system(size:13,weight:.semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(item.spent > item.budget ? Color.expense : Color.primary)
             }
             .padding(.vertical,14)
@@ -524,18 +525,18 @@ struct SemesterPlannerView: View {
                         RoundedRectangle(cornerRadius:12)
                             .fill(item.color.opacity(0.1))
                             .frame(width:48,height:48)
-                        Text(item.icon).font(.system(size:22))
+                        Text(item.icon).scaledFont(size: 22)
                     }
                     VStack(alignment:.leading,spacing:3) {
-                        Text(item.title).font(.system(size:15,weight:.semibold))
+                        Text(item.title).scaledFont(size: 15, weight: .semibold)
                         Text("\(item.date, style:.date) · \(daysUntil(item.date))")
-                            .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                            .scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 6) {
                         if let amt = item.amount {
                             Text("\(item.type == .income ? "+" : "−")\(amt.currencyRS)")
-                                .font(.system(size:14,weight:.semibold))
+                                .scaledFont(size: 14, weight: .semibold)
                                 .foregroundStyle(item.color)
                         }
                         Button {
@@ -576,7 +577,7 @@ struct SemesterPlannerView: View {
                 }
             }
             Button("+ Add Important Date") { showAddDate = true }
-                .font(.system(size:15,weight:.semibold)).foregroundStyle(Color.white)
+                .scaledFont(size: 15, weight: .semibold).foregroundStyle(Color.white)
                 .frame(maxWidth:.infinity).frame(height:48)
                 .background(LinearGradient.ctaGrad)
                 .clipShape(RoundedRectangle(cornerRadius:12))
@@ -597,7 +598,7 @@ struct SemesterPlannerView: View {
                                 .fill(goal.completed ? Color.income : Color(UIColor.tertiarySystemFill))
                                 .frame(width:28,height:28)
                             if goal.completed {
-                                Image(systemName:"checkmark").font(.system(size:12,weight:.bold)).foregroundStyle(Color.white)
+                                Image(systemName:"checkmark").scaledFont(size: 12, weight: .bold).foregroundStyle(Color.white)
                             }
                         }
                         .padding(.top,2)
@@ -605,15 +606,15 @@ struct SemesterPlannerView: View {
                     .buttonStyle(.plain)
                     VStack(alignment:.leading,spacing:8) {
                         Text(goal.title)
-                            .font(.system(size:15,weight:.medium))
+                            .scaledFont(size: 15, weight: .medium)
                             .foregroundStyle(goal.completed ? Color.secondary : Color.primary)
                             .strikethrough(goal.completed)
                         if let p = goal.progress, !goal.completed {
                             VStack(alignment:.leading,spacing:4) {
                                 HStack {
-                                    Text("Progress").font(.system(size: 11)).foregroundStyle(Color.secondary)
+                                    Text("Progress").scaledFont(size: 11).foregroundStyle(Color.secondary)
                                     Spacer()
-                                    Text("\(p)%").font(.system(size:11,weight:.bold)).foregroundStyle(Color.uniBlue)
+                                    Text("\(p)%").scaledFont(size: 11, weight: .bold).foregroundStyle(Color.uniBlue)
                                 }
                                 UniProgressBar(progress:Double(p)/100,color:accent,height:6)
                             }
@@ -660,18 +661,18 @@ struct SemesterPlannerView: View {
                 }
             }
             Button("+ Add New Goal") { showAddGoal = true }
-                .font(.system(size:15,weight:.semibold)).foregroundStyle(Color.white)
+                .scaledFont(size: 15, weight: .semibold).foregroundStyle(Color.white)
                 .frame(maxWidth:.infinity).frame(height:48)
                 .background(LinearGradient.ctaGrad)
                 .clipShape(RoundedRectangle(cornerRadius:12))
                 .padding(.top,4)
 
             HStack(spacing:14) {
-                Text("🏆").font(.system(size:28))
+                Text("🏆").scaledFont(size: 28)
                 VStack(alignment:.leading,spacing:4) {
-                    Text("You're doing great!").font(.system(size: 15, weight: .semibold))
+                    Text("You're doing great!").scaledFont(size: 15, weight: .semibold)
                     Text("2 of 4 goals completed. Keep going — you've got this!")
-                        .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                        .scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                 }
             }
             .padding(16)

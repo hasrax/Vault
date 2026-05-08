@@ -12,25 +12,25 @@ struct TermsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Terms of Service")
-                    .font(.system(size: 24, weight: .bold))
+                    .scaledFont(size: 24, weight: .bold, relativeTo: .headline)
                 Text("Last updated: March 30, 2026")
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12, relativeTo: .body)
                     .foregroundStyle(.secondary)
 
                 Text("1. Acceptance of Terms")
-                    .font(.system(size: 16, weight: .semibold))
+                    .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                 Text("By using Vault, you agree to these terms. Replace this placeholder with your legal terms.")
 
                 Text("2. Use of the App")
-                    .font(.system(size: 16, weight: .semibold))
+                    .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                 Text("Use Vault responsibly. Do not misuse, reverse engineer, or attempt unauthorized access.")
 
                 Text("3. Account Security")
-                    .font(.system(size: 16, weight: .semibold))
+                    .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                 Text("You are responsible for safeguarding your login credentials.")
 
                 Text("4. Changes")
-                    .font(.system(size: 16, weight: .semibold))
+                    .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
                 Text("We may update these terms. Continued use means acceptance of updates.")
             }
             .padding(20)

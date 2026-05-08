@@ -41,7 +41,7 @@ struct ReceiptScannerView: View {
             VStack(spacing: 24) {
                 HStack(spacing: 8) {
                     Text("Scan mode")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.secondary)
                     Spacer()
                     Picker("Scan mode", selection: $useLiveScanner) {
@@ -146,7 +146,7 @@ struct ReceiptScannerView: View {
                 } else {
                     VStack(spacing: 10) {
                         Image(systemName: "camera.badge.exclamationmark")
-                            .font(.system(size: 36))
+                            .scaledFont(size: 36, relativeTo: .body)
                             .foregroundStyle(Color.white.opacity(0.7))
                         Text("Live scan not available")
                             .foregroundStyle(Color.white.opacity(0.7))
@@ -164,17 +164,17 @@ struct ReceiptScannerView: View {
                 VStack(spacing: 10) {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 18))
+                            .scaledFont(size: 18, relativeTo: .body)
                             .foregroundStyle(Color.income)
                         Text("Receipt scanned")
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                             .foregroundStyle(Color.primary)
                     }
                     Text(amount.currencyRS)
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .scaledFont(size: 34, weight: .bold, design: .rounded, relativeTo: .headline)
                         .foregroundStyle(Color.income)
                     Text("Tap Log this transaction to continue")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.secondary)
                 }
                 .padding(16)
@@ -188,7 +188,7 @@ struct ReceiptScannerView: View {
             } else {
                 VStack(spacing: 16) {
                     Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 60))
+                        .scaledFont(size: 60, relativeTo: .body)
                         .foregroundStyle(Color.white.opacity(0.4))
                     Text("Point camera at receipt")
                         .foregroundStyle(Color.white.opacity(0.6))
@@ -227,7 +227,7 @@ struct ReceiptScannerView: View {
 
     private var howItWorksCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("How it works").font(.system(size: 18, weight: .semibold))
+            Text("How it works").scaledFont(size: 18, weight: .semibold, relativeTo: .headline)
             Label("Pick a receipt photo or use live scan",             systemImage: "1.circle.fill").font(.subheadline)
             Label("Vision reads the total amount automatically",       systemImage: "2.circle.fill").font(.subheadline)
             Label("Transaction is logged straight to your budget",     systemImage: "3.circle.fill").font(.subheadline)
@@ -239,25 +239,25 @@ struct ReceiptScannerView: View {
     private var actionButtons: some View {
         VStack(spacing: 12) {
             Toggle("Save receipt image (compressed)", isOn: $saveReceiptImage)
-                .font(.system(size: 13, weight: .medium))
+                .scaledFont(size: 13, weight: .medium, relativeTo: .headline)
 
             if isUploading {
                 HStack(spacing: 10) {
                     ProgressView().tint(Color.uniBlue)
                     Text("Uploading receipt...")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.secondary)
                 }
             } else if !uploadError.isEmpty {
                 Text(uploadError)
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium, relativeTo: .headline)
                     .foregroundStyle(Color.expense)
             }
 
             if scannedAmount != nil {
                 Button { prepareToAddTransaction() } label: {
                     Label("Log this transaction", systemImage: "plus.circle.fill")
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 52)
                         .background(LinearGradient.greenGrad)
@@ -268,7 +268,7 @@ struct ReceiptScannerView: View {
             if scannedAmount == nil, !amountCandidates.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Detected totals")
-                        .font(.system(size: 13, weight: .semibold))
+                        .scaledFont(size: 13, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(Color.primary)
                     ForEach(amountCandidates, id: \.self) { value in
                         Button {
@@ -276,7 +276,7 @@ struct ReceiptScannerView: View {
                         } label: {
                             HStack {
                                 Text(value.currencyRS)
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .scaledFont(size: 14, weight: .semibold, relativeTo: .headline)
                                 Spacer()
                                 if selectedCandidate == value {
                                     Image(systemName: "checkmark.circle.fill")
@@ -296,7 +296,7 @@ struct ReceiptScannerView: View {
                             scannedAmount = selectedCandidate
                         }
                     }
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
@@ -309,7 +309,7 @@ struct ReceiptScannerView: View {
             if useLiveScanner {
                 Button { scanLiveText() } label: {
                     Label("Scan from Live View", systemImage: "text.viewfinder")
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 52)
                         .background(isScanning
@@ -321,7 +321,7 @@ struct ReceiptScannerView: View {
 
                 Button { showFullScreenScanner = true } label: {
                     Label("Open Full Screen Scanner", systemImage: "viewfinder")
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 52)
                         .background(LinearGradient.primaryGrad)
@@ -332,7 +332,7 @@ struct ReceiptScannerView: View {
                 PhotosPicker(selection: $selectedItem, matching: .images) {
                     Label(scannedAmount == nil ? "Choose Receipt Photo" : "Choose Another",
                           systemImage: "photo.on.rectangle")
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 52)
                         .background(isScanning
@@ -549,13 +549,13 @@ private struct LiveScannerFullScreenView: View {
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "camera.badge.exclamationmark")
-                        .font(.system(size: 36))
+                        .scaledFont(size: 36, relativeTo: .body)
                         .foregroundStyle(Color.white.opacity(0.8))
                     Text("Live scan not available")
                         .foregroundStyle(Color.white.opacity(0.8))
                         .font(.subheadline)
                     Button("Close") { onCancel() }
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
@@ -568,7 +568,7 @@ private struct LiveScannerFullScreenView: View {
                 HStack {
                     Button { onCancel() } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
+                            .scaledFont(size: 14, weight: .bold, relativeTo: .headline)
                             .foregroundStyle(.white)
                             .padding(10)
                             .background(Color.black.opacity(0.6))
@@ -583,11 +583,11 @@ private struct LiveScannerFullScreenView: View {
 
                 VStack(spacing: 10) {
                     Text("Fill the screen with the receipt")
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.white.opacity(0.8))
                     Button { onUseText() } label: {
                         Label("Use Detected Text", systemImage: "text.viewfinder")
-                            .font(.system(size: 15, weight: .semibold))
+                            .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
@@ -623,7 +623,7 @@ private struct ReceiptImagePreviewView: View {
                 HStack {
                     Button { onCancel() } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
+                            .scaledFont(size: 14, weight: .bold, relativeTo: .headline)
                             .foregroundStyle(.white)
                             .padding(10)
                             .background(Color.black.opacity(0.6))
@@ -638,11 +638,11 @@ private struct ReceiptImagePreviewView: View {
 
                 VStack(spacing: 10) {
                     Text("Pinch to zoom, then scan")
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium, relativeTo: .headline)
                         .foregroundStyle(Color.white.opacity(0.8))
                     Button { onScan() } label: {
                         Label("Scan This Receipt", systemImage: "text.viewfinder")
-                            .font(.system(size: 15, weight: .semibold))
+                            .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)

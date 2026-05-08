@@ -365,6 +365,7 @@ struct WorkScheduleView: View {
             repeatMonthly = false
             repeatWeekly = false
         }
+        .appStatusBarStyle(.darkContent)
     }
 
     private var topSummaryCard: some View {
@@ -419,14 +420,14 @@ struct WorkScheduleView: View {
     private var infoCard: some View {
         return VStack(alignment: .leading, spacing: 4) {
             Text(viewMode == "hours" ? "Recommended block" : "Monthly pacing")
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                 .foregroundStyle(Color.secondary)
             Text(viewMode == "hours" ? "2h × 3 sessions" : "5 blocks · 20h")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .scaledFont(size: 22, weight: .bold, design: .rounded, relativeTo: .title2)
             Text(viewMode == "hours"
                  ? "Split your shifts into smaller two-hour bursts when classes are tight."
                  : "Average pay per hour \(Double(totalEarned / max(Double(totalHours),1)).currencyRS)")
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                 .foregroundStyle(Color.secondary)
         }
         .padding(16)
@@ -450,7 +451,7 @@ struct WorkScheduleView: View {
     private var shiftsHeader: some View {
         return HStack {
             Text("Shifts")
-                .font(.system(size: 16, weight: .semibold))
+                .scaledFont(size: 16, weight: .semibold, relativeTo: .headline)
             Spacer()
             Button { sortNewestFirst.toggle() } label: {
                 Image(systemName: sortNewestFirst ? "arrow.down" : "arrow.up")
@@ -514,7 +515,7 @@ struct WorkScheduleView: View {
             showAddShift = true
         } label: {
             Label("Add Shift",systemImage:"plus")
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(size: 15, weight: .semibold, relativeTo: .headline)
                 .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
@@ -574,7 +575,7 @@ struct WorkScheduleView: View {
                         selectedDate = date
                     }
                 }
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold, relativeTo: .caption)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(dayString(selectedDate) == day ? Color.uniBlue.opacity(0.2) : Color(UIColor.secondarySystemBackground))

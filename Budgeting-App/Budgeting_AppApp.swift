@@ -11,9 +11,18 @@ class AppState: ObservableObject {
     @Published var isAuthenticated        = false
     @Published var hasCompletedOnboarding = false
     @Published var hasCompletedSetup      = false
-    @Published var isDarkMode             = false
-    @Published var appFontScale: AppFontScale = .default
-    @Published var highContrastEnabled    = false
+    @Published var isDarkMode: Bool {
+        didSet { UserDefaults.standard.set(isDarkMode, forKey: "app_isDarkMode") }
+    }
+    @Published var appFontScale: AppFontScale {
+        didSet { UserDefaults.standard.set(appFontScale.rawValue, forKey: "app_fontScale") }
+    }
+    @Published var highContrastEnabled: Bool {
+        didSet { UserDefaults.standard.set(highContrastEnabled, forKey: "app_highContrastEnabled") }
+    }
+    @Published var inAppVoiceEnabled: Bool {
+        didSet { UserDefaults.standard.set(inAppVoiceEnabled, forKey: "app_inAppVoiceEnabled") }
+    }
     @Published var isFaceIDEnabled        = true
     @Published var notificationsEnabled   = true
     @Published var monthlyBudget: Double  = 45000
@@ -31,6 +40,14 @@ class AppState: ObservableObject {
     @Published var sessionTimeoutSeconds: TimeInterval = 30
     @Published var splitBills: [SplitBill] = []
     @Published var plannerTheme: PlannerTheme = PlannerTheme()
+
+    init() {
+        self.isDarkMode = UserDefaults.standard.bool(forKey: "app_isDarkMode")
+        let scaleRaw = UserDefaults.standard.string(forKey: "app_fontScale") ?? ""
+        self.appFontScale = AppFontScale(rawValue: scaleRaw) ?? .default
+        self.highContrastEnabled = UserDefaults.standard.bool(forKey: "app_highContrastEnabled")
+        self.inAppVoiceEnabled = UserDefaults.standard.bool(forKey: "app_inAppVoiceEnabled")
+    }
 
     private var budgetHistoryLoaded = false
 

@@ -14,92 +14,99 @@ struct PlannerView: View {
     @State private var path = NavigationPath()
     @State private var showThemePicker = false
     private let modules = MockData.plannerModules
+    private var plannerSummary: String {
+        "Planner Hub. You have modules for Semester planning, Work shifts, Meal and study, Savings, and Split bill. Customize your theme using the paint palette icon in the top right."
+    }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    plannerHeader
+        ZStack {
+            NavigationStack(path: $path) {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        plannerHeader
 
-                    // Grid
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-                        ForEach(modules) { mod in
-                            NavigationLink(value: mod.destination) {
-                                plannerGridCard(mod)
+                        // Grid
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
+                            ForEach(modules) { mod in
+                                NavigationLink(value: mod.destination) {
+                                    plannerGridCard(mod)
+                                }
                             }
                         }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 20)
-
-                    // Horizontal carousel
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Swipeable summaries")
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary).textCase(.uppercase)
-                            Text("Slide through the toolkit").font(.system(size: 18, weight: .semibold))
-                        }
                         .padding(.horizontal, 16)
+                        .padding(.top, 20)
 
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 14) {
-                                ForEach(modules) { mod in
-                                    NavigationLink(value: mod.destination) {
-                                        plannerCarouselCard(mod)
+                        // Horizontal carousel
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Swipeable summaries")
+                                    .scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary).textCase(.uppercase)
+                                Text("Slide through the toolkit").scaledFont(size: 18, weight: .semibold)
+                            }
+                            .padding(.horizontal, 16)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 14) {
+                                    ForEach(modules) { mod in
+                                        NavigationLink(value: mod.destination) {
+                                            plannerCarouselCard(mod)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
+                        }
+                        .padding(.top, 24)
+
+                        // Info card
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("What happens in each area?").scaledFont(size: 15, weight: .semibold)
+                            ForEach([
+                                ("📅","Semester planning","Sync tuition, exam weeks, and assignment reminders"),
+                                ("💼","Work shifts","Compare hours versus targets and export the rota"),
+                                ("🍽️","Meal & study","Balance swipes, dining rupees, and academic supplies"),
+                                ("🎯","Savings","Route rupees toward books, rent, and emergency buffer"),
+                                ("🔔","Smart notifications","Keep helpful nudges and snooze the rest"),
+                                ("🤝","Split bill","Invite roommates, log each share, send a settle-up link"),
+                            ], id:\.0) { emoji, title, desc in
+                                HStack(alignment:.top, spacing:10) {
+                                    Text(emoji).scaledFont(size:16)
+                                    VStack(alignment:.leading,spacing:2) {
+                                        Text(title).scaledFont(size:13,weight:.semibold)
+                                        Text(desc).scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                                     }
                                 }
                             }
-                            .padding(.horizontal, 16)
                         }
+                        .padding(16)
+                        .lightCard()
+                        .padding(.horizontal, 16)
+                        .padding(.top, 20)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.top, 24)
-
-                    // Info card
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("What happens in each area?").font(.system(size: 15, weight: .semibold))
-                        ForEach([
-                            ("📅","Semester planning","Sync tuition, exam weeks, and assignment reminders"),
-                            ("💼","Work shifts","Compare hours versus targets and export the rota"),
-                            ("🍽️","Meal & study","Balance swipes, dining rupees, and academic supplies"),
-                            ("🎯","Savings","Route rupees toward books, rent, and emergency buffer"),
-                            ("🔔","Smart notifications","Keep helpful nudges and snooze the rest"),
-                            ("🤝","Split bill","Invite roommates, log each share, send a settle-up link"),
-                        ], id:\.0) { emoji, title, desc in
-                            HStack(alignment:.top, spacing:10) {
-                                Text(emoji).font(.system(size:16))
-                                VStack(alignment:.leading,spacing:2) {
-                                    Text(title).font(.system(size:13,weight:.semibold))
-                                    Text(desc).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
-                                }
-                            }
-                        }
+                }
+                // KEY: ignoresSafeArea on the ScrollView lets plannerHeader
+                // extend its background behind the status bar (same as HomeView)
+                .ignoresSafeArea(edges: .top)
+                .background(Color.clear)
+                .navigationTitle("")
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: String.self) { dest in
+                    switch dest {
+                    case "semesterPlanner": SemesterPlannerView()
+                    case "workSchedule":    WorkScheduleView()
+                    case "mealPlan":        MealPlanView()
+                    case "savings":         SavingsView()
+                    case "splitBill":       SplitBillView()
+                    case "analytics":       AnalyticsView()
+                    default:                Text(dest)
                     }
-                    .padding(16)
-                    .lightCard()
-                    .padding(.horizontal, 16)
-                    .padding(.top, 20)
-                    .padding(.bottom, 100)
                 }
             }
-            // KEY: ignoresSafeArea on the ScrollView lets plannerHeader
-            // extend its background behind the status bar (same as HomeView)
-            .ignoresSafeArea(edges: .top)
-            .background(Color.clear)
-            .navigationTitle("")
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: String.self) { dest in
-                switch dest {
-                case "semesterPlanner": SemesterPlannerView()
-                case "workSchedule":    WorkScheduleView()
-                case "mealPlan":        MealPlanView()
-                case "savings":         SavingsView()
-                case "splitBill":       SplitBillView()
-                case "analytics":       AnalyticsView()
-                default:                Text(dest)
-                }
-            }
-        }
             .appStatusBarStyle(.lightContent)
+            
+            FloatingSpeakButton(textToSpeak: plannerSummary)
+        }
         .sheet(isPresented: $showThemePicker) {
             PlannerThemePickerView()
         }
@@ -119,16 +126,18 @@ struct PlannerView: View {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Campus toolkit")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium)
                         .foregroundStyle(Color.white.opacity(0.5))
                         .textCase(.uppercase)
                     Text("My Planner")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .scaledFont(size: 28, weight: .bold, design: .rounded)
                         .foregroundStyle(Color.white)
                     Text("Everything for budgeting, classes, and campus life.")
-                        .font(.subheadline)
+                        .scaledFont(size: 15, relativeTo: .subheadline)
                         .foregroundStyle(Color.white.opacity(0.6))
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
                 Spacer()
                 // Theme customise button
                 Button {
@@ -139,7 +148,7 @@ struct PlannerView: View {
                             .fill(Color.white.opacity(0.15))
                             .frame(width: 40, height: 40)
                         Image(systemName: "paintpalette.fill")
-                            .font(.system(size: 16, weight: .semibold))
+                            .scaledFont(size: 16, weight: .semibold)
                             .foregroundStyle(Color.white)
                     }
                 }
@@ -156,26 +165,29 @@ struct PlannerView: View {
         let grad = appState.plannerTheme.gradient(for: mod.id)
         return VStack(alignment: .leading, spacing: 12) {
             Text(mod.pill)
-                .font(.system(size:11,weight:.bold)).textCase(.uppercase)
+                .scaledFont(size:11,weight:.bold).textCase(.uppercase)
                 .foregroundStyle(Color.white.opacity(0.7))
                 .padding(.horizontal,10).padding(.vertical,4)
                 .background(Color.white.opacity(0.2))
                 .clipShape(Capsule())
             Spacer()
             Text(mod.title)
-                .font(.system(size:17,weight:.bold))
+                .scaledFont(size:17,weight:.bold)
                 .foregroundStyle(Color.white)
             Text(mod.description)
-                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.7))
+                .scaledFont(size: 12, weight: .medium).foregroundStyle(Color.white.opacity(0.7))
                 .lineLimit(3)
             Text("Open →")
-                .font(.system(size:13,weight:.semibold)).foregroundStyle(Color.white)
+                .scaledFont(size:13,weight:.semibold).foregroundStyle(Color.white)
                 .padding(.top,4)
         }
         .padding(18)
         .frame(width:200,height:180)
         .background(grad)
         .clipShape(RoundedRectangle(cornerRadius:18))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(mod.title). \(mod.description).")
+        .accessibilityHint("Double tap to open \(mod.title)")
     }
 
     private func plannerGridCard(_ mod: PlannerModule) -> some View {
@@ -183,23 +195,23 @@ struct PlannerView: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(mod.pill)
-                    .font(.system(size:10,weight:.bold)).textCase(.uppercase)
+                    .scaledFont(size:10,weight:.bold).textCase(.uppercase)
                     .foregroundStyle(accent)
                     .padding(.horizontal,8).padding(.vertical,3)
                     .background(accent.opacity(0.12))
                     .clipShape(Capsule())
                 Spacer()
                 Text(mod.icon)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .frame(width: 26, height: 26)
                     .background(accent.opacity(0.12))
                     .clipShape(Circle())
             }
-            Text(mod.title).font(.system(size:14,weight:.semibold)).foregroundStyle(Color.primary).lineLimit(1)
-            Text(mod.description).font(.system(size: 11)).foregroundStyle(Color.secondary).lineLimit(2)
+            Text(mod.title).scaledFont(size:14,weight:.semibold).foregroundStyle(Color.primary).lineLimit(1)
+            Text(mod.description).scaledFont(size: 11).foregroundStyle(Color.secondary).lineLimit(2)
             HStack {
                 Spacer()
-                Image(systemName:"chevron.right").font(.system(size: 12, weight: .medium)).foregroundStyle(accent)
+                Image(systemName:"chevron.right").scaledFont(size: 12, weight: .medium).foregroundStyle(accent)
             }
         }
         .padding(14)
@@ -209,6 +221,9 @@ struct PlannerView: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(accent.opacity(0.25), lineWidth: 1.5)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(mod.title). \(mod.description).")
+        .accessibilityHint("Double tap to open \(mod.title)")
     }
 }
 
@@ -234,11 +249,11 @@ struct PlannerThemePickerView: View {
                                     .fill(draft.color(for: moduleId))
                                     .frame(width: 38, height: 38)
                                 Text(PlannerTheme.moduleIcon(for: moduleId))
-                                    .font(.system(size: 18))
+                                    .scaledFont(size: 18)
                             }
 
                             Text(PlannerTheme.moduleName(for: moduleId))
-                                .font(.system(size: 15, weight: .medium))
+                                .scaledFont(size: 15, weight: .medium)
 
                             Spacer()
 
@@ -246,12 +261,14 @@ struct PlannerThemePickerView: View {
                             ColorPicker("", selection: colorBinding(for: moduleId), supportsOpacity: false)
                                 .labelsHidden()
                                 .frame(width: 36, height: 36)
+                                .accessibilityLabel("Pick color for \(PlannerTheme.moduleName(for: moduleId))")
                         }
                         .padding(.vertical, 4)
+                        .accessibilityElement(children: .combine)
                     }
                 } header: {
                     Text("Choose a colour for each planner module")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium)
                         .textCase(.none)
                         .padding(.bottom, 4)
                 }

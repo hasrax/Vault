@@ -46,7 +46,7 @@ struct LoginView: View {
                     // Title
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Welcome Back")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .scaledFont(size: 28, weight: .bold, design: .rounded)
                             .foregroundStyle(Color.primary)
                         Text("Sign in to continue budgeting")
                             .font(.subheadline).foregroundStyle(Color.secondary)
@@ -59,12 +59,12 @@ struct LoginView: View {
                         Button(action: authenticateWithBiometrics) {
                             VStack(spacing: 10) {
                                 Image(systemName: "faceid")
-                                    .font(.system(size: 36))
+                                    .scaledFont(size: 36)
                                     .foregroundStyle(Color.uniBlue)
                                 Text("Sign in with Face ID")
-                                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.primary)
+                                    .scaledFont(size: 15, weight: .semibold).foregroundStyle(Color.primary)
                                 Text("Quick and secure access")
-                                    .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                                    .scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                             }
                             .frame(maxWidth: .infinity).padding(.vertical, 24)
                             .background(Color.black.opacity(0.04))
@@ -81,7 +81,7 @@ struct LoginView: View {
                         HStack {
                             Rectangle().fill(Color.black.opacity(0.12)).frame(height: 1)
                             Text("or sign in with email")
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                                .scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                                 .fixedSize()
                             Rectangle().fill(Color.black.opacity(0.12)).frame(height: 1)
                         }
@@ -89,7 +89,7 @@ struct LoginView: View {
                         // Email
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Email")
-                                .font(.system(size: 12, weight: .medium))
+                                .scaledFont(size: 12, weight: .medium)
                                 .foregroundStyle(Color.secondary)
                             HStack(spacing: 8) {
                                 TextField("your@university.lk", text: $email)
@@ -124,7 +124,7 @@ struct LoginView: View {
 
                         // Password
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Password").font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                            Text("Password").scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                             HStack {
                                 Group {
                                     if showPassword { TextField("Enter your password", text: $password) }
@@ -151,7 +151,7 @@ struct LoginView: View {
 
                         // Forgot
                         Button("Forgot Password?") { resetPassword() }
-                            .font(.system(size: 13)).foregroundStyle(Color.secondary)
+                            .scaledFont(size: 13).foregroundStyle(Color.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         HStack(spacing: 12) {
@@ -168,7 +168,7 @@ struct LoginView: View {
                                 action: {}
                             ) {
                                 Image(systemName: "apple.logo")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .scaledFont(size: 16, weight: .semibold)
                                     .foregroundStyle(.white)
                             }
                         }
@@ -179,11 +179,11 @@ struct LoginView: View {
                                 Image(systemName: "info.circle")
                                 Text("Signed in with Google. Set a password to use Face ID.")
                             }
-                            .font(.system(size: 12, weight: .medium))
+                            .scaledFont(size: 12, weight: .medium)
                             .foregroundStyle(Color.secondary)
 
                             Button("Set password") { resetPassword() }
-                                .font(.system(size: 13, weight: .semibold))
+                                .scaledFont(size: 13, weight: .semibold)
                                 .foregroundStyle(Color.uniBlue)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -207,7 +207,7 @@ struct LoginView: View {
                         } label: {
                             Group {
                                 if isLoading { ProgressView().tint(.white) }
-                                else { Text("Sign In").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white) }
+                                else { Text("Sign In").scaledFont(size: 17, weight: .semibold).foregroundStyle(.white) }
                             }
                             .frame(maxWidth: .infinity).frame(height: 56)
                             .background(LinearGradient.ctaGrad)
@@ -218,7 +218,7 @@ struct LoginView: View {
                             showSignUp = true
                         } label: {
                             Text("Don't have an account? Sign Up")
-                                .font(.system(size: 15)).foregroundStyle(Color.secondary)
+                                .scaledFont(size: 15).foregroundStyle(Color.secondary)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -298,7 +298,7 @@ struct LoginView: View {
     private func glassField(label: String, placeholder: String,
                             text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.white.opacity(0.6))
+            Text(label).scaledFont(size: 12, weight: .medium).foregroundStyle(Color.white.opacity(0.6))
             TextField(placeholder, text: text)
                 .keyboardType(keyboard)
                 .autocorrectionDisabled()
@@ -484,7 +484,7 @@ struct SignUpView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Create Account")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .scaledFont(size: 28, weight: .bold, design: .rounded)
                             .foregroundStyle(Color.primary)
                         Text("Start your smart budgeting journey")
                             .font(.subheadline).foregroundStyle(Color.secondary)
@@ -554,7 +554,7 @@ struct SignUpView: View {
                                 action: {}
                             ) {
                                 Image(systemName: "apple.logo")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .scaledFont(size: 16, weight: .semibold)
                                     .foregroundStyle(Color.primary)
                             }
                         }
@@ -566,10 +566,10 @@ struct SignUpView: View {
                             } label: {
                                 Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
                                     .foregroundStyle(agreedToTerms ? Color.uniBlue : Color.secondary)
-                                    .font(.system(size: 20))
+                                    .scaledFont(size: 20)
                             }
                             Text("I agree to the Terms & Privacy Policy")
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+                                .scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
                         }
                     }
                     .padding(.horizontal, 24).padding(.top, 32)
@@ -582,7 +582,7 @@ struct SignUpView: View {
                                 if isLoading { ProgressView().tint(.white) }
                                 else { Text("Create Account") }
                             }
-                            .font(.system(size: 17, weight: .semibold))
+                            .scaledFont(size: 17, weight: .semibold)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 56)
                             .background(LinearGradient.ctaGrad)
@@ -591,7 +591,7 @@ struct SignUpView: View {
 
                         Button { dismiss() } label: {
                             Text("Already have an account? Sign In")
-                                .font(.system(size: 15)).foregroundStyle(Color.secondary)
+                                .scaledFont(size: 15).foregroundStyle(Color.secondary)
                         }
                         if !errorMessage.isEmpty {
                             StatusBanner(text: errorMessage, systemImage: "exclamationmark.circle", style: .error)
@@ -662,7 +662,7 @@ struct SignUpView: View {
         onSubmit: @escaping () -> Void
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.secondary)
+            Text(label).scaledFont(size: 12, weight: .medium).foregroundStyle(Color.secondary)
             Group {
                 if isSecure { SecureField(placeholder, text: text) }
                 else {
@@ -711,7 +711,7 @@ private struct StatusBanner: View {
 
     var body: some View {
         Label(text, systemImage: systemImage)
-            .font(.system(size: 12, weight: .medium))
+            .scaledFont(size: 12, weight: .medium)
             .foregroundStyle(style.foreground)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -755,7 +755,7 @@ private struct SocialAuthButton<Icon: View>: View {
                     ProgressView().tint(.white)
                 } else {
                     Text(title)
-                        .font(.system(size: 15, weight: .semibold))
+                        .scaledFont(size: 15, weight: .semibold)
                         .foregroundStyle(.white)
                 }
             }
@@ -822,7 +822,7 @@ private struct GoogleMark: View {
             ZStack {
                 Circle().fill(Color(hex: "#EA4335")).frame(width: 20, height: 20)
                 Text("G")
-                    .font(.system(size: 12, weight: .bold))
+                    .scaledFont(size: 12, weight: .bold)
                     .foregroundStyle(.white)
             }
         }

@@ -230,17 +230,14 @@ extension View {
 
 // MARK: - Scaled Font Modifier
 struct ScaledFontModifier: ViewModifier {
-    @ScaledMetric private var scaledSize: CGFloat
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let size: CGFloat
     let weight: Font.Weight
     let design: Font.Design
-
-    init(size: CGFloat, weight: Font.Weight, design: Font.Design, relativeTo: Font.TextStyle) {
-        _scaledSize = ScaledMetric(wrappedValue: size, relativeTo: relativeTo)
-        self.weight = weight
-        self.design = design
-    }
+    let relativeTo: Font.TextStyle
 
     func body(content: Content) -> some View {
+        let scaledSize = size * typeSize.scaleFactor
         content.font(.system(size: scaledSize, weight: weight, design: design))
     }
 }
@@ -415,16 +412,15 @@ extension Double {
     }
 }
 
-// MARK: - Font Extensions
-extension Font {
-    static let headlineLg   = Font.system(size: 22, weight: .bold)
-    static let headlineMd   = Font.system(size: 18, weight: .semibold)
-    static let headlineSm   = Font.system(size: 15, weight: .semibold)
-    static let bodyMd       = Font.system(size: 15, weight: .regular)
-    static let bodySm       = Font.system(size: 13, weight: .regular)
-    static let caption1     = Font.system(size: 12, weight: .medium)
-    static let caption2Text = Font.system(size: 11, weight: .regular)
-    static let labelFont    = Font.system(size: 11, weight: .semibold)
+extension View {
+    func headlineLg()   -> some View { scaledFont(size: 22, weight: .bold) }
+    func headlineMd()   -> some View { scaledFont(size: 18, weight: .semibold) }
+    func headlineSm()   -> some View { scaledFont(size: 15, weight: .semibold) }
+    func bodyMd()       -> some View { scaledFont(size: 15, weight: .regular) }
+    func bodySm()       -> some View { scaledFont(size: 13, weight: .regular) }
+    func caption1()     -> some View { scaledFont(size: 12, weight: .medium) }
+    func caption2Text() -> some View { scaledFont(size: 11, weight: .regular) }
+    func labelFont()    -> some View { scaledFont(size: 11, weight: .semibold) }
 }
 
 // MARK: - Accessibility Font Scale
@@ -451,6 +447,27 @@ enum AppFontScale: String, CaseIterable, Identifiable, Codable {
         case .default:    return .medium
         case .large:      return .large
         case .extraLarge: return .xxLarge
+        }
+    }
+}
+
+// MARK: - DynamicTypeSize Scale Helper
+extension DynamicTypeSize {
+    var scaleFactor: CGFloat {
+        switch self {
+        case .xSmall:       return 0.8
+        case .small:        return 0.9
+        case .medium:       return 1.0
+        case .large:        return 1.1
+        case .xLarge:       return 1.2
+        case .xxLarge:      return 1.4
+        case .xxxLarge:     return 1.6
+        case .accessibility1: return 1.8
+        case .accessibility2: return 2.1
+        case .accessibility3: return 2.4
+        case .accessibility4: return 2.7
+        case .accessibility5: return 3.0
+        @unknown default:   return 1.0
         }
     }
 }

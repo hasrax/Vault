@@ -82,6 +82,16 @@ struct SearchView: View {
 
     private var totalIncome:  Double { transactionsVM.transactions.filter { $0.type == .income  }.reduce(0) { $0 + $1.amount } }
     private var totalExpense: Double { transactionsVM.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
+
+    private var searchSummary: String {
+        var summary = "Showing \(filtered.count) transactions. "
+        summary += "Total income is \(totalIncome.currencyRS) and total expenses are \(totalExpense.currencyRS). "
+        if let first = filtered.first {
+            summary += "The most recent transaction is \(first.name) for \(first.amount.currencyRS)."
+        }
+        return summary
+    }
+
     private struct MonthSummary {
         let income: Double
         let expense: Double
@@ -92,164 +102,173 @@ struct SearchView: View {
 
     // MARK: - Body
     var body: some View {
-        VStack(spacing: 0) {
-            // ── Header ──────────────────────────────────────────────────────
-            VStack(alignment: .leading, spacing: 0) {
-                if showBack {
-                    HStack {
-                        BackButton { dismiss() }
+        ZStack {
+            VStack(spacing: 0) {
+                // ── Header ──────────────────────────────────────────────────────
+                VStack(alignment: .leading, spacing: 0) {
+                    if showBack {
+                        HStack {
+                            BackButton { dismiss() }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                    }
+
+                    Text("History")
+                        .scaledFont(size: 32, weight: .bold, design: .rounded)
+                        .padding(.horizontal, 20)
+                        .padding(.top, showBack ? 16 : 8)
+                        .padding(.bottom, 14)
+
+                    // Search bar
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+                        TextField("Search history...", text: $searchText)
+                            .autocorrectionDisabled()
+                        if !searchText.isEmpty {
+                            Button {
+                                searchText = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .accessibilityLabel("Clear search")
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 20)
+
+                    // Filter chips
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(TxFilter.allCases, id: \.self) { f in
+                                FilterChip(label: f.rawValue, isSelected: activeFilter == f) {
+                                    withAnimation(.spring(duration: 0.25)) { activeFilter = f }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                    }
+
+                    // Filters row
+                    HStack(spacing: 10) {
+                        Menu {
+                            Button("All categories") { selectedBudgetCategory = nil }
+                            ForEach(BudgetCategory.allCases) { category in
+                                Button(category.rawValue) { selectedBudgetCategory = category }
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(categoryLabel)
+                                    .scaledFont(size: 12, weight: .medium)
+                                Image(systemName: "chevron.down")
+                                    .scaledFont(size: 11, weight: .semibold)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(Capsule())
+                        }
+
+                        Menu {
+                            ForEach(DateFilter.allCases, id: \.self) { option in
+                                Button(option.rawValue) { dateFilter = option }
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(dateFilter.rawValue)
+                                    .scaledFont(size: 12, weight: .medium)
+                                Image(systemName: "chevron.down")
+                                    .scaledFont(size: 11, weight: .semibold)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(Capsule())
+                        }
+
                         Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                }
-
-                Text("History")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
                     .padding(.horizontal, 20)
-                    .padding(.top, showBack ? 16 : 8)
-                    .padding(.bottom, 14)
-
-                // Search bar
-                HStack(spacing: 10) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-                    TextField("Search history...", text: $searchText)
-                        .autocorrectionDisabled()
-                    if !searchText.isEmpty {
-                        Button {
-                            searchText = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityLabel("Clear search")
-                    }
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 11)
-                .background(Color(UIColor.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .background(Color(UIColor.systemBackground))
+
+                // ── Summary cards ────────────────────────────────────────────────
+                HStack(spacing: 12) {
+                    summaryCard(label: "Income",   amount: totalIncome,  color: .income)
+                    summaryCard(label: "Expenses", amount: totalExpense, color: .expense)
+                }
                 .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color(UIColor.systemBackground))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Transaction Summary: Income \(totalIncome.currencyRS), Expenses \(totalExpense.currencyRS)")
 
-                // Filter chips
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(TxFilter.allCases, id: \.self) { f in
-                            FilterChip(label: f.rawValue, isSelected: activeFilter == f) {
-                                withAnimation(.spring(duration: 0.25)) { activeFilter = f }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                }
+                Divider()
 
-                // Filters row
-                HStack(spacing: 10) {
-                    Menu {
-                        Button("All categories") { selectedBudgetCategory = nil }
-                        ForEach(BudgetCategory.allCases) { category in
-                            Button(category.rawValue) { selectedBudgetCategory = category }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(categoryLabel)
-                                .font(.system(size: 12, weight: .medium))
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .clipShape(Capsule())
-                    }
-
-                    Menu {
-                        ForEach(DateFilter.allCases, id: \.self) { option in
-                            Button(option.rawValue) { dateFilter = option }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(dateFilter.rawValue)
-                                .font(.system(size: 12, weight: .medium))
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .clipShape(Capsule())
-                    }
-
+                // ── Transaction list ─────────────────────────────────────────────
+                if filtered.isEmpty {
                     Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
-            }
-            .background(Color(UIColor.systemBackground))
-
-            // ── Summary cards ────────────────────────────────────────────────
-            HStack(spacing: 12) {
-                summaryCard(label: "Income",   amount: totalIncome,  color: .income)
-                summaryCard(label: "Expenses", amount: totalExpense, color: .expense)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(Color(UIColor.systemBackground))
-
-            Divider()
-
-            // ── Transaction list ─────────────────────────────────────────────
-            if filtered.isEmpty {
-                Spacer()
-                VStack(spacing: 14) {
-                    Text("🔍").font(.system(size: 48))
-                    Text("No transactions found")
-                        .font(.system(size: 17, weight: .medium))
-                    Text("Try adjusting your search or filters")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 16, pinnedViews: .sectionHeaders) {
-                        ForEach(grouped, id: \.date) { group in
-                            Section {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(group.txs.enumerated()), id: \.element.id) { idx, tx in
-                                        TransactionRow(transaction: tx)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 2)
-                                        if idx < group.txs.count - 1 {
-                                            Divider()
-                                                .padding(.leading, 72)
-                                                .padding(.trailing, 16)
+                    VStack(spacing: 14) {
+                        Text("🔍").scaledFont(size: 48)
+                        Text("No transactions found")
+                            .scaledFont(size: 17, weight: .medium)
+                        Text("Try adjusting your search or filters")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16, pinnedViews: .sectionHeaders) {
+                            ForEach(grouped, id: \.date) { group in
+                                Section {
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(group.txs.enumerated()), id: \.element.id) { idx, tx in
+                                            TransactionRow(transaction: tx)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 2)
+                                            if idx < group.txs.count - 1 {
+                                                Divider()
+                                                    .padding(.leading, 72)
+                                                    .padding(.trailing, 16)
+                                            }
                                         }
                                     }
+                                    .background(Color(UIColor.systemBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                } header: {
+                                    Text(group.date)
+                                        .scaledFont(size: 13, weight: .semibold)
+                                        .foregroundStyle(.secondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 6)
+                                        .background(Color.clear)
+                                        .accessibilityAddTraits(.isHeader)
                                 }
-                                .background(Color(UIColor.systemBackground))
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                            } header: {
-                                Text(group.date)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 6)
-                                    .background(Color.clear)
                             }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 100)
                 }
             }
+            .background(Color.clear)
+            .navigationTitle("")
+            .navigationBarHidden(true)
+            .appStatusBarStyle(.darkContent)
+            
+            FloatingSpeakButton(textToSpeak: searchSummary)
         }
-        .background(Color.clear)
-        .navigationTitle("")
-        .navigationBarHidden(true)
+        .appStatusBarStyle(.darkContent)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 HStack(spacing: 14) {
@@ -293,10 +312,10 @@ struct SearchView: View {
     private func summaryCard(label: String, amount: Double, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(label)
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(.secondary)
             Text(amount.currencyRS)
-                .font(.system(size: 18, weight: .bold))
+                .scaledFont(size: 18, weight: .bold)
                 .foregroundStyle(color)
                 .minimumScaleFactor(0.7)
         }
@@ -361,7 +380,7 @@ struct SearchView: View {
             Spacer()
             Text(value.currencyRS)
                 .foregroundStyle(color)
-                .font(.system(size: 14, weight: .semibold))
+                .scaledFont(size: 14, weight: .semibold)
         }
     }
 

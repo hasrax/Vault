@@ -18,20 +18,17 @@ struct BackButton: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(isDark
-                          ? Color.white.opacity(0.15)
-                          : Color(UIColor.systemBackground))
-                    .frame(width: 40, height: 40)
-                    .shadow(color: .black.opacity(isDark ? 0.0 : 0.08),
-                            radius: 6, x: 0, y: 2)
+                    .fill(Color(UIColor.systemBackground))
+                    .frame(width: 44, height: 44)
 
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold, relativeTo: .body)
                     .foregroundStyle(isDark ? Color.white : Color.uniBlue)
             }
         }
         .buttonStyle(CircleButtonStyle())
         .accessibilityLabel("Go back")
+        .accessibilityHint("Returns to the previous screen")
     }
 }
 

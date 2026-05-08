@@ -86,55 +86,69 @@ struct HomeView: View {
         return "Received \(received) · \(leftText)"
     }
 
+    private var homeSummary: String {
+        let name = appState.currentUser?.name ?? MockData.userName
+        var summary = "Hi \(name). Your monthly budget balance is \(balance.currencyRS). "
+        summary += "This month you have received \(totalIncome.currencyRS) and spent \(totalExpense.currencyRS). "
+        if let limit = currentLimit {
+            summary += "Your \(activeCategory.rawValue) budget is \(Int(limit.progress * 100)) percent used, with \(limit.remaining.currencyRS) remaining."
+        }
+        return summary
+    }
+
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    darkHeader
-                    glassOverlapCard
-                    contentSection
+        ZStack {
+            NavigationStack {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        darkHeader
+                        glassOverlapCard
+                        contentSection
+                    }
+                }
+                .ignoresSafeArea(edges: .top)
+                .background(Color(UIColor.systemGroupedBackground))
+                // Sheets
+                .sheet(isPresented: $showAddTransaction) {
+                    AddTransactionView(prefillType: addTransactionType)
+                }
+                .sheet(isPresented: $showNotifications) {
+                    NotificationsView()
+                }
+                // Navigation destinations
+                .navigationDestination(isPresented: $showSearch) {
+                    SearchView(showBack: true)
+                }
+                .navigationDestination(isPresented: $showBudget) {
+                    BudgetView()
+                }
+                .navigationDestination(isPresented: $showPlanner) {
+                    PlannerView()
+                }
+                .navigationDestination(isPresented: $showSemesterPlanner) {
+                    SemesterPlannerView()
+                }
+                .navigationDestination(isPresented: $showWorkSchedule) {
+                    WorkScheduleView()
+                }
+                .navigationDestination(isPresented: $showSplitBill) {
+                    SplitBillView()
+                }
+                .navigationDestination(isPresented: $showMealPlan) {
+                    MealPlanView()
+                }
+                .navigationDestination(isPresented: $showSavings) {
+                    SavingsView()
+                }
+                .navigationDestination(isPresented: $showAnalytics) {
+                    AnalyticsView()
+                }
+                .navigationDestination(isPresented: $showProfile) {
+                    ProfileView()
                 }
             }
-            .ignoresSafeArea(edges: .top)
-            .background(Color(UIColor.systemGroupedBackground))
-            // Sheets
-            .sheet(isPresented: $showAddTransaction) {
-                AddTransactionView(prefillType: addTransactionType)
-            }
-            .sheet(isPresented: $showNotifications) {
-                NotificationsView()
-            }
-            // Navigation destinations
-            .navigationDestination(isPresented: $showSearch) {
-                SearchView(showBack: true)
-            }
-            .navigationDestination(isPresented: $showBudget) {
-                BudgetView()
-            }
-            .navigationDestination(isPresented: $showPlanner) {
-                PlannerView()
-            }
-            .navigationDestination(isPresented: $showSemesterPlanner) {
-                SemesterPlannerView()
-            }
-            .navigationDestination(isPresented: $showWorkSchedule) {
-                WorkScheduleView()
-            }
-            .navigationDestination(isPresented: $showSplitBill) {
-                SplitBillView()
-            }
-            .navigationDestination(isPresented: $showMealPlan) {
-                MealPlanView()
-            }
-            .navigationDestination(isPresented: $showSavings) {
-                SavingsView()
-            }
-            .navigationDestination(isPresented: $showAnalytics) {
-                AnalyticsView()
-            }
-            .navigationDestination(isPresented: $showProfile) {
-                ProfileView()
-            }
+            
+            FloatingSpeakButton(textToSpeak: homeSummary)
         }
     }
 
@@ -155,15 +169,19 @@ struct HomeView: View {
                             profileAvatar
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Profile settings")
+                        
                         let displayName = appState.currentUser?.name ?? MockData.userName
                         Text("Hi, \(displayName)!")
-                            .font(.system(size: 15, weight: .semibold))
+                            .scaledFont(size: 15, weight: .semibold)
                             .foregroundStyle(Color.white)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Hi, \(appState.currentUser?.name ?? MockData.userName). Profile settings")
                     Spacer()
                     Button { showNotifications = true } label: {
                         Image(systemName: "bell.fill")
-                            .font(.system(size: 16))
+                            .scaledFont(size: 16)
                             .foregroundStyle(Color.white)
                             .frame(width: 40, height: 40)
                             .background(Color.white.opacity(0.1))
@@ -177,44 +195,50 @@ struct HomeView: View {
                 // Balance
                 VStack(spacing: 6) {
                     Text("Monthly Budget")
-                        .font(.system(size: 12, weight: .medium))
+                        .scaledFont(size: 12, weight: .medium)
                         .foregroundStyle(Color.white.opacity(0.5))
                     Text(balance.currencyRS)
-                        .font(.system(size: 40, weight: .bold, design: .rounded))
+                        .scaledFont(size: 40, weight: .bold, design: .rounded)
                         .foregroundStyle(Color.white)
                     TimelineView(.periodic(from: Date(), by: 60)) { context in
                         Text(receivedText(at: context.date))
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .foregroundStyle(Color.white.opacity(0.4))
                     }
                 }
                 .padding(.top, 24)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Monthly Budget Balance: \(balance.currencyRS). \(receivedText(at: Date()))")
 
                 // Income / Expense row
                 HStack(spacing: 32) {
                     VStack(spacing: 3) {
                         Text("Income")
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalIncome.currencyRS)
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold)
                             .foregroundStyle(Color.income)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Total Income: \(totalIncome.currencyRS)")
                     Rectangle().fill(Color.white.opacity(0.15)).frame(width: 1, height: 32)
                     VStack(spacing: 3) {
                         Text("Spent")
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .foregroundStyle(Color.white.opacity(0.7))
                         Text(totalExpense.currencyRS)
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold)
                             .foregroundStyle(Color.expense)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Total Spent: \(totalExpense.currencyRS)")
                 }
                 .padding(.top, 16)
 
                 // Donut chart + legend
                 Text("Budget Allocation")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.white.opacity(0.4))
                     .padding(.top, 24)
 
@@ -236,13 +260,15 @@ struct HomeView: View {
                                 Circle().fill(cat.color).frame(width: 8, height: 8)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(cat.rawValue)
-                                        .font(.system(size: 11))
+                                        .scaledFont(size: 11)
                                         .foregroundStyle(Color.white.opacity(0.5))
                                     Text(allocationAmount(for: cat).shortCurrency)
-                                        .font(.system(size: 12, weight: .bold))
+                                        .scaledFont(size: 12, weight: .bold)
                                         .foregroundStyle(Color.white)
                                 }
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(cat.rawValue) allocation: \(allocationAmount(for: cat).shortCurrency)")
                         }
                     }
                 }
@@ -255,7 +281,7 @@ struct HomeView: View {
                             withAnimation(.spring(duration: 0.3)) { activeCategory = cat }
                         } label: {
                             Text(cat.rawValue)
-                                .font(.system(size: 14, weight: activeCategory == cat ? .semibold : .regular))
+                                .scaledFont(size: 14, weight: activeCategory == cat ? .semibold : .regular)
                                 .foregroundStyle(activeCategory == cat ? Color.white : Color.white.opacity(0.4))
                                 .padding(.horizontal, 16).padding(.vertical, 8)
                                 .background(activeCategory == cat ? cat.color : Color.clear)
@@ -296,7 +322,7 @@ struct HomeView: View {
                 ZStack {
                     Color.white.opacity(0.12)
                     Text(MockData.userAvatar)
-                        .font(.system(size: 22))
+                        .scaledFont(size: 22)
                 }
             }
         }
@@ -313,32 +339,34 @@ struct HomeView: View {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(activeCategory.color.opacity(0.12))
                             .frame(width: 40, height: 40)
-                        Text(activeCategory.emoji).font(.system(size: 18))
+                        Text(activeCategory.emoji).scaledFont(size: 18)
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(activeCategory.rawValue)
-                            .font(.system(size: 15, weight: .semibold))
+                            .scaledFont(size: 15, weight: .semibold)
                         Text(activeCategory.subtitle)
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .foregroundStyle(Color.secondary)
                     }
                     Spacer()
                     Text(limit.limit.currencyRS)
-                        .font(.system(size: 17, weight: .bold))
+                        .scaledFont(size: 17, weight: .bold)
                 }
                 UniProgressBar(progress: limit.progress, color: limit.progressColor)
                 HStack {
                     Text("\(limit.remaining.currencyRS) left")
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12)
                         .foregroundStyle(Color.secondary)
                     Spacer()
                     Text("\(Int(limit.progress * 100))% used")
-                        .font(.system(size: 11, weight: .bold))
+                        .scaledFont(size: 11, weight: .bold)
                         .foregroundStyle(limit.progressColor)
                 }
             }
         }
         .padding(16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(currentLimit != nil ? "\(activeCategory.rawValue) budget: \(currentLimit!.limit.currencyRS). \(currentLimit!.remaining.currencyRS) left. \(Int(currentLimit!.progress * 100)) percent used." : "")
         .background(Color(UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.10), radius: 12, y: 4)
@@ -372,13 +400,13 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Add transaction")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.secondary)
                     .textCase(.uppercase)
                 Text("Log expense or income")
-                    .font(.system(size: 18, weight: .bold))
+                    .scaledFont(size: 18, weight: .bold)
                 Text("Capture rupees right away so budgets stay accurate.")
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Color.secondary)
             }
             HStack(spacing: 12) {
@@ -387,7 +415,7 @@ struct HomeView: View {
                     showAddTransaction = true
                 } label: {
                     Label("Expense", systemImage: "minus.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(Color.expense)
                         .frame(maxWidth: .infinity).frame(height: 44)
                         .background(Color.expense.opacity(0.16))
@@ -402,7 +430,7 @@ struct HomeView: View {
                     showAddTransaction = true
                 } label: {
                     Label("Income", systemImage: "plus.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(Color.income)
                         .frame(maxWidth: .infinity).frame(height: 44)
                         .background(Color.income.opacity(0.16))

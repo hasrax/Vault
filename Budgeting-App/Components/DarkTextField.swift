@@ -20,7 +20,7 @@ struct DarkTextField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium, relativeTo: .caption)
                 .foregroundStyle(Color.secondary)
 
             Group {

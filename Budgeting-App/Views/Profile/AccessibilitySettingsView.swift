@@ -25,6 +25,10 @@ struct AccessibilitySettingsView: View {
                 Toggle("High contrast", isOn: $appState.highContrastEnabled)
             }
 
+            Section("Voice Assistant") {
+                Toggle("Speak Screen button", isOn: $appState.inAppVoiceEnabled)
+            }
+
             Section {
                 Text("Changes apply immediately across the app.")
                     .font(.caption)
