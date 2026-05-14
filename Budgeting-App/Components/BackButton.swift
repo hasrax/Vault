@@ -18,12 +18,12 @@ struct BackButton: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(Color(UIColor.systemBackground))
+                    .fill(isDark ? Color.white.opacity(0.15) : Color(UIColor.systemBackground))
                     .frame(width: 44, height: 44)
 
                 Image(systemName: "chevron.left")
                     .scaledFont(size: 14, weight: .semibold, relativeTo: .body)
-                    .foregroundStyle(isDark ? Color.white : Color.uniBlue)
+                    .foregroundStyle(isDark ? .white : Color.uniBlue)
             }
         }
         .buttonStyle(CircleButtonStyle())

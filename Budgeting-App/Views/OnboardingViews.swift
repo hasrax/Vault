@@ -204,8 +204,7 @@ struct SetupBudgetView: View {
     ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
 
                     // ── Title block ──────────────────────────────────────
@@ -376,13 +375,7 @@ struct SetupBudgetView: View {
                 if isEditing {
                     // Edit mode: Cancel (left) + Save (right)
                     ToolbarItem(placement: .topBarLeading) {
-                        Button("Cancel") { dismiss() }
-                            .scaledFont(size: 15, weight: .medium, relativeTo: .body)
-                            .foregroundStyle(Color.uniBlue)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 7)
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .clipShape(Capsule())
+                        BackButton { dismiss() }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Save") {
@@ -418,7 +411,6 @@ struct SetupBudgetView: View {
                     }
                 }
             }
-        }
         .onAppear {
             budget      = appState.monthlyBudget
             needsPct    = appState.needsPercent

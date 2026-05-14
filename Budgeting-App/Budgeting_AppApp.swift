@@ -40,6 +40,8 @@ class AppState: ObservableObject {
     @Published var sessionTimeoutSeconds: TimeInterval = 30
     @Published var splitBills: [SplitBill] = []
     @Published var plannerTheme: PlannerTheme = PlannerTheme()
+    @Published var selectedTab = 0
+
 
     init() {
         self.isDarkMode = UserDefaults.standard.bool(forKey: "app_isDarkMode")
@@ -138,7 +140,9 @@ class AppState: ObservableObject {
             carryOverBalance = 0
             budgetHistory = []
             plannerTheme = PlannerTheme()   // reset to defaults on logout
+            selectedTab = 0                 // Reset to Home screen
             stopTransactionListener()
+
             stopSavingsGoalsListener()
         }
 
@@ -1148,7 +1152,7 @@ struct RootView: View {
         } else if !authVM.isAuthenticated {
             WelcomeView()
         } else if !authVM.hasCompletedSetup {
-            SetupBudgetView()
+            NavigationStack { SetupBudgetView() }
         } else {
             MainTabView()
                 .id(authVM.isAuthenticated)

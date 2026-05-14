@@ -378,12 +378,12 @@ struct ProfileView: View {
                 .onTapGesture { onCancel() }
 
             VStack(spacing: 12) {
-                Text("Logout")
+                Text("Sign Out")
                     .scaledFont(size: 17, weight: .semibold)
                     .foregroundStyle(Color.uniBlue)
 
                 VStack(spacing: 4) {
-                    Text("Are you sure you want to logout of")
+                    Text("Are you sure you want to sign out of")
                         .scaledFont(size: 13)
                         .foregroundStyle(Color.primary)
                     Text("\(accountName)'s account ?")
@@ -393,7 +393,7 @@ struct ProfileView: View {
                 .multilineTextAlignment(.center)
 
                 HStack(spacing: 14) {
-                    Button("Logout") { onConfirm() }
+                    Button("Sign Out") { onConfirm() }
                         .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(Color.uniBlue)
                         .frame(maxWidth: .infinity)

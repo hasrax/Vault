@@ -19,6 +19,7 @@ struct HomeView: View {
     // Navigation destinations
     @State private var showSearch         = false
     @State private var showBudget         = false
+    @State private var showEditBudgetNav  = false
     @State private var showPlanner        = false
     @State private var showWorkSchedule   = false
     @State private var showSplitBill      = false
@@ -145,6 +146,9 @@ struct HomeView: View {
                 }
                 .navigationDestination(isPresented: $showProfile) {
                     ProfileView()
+                }
+                .navigationDestination(isPresented: $showEditBudgetNav) {
+                    SetupBudgetView(isEditing: true)
                 }
             }
             

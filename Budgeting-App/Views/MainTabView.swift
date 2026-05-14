@@ -9,10 +9,9 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab = 0
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: $appState.selectedTab) {
             HomeView()
                 .tabItem { Label("Home",    systemImage: "house.fill") }
                 .tag(0)
@@ -35,9 +34,6 @@ struct MainTabView: View {
         }
         .tint(Color.uniBlue)
         .id(appState.currentUser?.id ?? "guest")
-        .onChange(of: appState.isAuthenticated) { _, isAuthed in
-            if isAuthed { selectedTab = 0 }
-        }
     }
 }
 
