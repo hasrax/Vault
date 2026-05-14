@@ -139,7 +139,7 @@ struct BudgetView: View {
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $showAnalytics) { AnalyticsView() }
             .sheet(isPresented: $showEditBudget) {
-                SetupBudgetView(isEditing: true)
+                NavigationStack { SetupBudgetView(isEditing: true) }
             }
             .sheet(isPresented: $showHistory) {
                 BudgetHistoryView()
